@@ -162,47 +162,41 @@ colobot/
 
 | 模块 | 完成度 | 状态 |
 |------|--------|------|
-| 父Agent 运行时 | 80% | LLM 循环可用，多模态支持，缺审计 |
+| 父Agent 运行时 | 90% | ✅ 审计 + 审批触发 |
 | 子Agent | 60% | 纯内存是设计，多模态支持 |
 | Skill 系统 | 50% | 可用，缺 Schema 验证 |
 | Trigger 引擎 | 50% | interval/cron/webhook 可用 |
 | 向量记忆 | 70% | ✅ embedding 存储 + 混合搜索 |
-| 审批流 | 20% | 表存在，触发和应用缺失 |
+| 审批流 | 50% | ✅ 触发已集成，执行待优化 |
 | Soul 自进化 | 70% | ✅ 表已创建，流程可用 |
 | 全模态支持 | ✅ | OpenAI/Anthropic 多模态 |
-| 审计日志 | 10% | 表存在，写入缺失 |
+| 审计日志 | ✅ | services/audit.ts 全链路写入 |
 | 渠道接入 | 10% | 仅 WebSocket |
 | 前端 Dashboard | 0% | 不存在 |
-| 认证 | 0% | 未实现 |
+| 认证 | ✅ | API Key 中间件 |
 
-### 已修复的问题
+### 已完成 (P0)
 
-| # | 问题 | 状态 |
+| # | 功能 | 文件 |
 |---|------|------|
-| 1 | `soul_proposals` 表缺失 | ✅ 已修复 |
-| 2 | `addMemory()` 不存 embedding | ✅ 已修复 |
-| 3 | 全模态模型支持 | ✅ 已实现 |
+| 1 | `soul_proposals` 表 | sql/schema.sql |
+| 2 | `addMemory()` embedding | src/memory/vector.ts |
+| 3 | 全模态支持 | src/llm/index.ts |
+| 4 | 审计日志写入 | src/services/audit.ts |
+| 5 | 审批流触发 | src/agent-runtime/runtime.ts |
+| 6 | API Key 认证 | src/middleware/auth.ts |
 
 ### 剩余问题
-
-#### 严重问题
-
-| # | 问题 | 位置 |
-|---|------|------|
-| 4 | `approvalFlow.create()` 从未被调用 | `runtime.ts` |
-| 5 | `audit_logs` 从未写入 | `runtime.ts` |
-| 6 | `isToolAllowed()` 权限控制形同虚设 | `executor.ts` |
-| 7 | 审批通过后不执行被阻止操作 | `approval.ts` |
 
 #### 中等问题
 
 | # | 问题 | 位置 |
 |---|------|------|
-| 8 | `parseBody` JSON 失败返回 500 | `colobot-server.ts` |
-| 9 | Trigger timers 内存中 | `trigger-runtime.ts` |
-| 10 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
-| 11 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
-| 12 | 无 fallback model 切换 | `llm/index.ts` |
+| 1 | `parseBody` JSON 失败返回 500 | `colobot-server.ts` |
+| 2 | Trigger timers 内存中 | `trigger-runtime.ts` |
+| 3 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
+| 4 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
+| 5 | 无 fallback model 切换 | `llm/index.ts` |
 
 ---
 
