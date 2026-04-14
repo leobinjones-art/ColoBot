@@ -73,6 +73,7 @@
 | 搜索 | SearXNG |
 | 前端 | React 19 + Vite + TailwindCSS |
 | 渠道 | 飞书 WebSocket / Telegram / Discord / Slack |
+| 认证 | API Key |
 
 ---
 
@@ -101,6 +102,9 @@ cp .env.example .env
 
 # 启动 PostgreSQL
 docker compose up -d postgres
+
+# 初始化数据库
+npm run db:init
 
 # 启动 ColoBot
 npm run dev
@@ -131,6 +135,74 @@ colobot/
 └── sql/
     └── schema.sql            # 数据库 schema
 ```
+
+---
+
+## API 路由
+
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/agents` | GET/POST | 列出/创建 Agent |
+| `/api/agents/:id` | GET/DELETE | 获取/删除单个 Agent |
+| `/api/chat` | POST | 发送消息（自动路由到 Skill 或 Agent） |
+| `/api/memory/search` | POST | 记忆语义搜索 |
+| `/api/search` | POST | SearXNG 搜索 |
+| `/api/skills` | GET/POST | 列出/创建 Skill |
+| `/api/triggers/fire` | POST | 触发 Webhook Trigger |
+| `/api/approvals` | GET | 获取待审批请求 |
+| `/api/approvals/:id/approve` | POST | 审批通过 |
+| `/api/approvals/:id/reject` | POST | 审批拒绝 |
+| `/health` | GET | 健康检查 |
+
+---
+
+## 项目状态
+
+### 模块完成度
+
+| 模块 | 完成度 | 状态 |
+|------|--------|------|
+| 父Agent 运行时 | 70% | LLM 循环可用，缺审计/权限 |
+| 子Agent | 50% | 可用但不持久化 |
+| Skill 系统 | 40% | 可用，缺 Schema 验证 |
+| Trigger 引擎 | 40% | interval/cron/webhook 可用 |
+| 向量记忆 | 20% | ⚠️ embedding 未存储 |
+| 审批流 | 20% | 表存在，触发和应用缺失 |
+| Soul 自进化 | 0% | ⚠️ `soul_proposals` 表不存在 |
+| 审计日志 | 0% | ⚠️ 表存在但从未写入 |
+| 渠道接入 | 10% | 仅 WebSocket |
+| 前端 Dashboard | 0% | 不存在 |
+| 认证 | 0% | 未实现 |
+
+### 已知问题
+
+#### 致命问题
+
+| # | 问题 | 影响 |
+|---|------|------|
+| 1 | `soul_proposals` 表不存在 | Soul 自进化直接崩溃 |
+| 2 | `addMemory()` 不保存 embedding | 向量搜索完全失效 |
+| 3 | 无认证机制 | API 完全开放 |
+
+#### 严重问题
+
+| # | 问题 | 位置 |
+|---|------|------|
+| 4 | `approvalFlow.create()` 从未被调用 | `runtime.ts` |
+| 5 | `audit_logs` 表存在但从未写入 | `runtime.ts` |
+| 6 | `isToolAllowed()` 权限控制失效 | `executor.ts` |
+| 7 | 审批通过后不执行被阻止的操作 | `approval.ts` |
+
+#### 中等问题
+
+| # | 问题 | 位置 |
+|---|------|------|
+| 8 | `parseBody` JSON 解析失败返回 500 | `colobot-server.ts` |
+| 9 | Trigger interval timers 存在内存中 | `trigger-runtime.ts` |
+| 10 | 子 Agent 重启后丢失 | `sub-agents.ts` |
+| 11 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
+| 12 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
+| 13 | 无 fallback model 切换 | `llm/index.ts` |
 
 ---
 
