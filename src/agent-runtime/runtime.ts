@@ -4,19 +4,19 @@
 
 import { agentRegistry, type Agent } from '../agents/registry.js';
 import { sessionManager } from '../agents/session.js';
-import { agentChat, type LLMMessage } from '../llm/index.js';
+import { agentChat, type LLMMessage, type ContentBlock } from '../llm/index.js';
 import { parseToolCalls, stripToolCalls, executeToolCalls, formatToolResults, isToolAllowed } from './tools/executor.js';
 import { hybridSearch } from '../memory/vector.js';
 
 export interface RunOptions {
   agentId: string;
   sessionKey: string;
-  userMessage: string;
+  userMessage: string | ContentBlock[];
   maxRounds?: number;
 }
 
 export interface RunResult {
-  response: string;
+  response: string | ContentBlock[];
   toolCalls: string[];
   finished: boolean;
 }
@@ -43,7 +43,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
   await sessionManager.appendMessage(agentId, sessionKey, 'user', userMessage);
 
   const toolCallNames: string[] = [];
-  let finalContent = '';
+  let finalContent: string | ContentBlock[] = '';
 
   for (let round = 0; round < maxRounds; round++) {
     const response = await agentChat(soul, messages, {
@@ -56,10 +56,14 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
     const rawContent = response.content;
     messages.push({ role: 'assistant', content: rawContent });
 
-    const toolCalls = parseToolCalls(rawContent);
+    // 解析工具调用时需要文本
+    const rawText = typeof rawContent === 'string' ? rawContent
+      : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+
+    const toolCalls = parseToolCalls(rawText);
 
     if (toolCalls.length === 0) {
-      finalContent = stripToolCalls(rawContent);
+      finalContent = rawContent;
       break;
     }
 
@@ -77,7 +81,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
       : '';
 
     messages.push({ role: 'user', content: `${toolResultText}${blockedText}` });
-    finalContent = stripToolCalls(rawContent);
+    finalContent = rawContent;
   }
 
   // 保存助手回复

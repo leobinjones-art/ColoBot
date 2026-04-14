@@ -3,8 +3,8 @@
  */
 
 import { query, queryOne } from '../memory/db.js';
-import { parseToolCalls, stripToolCalls, executeToolCalls, formatToolResults } from './tools/executor.js';
-import { agentChat } from '../llm/index.js';
+import { parseToolCalls, executeToolCalls, formatToolResults } from './tools/executor.js';
+import { agentChat, type LLMMessage } from '../llm/index.js';
 
 export interface Skill {
   id: string;
@@ -68,11 +68,13 @@ export async function executeSkill(
       [{ role: 'user', content: context.userMessage }],
       {}
     );
-    return response.content;
+    const text = typeof response.content === 'string' ? response.content
+      : response.content.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+    return text;
   }
 
   // 构建执行上下文
-  const messages = [
+  const messages: LLMMessage[] = [
     { role: 'system', content: buildSkillSystemPrompt(skill) },
     { role: 'user', content: context.userMessage },
   ];
@@ -83,9 +85,12 @@ export async function executeSkill(
     const response = await agentChat({ personality: skill.markdown_content }, messages as any, {});
     const rawContent = response.content;
 
-    const toolCalls = parseToolCalls(rawContent);
+    const rawText = typeof rawContent === 'string' ? rawContent
+      : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+
+    const toolCalls = parseToolCalls(rawText);
     if (toolCalls.length === 0) {
-      finalContent = stripToolCalls(rawContent);
+      finalContent = rawText;
       break;
     }
 
@@ -95,7 +100,7 @@ export async function executeSkill(
     const toolResultText = formatToolResults(executed);
 
     messages.push({ role: 'user', content: toolResultText });
-    finalContent = stripToolCalls(rawContent);
+    finalContent = rawText;
   }
 
   return finalContent || '(无回复)';

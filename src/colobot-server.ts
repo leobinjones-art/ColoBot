@@ -7,6 +7,7 @@ import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
 import { runAgent, searchAgentMemory } from './agent-runtime/runtime.js';
+import type { ContentBlock } from './llm/index.js';
 import { listSkills, matchesTrigger, executeSkill } from './agent-runtime/skill-runtime.js';
 import { initTriggerEngine, fireWebhook } from './agent-runtime/trigger-runtime.js';
 import { agentRegistry } from './agents/registry.js';
@@ -80,7 +81,8 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req);
       const agent_id = String(body.agent_id || '');
       const session_key = String(body.session_key || '');
-      const message = String(body.message || '');
+      // message 支持 string (纯文本) 或 ContentBlock[] (多模态)
+      const message = body.message;
 
       if (!agent_id || !session_key || !message) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -88,20 +90,23 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      // Skill 触发仅支持文本匹配
+      const messageText = typeof message === 'string' ? message
+        : (Array.isArray(message) ? message.map(b => b.type === 'text' ? b.text : '').join(' ') : String(message));
+
       // 检查是否触发 Skill
       const skills = await listSkills();
-      const triggeredSkill = skills.find(s => matchesTrigger(s, message));
+      const triggeredSkill = skills.find(s => matchesTrigger(s, messageText));
 
-      let response: string;
       if (triggeredSkill) {
-        response = await executeSkill(triggeredSkill, agent_id, { sessionKey: session_key, userMessage: message });
+        const response = await executeSkill(triggeredSkill, agent_id, { sessionKey: session_key, userMessage: messageText });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ response }));
       } else {
-        const result = await runAgent({ agentId: agent_id, sessionKey: session_key, userMessage: message });
-        response = result.response;
+        const result = await runAgent({ agentId: agent_id, sessionKey: session_key, userMessage: message as string | ContentBlock[] });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ response: result.response }));
       }
-
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ response }));
       return;
     }
 
@@ -239,7 +244,7 @@ wss.on('connection', (ws, req) => {
         const skills = await listSkills();
         const triggeredSkill = skills.find(s => matchesTrigger(s, message as string));
 
-        let response: string;
+        let response: string | ContentBlock[];
         if (triggeredSkill) {
           response = await executeSkill(triggeredSkill, agentId, { sessionKey, userMessage: message as string });
         } else {

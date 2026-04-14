@@ -3,6 +3,8 @@
  * 纯内存存在，TTL自动过期，父子关系权限控制
  */
 
+import type { LLMMessage } from '../llm/index.js';
+
 export interface SubAgentConfig {
   name: string;
   soul_content: string;
@@ -116,7 +118,7 @@ export async function runSubAgentTask(
     const soul = JSON.parse(subAgent.soul_content || '{}');
     const maxRounds = 5;
 
-    const messages: Array<{ role: string; content: string }> = [
+    const messages: LLMMessage[] = [
       { role: 'system', content: buildSubAgentSystemPrompt(soul) },
       { role: 'user', content: task },
     ];
@@ -127,11 +129,15 @@ export async function runSubAgentTask(
       const response = await agentChat(soul, messages as any, {});
       const rawContent = response.content;
 
+      // 多模态 content 转为文本供工具解析
+      const rawText = typeof rawContent === 'string' ? rawContent
+        : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+
       const { parseToolCalls, stripToolCalls, executeToolCalls, formatToolResults } = await import('./tools/executor.js');
-      const toolCalls = parseToolCalls(rawContent);
+      const toolCalls = parseToolCalls(rawText);
 
       if (toolCalls.length === 0) {
-        finalContent = stripToolCalls(rawContent);
+        finalContent = rawText;
         messages.push({ role: 'assistant', content: rawContent });
         break;
       }
@@ -149,7 +155,7 @@ export async function runSubAgentTask(
         : '';
 
       messages.push({ role: 'user', content: `${toolResultText}${blockedText}` });
-      finalContent = stripToolCalls(rawContent);
+      finalContent = rawText;
     }
 
     setSubAgentStatus(subAgent.id, 'done');

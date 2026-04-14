@@ -3,6 +3,7 @@
  */
 
 import { query, queryOne } from '../memory/db.js';
+import type { ContentBlock } from '../llm/index.js';
 
 export interface Session {
   id: string;
@@ -65,10 +66,10 @@ class SessionManager {
     agentId: string,
     sessionKey: string,
     role: 'user' | 'assistant',
-    content: string
+    content: string | ContentBlock[]
   ): Promise<void> {
     const session = await this.getOrCreate(agentId, sessionKey);
-    const history = (session.context.history as Array<{ role: string; content: string }>) || [];
+    const history = (session.context.history as Array<{ role: string; content: string | ContentBlock[] }>) || [];
     history.push({ role, content });
     // 保留最近 20 条
     const trimmed = history.slice(-20);
@@ -76,9 +77,9 @@ class SessionManager {
   }
 
   /** 获取历史消息 */
-  async getHistory(agentId: string, sessionKey: string): Promise<Array<{ role: string; content: string }>> {
+  async getHistory(agentId: string, sessionKey: string): Promise<Array<{ role: string; content: string | ContentBlock[] }>> {
     const session = await this.get(agentId, sessionKey);
-    return (session?.context?.history as Array<{ role: string; content: string }>) || [];
+    return (session?.context?.history as Array<{ role: string; content: string | ContentBlock[] }>) || [];
   }
 
   private parseRow(r: SessionRow): Session {

@@ -2,9 +2,16 @@
  * LLM 抽象层 - 支持 OpenAI / Anthropic / MiniMax / Mock
  */
 
+// ─── Content Blocks (多模态) ──────────────────────────────────
+
+export type TextContent = { type: 'text'; text: string };
+export type ImageUrlContent = { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } };
+export type AudioContent = { type: 'input_audio'; input_audio: { data: string; format: string } };
+export type ContentBlock = TextContent | ImageUrlContent | AudioContent;
+
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | ContentBlock[];
 }
 
 export interface LLMOptions {
@@ -15,7 +22,7 @@ export interface LLMOptions {
 }
 
 export interface LLMResponse {
-  content: string;
+  content: string | ContentBlock[];
   raw: unknown;
 }
 
@@ -76,19 +83,25 @@ function buildSystemPrompt(
 
 // ─── Mock ───────────────────────────────────────────────────
 
+function getTextContent(content: string | ContentBlock[]): string {
+  if (typeof content === 'string') return content;
+  return content.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+}
+
 function mockChat(messages: LLMMessage[]): LLMResponse {
   const lastMsg = messages[messages.length - 1]?.content || '';
-  const role = messages.find(m => m.role === 'system')?.content || '';
+  const text = getTextContent(lastMsg);
+  const role = getTextContent(messages.find(m => m.role === 'system')?.content || '');
   let content: string;
 
   if (role.includes('Skill')) {
-    content = `[Mock Skill Response] 处理消息: "${lastMsg.slice(0, 40)}..." - Skill 执行成功`;
-  } else if (lastMsg.includes('介绍')) {
-    content = '我是 ColoBot，一个多模态 AI 助手。在 MOCK_LLM 模式下运行。';
-  } else if (lastMsg.includes('记住')) {
+    content = `[Mock Skill Response] 处理消息: "${text.slice(0, 40)}..." - Skill 执行成功`;
+  } else if (text.includes('介绍')) {
+    content = '我是 ColoBot，一个全模态 AI 助手，支持文本/图片/音频/视频。在 MOCK_LLM 模式下运行。';
+  } else if (text.includes('记住')) {
     content = '好的，我已经记住了这个信息。';
   } else {
-    content = `[Mock] 收到: "${lastMsg.slice(0, 30)}..." - 这是 E2E 测试的 Mock 响应。`;
+    content = `[Mock] 收到: "${text.slice(0, 30)}..." - 这是 E2E 测试的 Mock 响应。`;
   }
 
   return { content, raw: { mock: true } };
@@ -104,6 +117,8 @@ async function chatOpenAI(
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
   const model = options.model || 'gpt-4o';
+
+  // OpenAI 支持多模态 content 数组，原样传递
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -123,7 +138,7 @@ async function chatOpenAI(
     throw new Error(`OpenAI API error: ${res.status} ${err}`);
   }
 
-  const data = await res.json() as { choices: Array<{ message: { content: string } }> };
+  const data = await res.json() as { choices: Array<{ message: { content: string | ContentBlock[] } }> };
   return { content: data.choices[0]?.message?.content ?? '', raw: data };
 }
 
@@ -140,6 +155,7 @@ async function chatAnthropic(
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
+  // Anthropic 支持多模态 content 数组，原样传递
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -161,8 +177,10 @@ async function chatAnthropic(
     throw new Error(`Anthropic API error: ${res.status} ${err}`);
   }
 
-  const data = await res.json() as { content: Array<{ text: string }> };
-  return { content: data.content[0]?.text ?? '', raw: data };
+  const data = await res.json() as { content: Array<{ text: string } | { type: string; source: { media_type: string; data: string } }> };
+  // Anthropic 返回 content 数组，转换为统一格式
+  const textBlocks = data.content.filter(b => 'text' in b) as Array<{ text: string }>;
+  return { content: textBlocks[0]?.text ?? '', raw: data };
 }
 
 // ─── MiniMax ───────────────────────────────────────────────
