@@ -26,9 +26,9 @@ export async function addMemory(
   if (!embedding) return;
 
   await query(
-    `INSERT INTO agent_memory (agent_id, memory_key, memory_value, metadata)
-     VALUES ($1, $2, $3, $4)`,
-    [agentId, key, value, JSON.stringify(metadata)]
+    `INSERT INTO agent_memory (agent_id, memory_key, memory_value, embedding, metadata)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [agentId, key, value, JSON.stringify(embedding), JSON.stringify(metadata)]
   );
 }
 

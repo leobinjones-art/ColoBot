@@ -189,3 +189,19 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 
 CREATE INDEX IF NOT EXISTS idx_activity_logs_agent ON activity_logs(agent_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at DESC);
+
+-- Soul 自进化提案
+CREATE TABLE IF NOT EXISTS soul_proposals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  soul_diff TEXT NOT NULL,
+  proposed_soul TEXT NOT NULL,
+  reason TEXT NOT NULL DEFAULT '',
+  status VARCHAR(50) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  decided_at TIMESTAMP WITH TIME ZONE,
+  approver VARCHAR(255)
+);
+
+CREATE INDEX IF NOT EXISTS idx_soul_proposals_agent ON soul_proposals(agent_id);
+CREATE INDEX IF NOT EXISTS idx_soul_proposals_status ON soul_proposals(status);

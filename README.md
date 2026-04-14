@@ -199,7 +199,7 @@ colobot/
 |---|------|------|
 | 8 | `parseBody` JSON 解析失败返回 500 | `colobot-server.ts` |
 | 9 | Trigger interval timers 存在内存中 | `trigger-runtime.ts` |
-| 10 | 子 Agent 重启后丢失 | `sub-agents.ts` |
+| 10 | 子 Agent 纯内存，进程重启丢失 | `sub-agents.ts` |
 | 11 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
 | 12 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
 | 13 | 无 fallback model 切换 | `llm/index.ts` |
