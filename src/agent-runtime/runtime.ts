@@ -5,14 +5,26 @@
 import { agentRegistry, type Agent } from '../agents/registry.js';
 import { sessionManager } from '../agents/session.js';
 import { agentChat, type LLMMessage, type ContentBlock } from '../llm/index.js';
-import { parseToolCalls, stripToolCalls, executeToolCalls, formatToolResults, isToolAllowed } from './tools/executor.js';
+import { parseToolCalls, executeToolCalls, formatToolResults, isToolAllowed } from './tools/executor.js';
 import { hybridSearch } from '../memory/vector.js';
+import { writeAudit } from '../services/audit.js';
+import { approvalFlow, ApprovalActionType } from './approval.js';
+
+// 需要审批的危险工具 → 审批操作类型
+const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
+  send_message: 'send',
+  exec_code: 'exec',
+  delete_agent: 'delete',
+  update_agent: 'update',
+  spawn_subagent: 'update',
+};
 
 export interface RunOptions {
   agentId: string;
   sessionKey: string;
   userMessage: string | ContentBlock[];
   maxRounds?: number;
+  ipAddress?: string;
 }
 
 export interface RunResult {
@@ -24,12 +36,28 @@ export interface RunResult {
 const DEFAULT_MAX_ROUNDS = 10;
 
 export async function runAgent(opts: RunOptions): Promise<RunResult> {
-  const { agentId, sessionKey, userMessage, maxRounds = DEFAULT_MAX_ROUNDS } = opts;
+  const { agentId, sessionKey, userMessage, maxRounds = DEFAULT_MAX_ROUNDS, ipAddress } = opts;
 
   const agent = await agentRegistry.get(agentId);
   if (!agent) throw new Error(`Agent not found: ${agentId}`);
 
   const soul = agentRegistry.parseSoul(agent.soul_content);
+
+  // 审计：聊天开始
+  const messageText = typeof userMessage === 'string' ? userMessage
+    : userMessage.map(b => b.type === 'text' ? b.text : '').join(' ');
+
+  await writeAudit({
+    actorType: 'agent',
+    actorId: agentId,
+    actorName: agent.name,
+    action: 'chat.start',
+    targetType: 'session',
+    targetId: sessionKey,
+    detail: { messageLength: messageText.length, maxRounds },
+    ipAddress,
+    result: 'success',
+  });
 
   // 获取历史消息
   const history = await sessionManager.getHistory(agentId, sessionKey);
@@ -69,23 +97,101 @@ export async function runAgent(opts: RunOptions): Promise<RunResult> {
 
     toolCallNames.push(...toolCalls.map(c => c.name));
 
-    // 执行工具调用
-    const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name));
+    // 分类：需要审批的危险工具 vs 普通工具
+    const dangerousCalls = toolCalls.filter(c => DANGEROUS_TOOLS[c.name]);
+    const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
     const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
 
+    // 危险工具：创建审批请求并等待
+    for (const call of dangerousCalls) {
+      const actionType = DANGEROUS_TOOLS[call.name];
+      await approvalFlow.create({
+        agentId,
+        requester: agent.name,
+        channel: 'api',
+        actionType,
+        targetResource: JSON.stringify(call.args),
+        description: `危险操作: ${call.name}`,
+        payload: call.args,
+      });
+
+      await writeAudit({
+        actorType: 'agent',
+        actorId: agentId,
+        actorName: agent.name,
+        action: 'approval.requested',
+        targetType: 'tool',
+        targetId: call.name,
+        detail: { args: call.args, actionType },
+        ipAddress,
+        result: 'success',
+      });
+    }
+
+    // 执行非危险工具
     const executed = await executeToolCalls(allowedCalls);
     const toolResultText = formatToolResults(executed);
+
+    // 审计：工具执行
+    for (const call of allowedCalls) {
+      const exec = executed.find(e => e.name === call.name);
+      await writeAudit({
+        actorType: 'agent',
+        actorId: agentId,
+        actorName: agent.name,
+        action: 'tool.execute',
+        targetType: 'tool',
+        targetId: call.name,
+        detail: { args: call.args, success: exec?.success },
+        ipAddress,
+        result: exec?.success ? 'success' : 'failure',
+        errorMessage: exec?.error,
+      });
+    }
+
+    // 审计：工具被阻止
+    for (const call of blockedCalls) {
+      await writeAudit({
+        actorType: 'agent',
+        actorId: agentId,
+        actorName: agent.name,
+        action: 'tool.blocked',
+        targetType: 'tool',
+        targetId: call.name,
+        detail: { args: call.args },
+        ipAddress,
+        result: 'failure',
+        errorMessage: 'Tool not allowed for this agent',
+      });
+    }
 
     const blockedText = blockedCalls.length > 0
       ? `\n[Blocked: ${blockedCalls.map(c => c.name).join(', ')} not allowed]`
       : '';
 
-    messages.push({ role: 'user', content: `${toolResultText}${blockedText}` });
+    const dangerousText = dangerousCalls.length > 0
+      ? `\n[需要审批: ${dangerousCalls.map(c => c.name).join(', ')} - 请在 /api/approvals 批准]`
+      : '';
+
+    messages.push({ role: 'user', content: `${toolResultText}${blockedText}${dangerousText}` });
     finalContent = rawContent;
   }
 
   // 保存助手回复
   await sessionManager.appendMessage(agentId, sessionKey, 'assistant', finalContent);
+
+  // 审计：聊天完成
+  await writeAudit({
+    actorType: 'agent',
+    actorId: agentId,
+    actorName: agent.name,
+    action: 'chat.complete',
+    targetType: 'session',
+    targetId: sessionKey,
+    detail: { toolCalls: toolCallNames, rounds: toolCallNames.length },
+    ipAddress,
+    result: 'success',
+  });
 
   return {
     response: finalContent || '(无回复)',

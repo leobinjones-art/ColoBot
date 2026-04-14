@@ -12,8 +12,19 @@ import { listSkills, matchesTrigger, executeSkill } from './agent-runtime/skill-
 import { initTriggerEngine, fireWebhook } from './agent-runtime/trigger-runtime.js';
 import { agentRegistry } from './agents/registry.js';
 import { query } from './memory/db.js';
+import { writeAudit } from './services/audit.js';
+import { requireAuth } from './middleware/auth.js';
 
 const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
+
+// ─── 辅助函数 ───────────────────────────────────────────────
+
+function getClientIp(req: http.IncomingMessage): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  if (Array.isArray(forwarded)) return String(forwarded[0]).split(',')[0].trim();
+  return req.socket.remoteAddress?.replace('::ffff:', '') || '';
+}
 
 // ─── HTTP 服务器 ─────────────────────────────────────────────
 
@@ -21,6 +32,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const path = url.pathname;
   const method = req.method;
+  const clientIp = getClientIp(req);
 
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,6 +43,18 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204);
     res.end();
     return;
+  }
+
+  // 认证：/api/* 路由需要 API Key（开发模式未配置时不验证）
+  if (path.startsWith('/api/')) {
+    try {
+      requireAuth(req);
+    } catch (e) {
+      const err = e as { status?: number; message?: string };
+      res.writeHead(err.status || 401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message || 'Unauthorized' }));
+      return;
+    }
   }
 
   try {
@@ -54,6 +78,18 @@ const server = http.createServer(async (req, res) => {
         system_prompt_override: body.system_prompt_override ? String(body.system_prompt_override) : undefined,
       };
       const agent = await agentRegistry.create(agentInput);
+
+      await writeAudit({
+        actorType: 'user',
+        actorName: agentInput.name,
+        action: 'agent.create',
+        targetType: 'agent',
+        targetId: agent.id,
+        targetName: agent.name,
+        ipAddress: clientIp,
+        result: 'success',
+      });
+
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(agent));
       return;
@@ -69,7 +105,19 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       if (method === 'DELETE') {
+        const agent = await agentRegistry.get(id);
         await agentRegistry.delete(id);
+
+        await writeAudit({
+          actorType: 'user',
+          action: 'agent.delete',
+          targetType: 'agent',
+          targetId: id,
+          targetName: agent?.name,
+          ipAddress: clientIp,
+          result: 'success',
+        });
+
         res.writeHead(204);
         res.end();
         return;
@@ -103,7 +151,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ response }));
       } else {
-        const result = await runAgent({ agentId: agent_id, sessionKey: session_key, userMessage: message as string | ContentBlock[] });
+        const result = await runAgent({ agentId: agent_id, sessionKey: session_key, userMessage: message as string | ContentBlock[], ipAddress: clientIp });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ response: result.response }));
       }
@@ -192,11 +240,23 @@ const server = http.createServer(async (req, res) => {
       const { approvalFlow } = await import('./agent-runtime/approval.js');
 
       let result;
+      const approver = String(body.approver || 'system');
       if (action === 'approve') {
-        result = await approvalFlow.approve(id, String(body.approver || 'system'), (body.result as Record<string, unknown>) || {});
+        result = await approvalFlow.approve(id, approver, (body.result as Record<string, unknown>) || {});
       } else {
-        result = await approvalFlow.reject(id, String(body.approver || 'system'), String(body.reason || ''));
+        result = await approvalFlow.reject(id, approver, String(body.reason || ''));
       }
+
+      await writeAudit({
+        actorType: 'user',
+        actorName: approver,
+        action: `approval.${action}`,
+        targetType: 'approval_request',
+        targetId: id,
+        ipAddress: clientIp,
+        result: 'success',
+        detail: { result },
+      });
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
