@@ -1,44 +1,120 @@
 /**
  * 认证中间件 - API Key 验证
+ *
+ * 优先级：
+ * 1. 启动参数 --api-keys "k1,k2"
+ * 2. 交互式输入（启动时未提供参数）
+ * 3. 未配置 → 开发模式（跳过验证）
  */
 
-const API_KEYS = new Set<string>(
-  (process.env.API_KEYS || '').split(',').map(k => k.trim()).filter(Boolean)
-);
+import * as readline from 'readline';
+
+let apiKeys: Set<string> = new Set();
+let configured = false;
+
+/**
+ * 解析启动参数 --api-keys "k1,k2"
+ */
+function parseCliArgs(): string[] {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length - 1; i++) {
+    if (args[i] === '--api-keys' || args[i] === '--api-key') {
+      return args[i + 1].split(',').map(k => k.trim()).filter(Boolean);
+    }
+  }
+  // 也支持 --api-keys="k1,k2" 格式
+  for (const arg of args) {
+    if (arg.startsWith('--api-keys=') || arg.startsWith('--api-key=')) {
+      return arg.split('=')[1].split(',').map(k => k.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+/**
+ * 设置 API Keys（供交互式或程序化调用）
+ */
+export function setApiKeys(keys: string[]): void {
+  apiKeys = new Set(keys.filter(Boolean));
+  configured = true;
+}
+
+/**
+ * 是否已配置（无论是否设置了 key）
+ */
+export function isAuthConfigured(): boolean {
+  return configured;
+}
+
+/**
+ * 是否有 key（已配置且非空）
+ */
+export function hasKeys(): boolean {
+  return apiKeys.size > 0;
+}
+
+/**
+ * 初始化认证：解析 CLI 参数或交互式输入
+ */
+export async function initAuth(): Promise<void> {
+  const cliKeys = parseCliArgs();
+  if (cliKeys.length > 0) {
+    setApiKeys(cliKeys);
+    console.log(`[Auth] API Keys 已从启动参数加载 (${apiKeys.size} 个)`);
+    return;
+  }
+
+  configured = true;
+
+  // 非 TTY 环境（如测试、后台进程）跳过交互式输入
+  if (!process.stdin.isTTY) {
+    console.log('[Auth] 非交互模式，未设置 API Keys（跳过认证）');
+    return;
+  }
+
+  // 交互式输入
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question('[Auth] 请输入 API Keys（逗号分隔，留空跳过）: ', (answer) => {
+      rl.close();
+      const keys = answer.split(',').map(k => k.trim()).filter(Boolean);
+      if (keys.length > 0) {
+        setApiKeys(keys);
+        console.log(`[Auth] API Keys 已设置 (${apiKeys.size} 个)`);
+      } else {
+        console.log('[Auth] 未设置 API Keys，开发模式（跳过认证）');
+      }
+      resolve();
+    });
+  });
+}
 
 export interface AuthContext {
   apiKey?: string;
   authenticated: boolean;
 }
 
-/**
- * 从请求中提取 API Key
- */
-export function extractApiKey(req: { headers: Record<string, string | string[] | undefined> }): string | undefined {
+function extractApiKey(req: { headers: Record<string, string | string[] | undefined> }): string | undefined {
   const auth = req.headers['authorization'] || req.headers['x-api-key'];
   if (!auth) return undefined;
   if (Array.isArray(auth)) return String(auth[0]);
-  // 支持 "Bearer <key>" 格式
   if (auth.startsWith('Bearer ')) return auth.slice(7);
   return auth;
 }
 
-/**
- * 验证 API Key
- */
-export function validateApiKey(key: string | undefined): AuthContext {
-  if (API_KEYS.size === 0) {
-    // 未配置 API Keys时不验证（开发模式）
+function validateApiKey(key: string | undefined): AuthContext {
+  if (!configured || apiKeys.size === 0) {
+    // 未配置，开发模式
     return { apiKey: key, authenticated: true };
   }
   if (!key) return { authenticated: false };
-  return { apiKey: key, authenticated: API_KEYS.has(key) };
+  return { apiKey: key, authenticated: apiKeys.has(key) };
 }
 
-/**
- * 认证中间件工厂
- * 返回是否通过认证，未通过时抛出错误
- */
 export function requireAuth(req: { headers: Record<string, string | string[] | undefined> }): AuthContext {
   const key = extractApiKey(req);
   const ctx = validateApiKey(key);

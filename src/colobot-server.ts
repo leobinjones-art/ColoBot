@@ -13,7 +13,7 @@ import { initTriggerEngine, fireWebhook } from './agent-runtime/trigger-runtime.
 import { agentRegistry } from './agents/registry.js';
 import { query } from './memory/db.js';
 import { writeAudit } from './services/audit.js';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, initAuth } from './middleware/auth.js';
 
 const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
 
@@ -286,6 +286,15 @@ const wss = new WebSocketServer({ server });
 const wsClients = new Map<string, WebSocket>();
 
 wss.on('connection', (ws, req) => {
+  // WebSocket 认证
+  try {
+    requireAuth(req as any);
+  } catch {
+    ws.send(JSON.stringify({ type: 'error', payload: { error: 'Unauthorized' } }));
+    ws.close();
+    return;
+  }
+
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const sessionKey = url.searchParams.get('session') || 'default';
   const agentId = url.searchParams.get('agent_id') || 'default';
@@ -345,6 +354,9 @@ function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> 
 // ─── 启动 ───────────────────────────────────────────────────
 
 async function main() {
+  // 初始化认证（CLI 参数或交互式）
+  await initAuth();
+
   // 初始化数据库
   try {
     await query('SELECT 1');

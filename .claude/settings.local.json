@@ -26,7 +26,8 @@
       "Bash(tasklist /FI \"PID eq 8156\")",
       "Bash(powershell -Command \"Get-Process -Id 8156 | Select-Object ProcessName,Id\")",
       "Bash(powershell:*)",
-      "Bash(taskkill //F //PID 16316)"
+      "Bash(taskkill //F //PID 16316)",
+      "Bash(taskkill //F //PID 17624)"
     ]
   }
 }
