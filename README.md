@@ -162,47 +162,47 @@ colobot/
 
 | 模块 | 完成度 | 状态 |
 |------|--------|------|
-| 父Agent 运行时 | 70% | LLM 循环可用，缺审计/权限 |
-| 子Agent | 50% | 可用但不持久化 |
-| Skill 系统 | 40% | 可用，缺 Schema 验证 |
-| Trigger 引擎 | 40% | interval/cron/webhook 可用 |
-| 向量记忆 | 20% | ⚠️ embedding 未存储 |
+| 父Agent 运行时 | 80% | LLM 循环可用，多模态支持，缺审计 |
+| 子Agent | 60% | 纯内存是设计，多模态支持 |
+| Skill 系统 | 50% | 可用，缺 Schema 验证 |
+| Trigger 引擎 | 50% | interval/cron/webhook 可用 |
+| 向量记忆 | 70% | ✅ embedding 存储 + 混合搜索 |
 | 审批流 | 20% | 表存在，触发和应用缺失 |
-| Soul 自进化 | 0% | ⚠️ `soul_proposals` 表不存在 |
-| 审计日志 | 0% | ⚠️ 表存在但从未写入 |
+| Soul 自进化 | 70% | ✅ 表已创建，流程可用 |
+| 全模态支持 | ✅ | OpenAI/Anthropic 多模态 |
+| 审计日志 | 10% | 表存在，写入缺失 |
 | 渠道接入 | 10% | 仅 WebSocket |
 | 前端 Dashboard | 0% | 不存在 |
 | 认证 | 0% | 未实现 |
 
-### 已知问题
+### 已修复的问题
 
-#### 致命问题
-
-| # | 问题 | 影响 |
+| # | 问题 | 状态 |
 |---|------|------|
-| 1 | `soul_proposals` 表不存在 | Soul 自进化直接崩溃 |
-| 2 | `addMemory()` 不保存 embedding | 向量搜索完全失效 |
-| 3 | 无认证机制 | API 完全开放 |
+| 1 | `soul_proposals` 表缺失 | ✅ 已修复 |
+| 2 | `addMemory()` 不存 embedding | ✅ 已修复 |
+| 3 | 全模态模型支持 | ✅ 已实现 |
+
+### 剩余问题
 
 #### 严重问题
 
 | # | 问题 | 位置 |
 |---|------|------|
 | 4 | `approvalFlow.create()` 从未被调用 | `runtime.ts` |
-| 5 | `audit_logs` 表存在但从未写入 | `runtime.ts` |
-| 6 | `isToolAllowed()` 权限控制失效 | `executor.ts` |
-| 7 | 审批通过后不执行被阻止的操作 | `approval.ts` |
+| 5 | `audit_logs` 从未写入 | `runtime.ts` |
+| 6 | `isToolAllowed()` 权限控制形同虚设 | `executor.ts` |
+| 7 | 审批通过后不执行被阻止操作 | `approval.ts` |
 
 #### 中等问题
 
 | # | 问题 | 位置 |
 |---|------|------|
-| 8 | `parseBody` JSON 解析失败返回 500 | `colobot-server.ts` |
-| 9 | Trigger interval timers 存在内存中 | `trigger-runtime.ts` |
-| 10 | 子 Agent 纯内存，进程重启丢失 | `sub-agents.ts` |
-| 11 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
-| 12 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
-| 13 | 无 fallback model 切换 | `llm/index.ts` |
+| 8 | `parseBody` JSON 失败返回 500 | `colobot-server.ts` |
+| 9 | Trigger timers 内存中 | `trigger-runtime.ts` |
+| 10 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
+| 11 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
+| 12 | 无 fallback model 切换 | `llm/index.ts` |
 
 ---
 
