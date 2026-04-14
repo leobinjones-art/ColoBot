@@ -1,0 +1,29 @@
+{
+  "name": "colobot",
+  "version": "0.1.0",
+  "description": "单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + SearXNG 搜索",
+  "type": "module",
+  "main": "dist/colobot-server.js",
+  "scripts": {
+    "dev": "tsx watch src/colobot-server.ts",
+    "build": "tsc",
+    "start": "node dist/colobot-server.js",
+    "db:init": "psql -U colonies -d colobot < sql/schema.sql",
+    "test:e2e": "vitest run src/__tests__/e2e.test.ts",
+    "test:e2e:watch": "vitest src/__tests__/e2e.test.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ws": "^8.18.0",
+    "pg": "^8.13.0",
+    "pgvector": "^0.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}
