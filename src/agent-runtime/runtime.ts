@@ -4,13 +4,13 @@
 
 import { agentRegistry, type Agent } from '../agents/registry.js';
 import { sessionManager } from '../agents/session.js';
-import { agentChat, type LLMMessage, type ContentBlock } from '../llm/index.js';
+import { agentChat, agentChatStream, type LLMMessage, type ContentBlock, type LLMStreamChunk } from '../llm/index.js';
 import { parseToolCalls, executeToolCalls, formatToolResults, isToolAllowed, type ToolCall } from './tools/executor.js';
 import { hybridSearch } from '../memory/vector.js';
 import { writeAudit } from '../services/audit.js';
 import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approval.js';
 import { query } from '../memory/db.js';
-import { pushWsResult } from '../ws-push.js';
+import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
 
 // 需要审批的危险工具 → 审批操作类型
 const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
@@ -262,6 +262,179 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     toolCalls: toolCallNames,
     finished: toolCallNames.length === 0 || toolCallNames.length >= maxRounds,
   };
+}
+
+// ─── 流式 Agent（WebSocket推送） ─────────────────────────────────────────
+
+export interface RunStreamOptions extends RunOptions {
+  streamChunks?: boolean;
+}
+
+export async function runAgentStream(
+  opts: RunStreamOptions
+): Promise<void> {
+  const { agentId, sessionKey, userMessage, maxRounds = DEFAULT_MAX_ROUNDS, ipAddress, streamChunks = true } = opts;
+
+  const agent = await agentRegistry.get(agentId);
+  if (!agent) throw new Error(`Agent not found: ${agentId}`);
+
+  const soul = agentRegistry.parseSoul(agent.soul_content);
+
+  const messageText = typeof userMessage === 'string' ? userMessage
+    : userMessage.map(b => b.type === 'text' ? b.text : '').join(' ');
+
+  await writeAudit({
+    actorType: 'agent',
+    actorId: agentId,
+    actorName: agent.name,
+    action: 'chat.start',
+    targetType: 'session',
+    targetId: sessionKey,
+    detail: { messageLength: messageText.length, maxRounds, streaming: true },
+    ipAddress,
+    result: 'success',
+  });
+
+  const history = await sessionManager.getHistory(agentId, sessionKey);
+  const messages: LLMMessage[] = [
+    ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+    { role: 'user', content: userMessage },
+  ];
+  await sessionManager.appendMessage(agentId, sessionKey, 'user', userMessage);
+
+  const toolCallNames: string[] = [];
+  let finalContent = '';
+
+  for (let round = 0; round < maxRounds; round++) {
+    // 使用流式 LLM
+    const stream = agentChatStream(soul, messages, {
+      temperature: agent.temperature,
+      maxTokens: agent.max_tokens,
+      model: agent.primary_model_id ?? undefined,
+      fallbackModelId: agent.fallback_model_id ?? undefined,
+      systemPromptOverride: agent.system_prompt_override ?? undefined,
+    });
+
+    let fullChunk = '';
+    for await (const chunk of stream) {
+      if (!chunk.done) {
+        fullChunk += chunk.content;
+        if (streamChunks) {
+          pushWsChunk(agentId, sessionKey, chunk.content);
+        }
+      }
+    }
+
+    // 流结束后推送 done
+    if (streamChunks) {
+      pushWsDone(agentId, sessionKey);
+    }
+
+    const rawContent: string = fullChunk;
+    messages.push({ role: 'assistant', content: rawContent });
+
+    const toolCalls = parseToolCalls(rawContent);
+
+    if (toolCalls.length === 0) {
+      finalContent = rawContent;
+      break;
+    }
+
+    toolCallNames.push(...toolCalls.map(c => c.name));
+
+    // 审批流程（不支持流式，等待完成）
+    const dangerousCalls = toolCalls.filter(c => DANGEROUS_TOOLS[c.name]);
+    if (dangerousCalls.length > 0) {
+      for (const call of dangerousCalls) {
+        const actionType = DANGEROUS_TOOLS[call.name];
+        const approval = await approvalFlow.create({
+          agentId,
+          requester: agent.name,
+          channel: 'api',
+          actionType,
+          targetResource: JSON.stringify(call.args),
+          description: `危险操作: ${call.name}`,
+          payload: { ...call.args, _toolName: call.name },
+        });
+        await writeAudit({
+          actorType: 'agent',
+          actorId: agentId,
+          actorName: agent.name,
+          action: 'approval.requested',
+          targetType: 'tool',
+          targetId: call.name,
+          detail: { args: call.args, actionType },
+          ipAddress,
+          result: 'success',
+        });
+        await savePendingConversation(
+          approval.id, agentId, sessionKey, messages, dangerousCalls,
+          round, [], [], ipAddress
+        );
+        return; // 等待审批
+      }
+    }
+
+    const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
+    const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
+
+    const executed = await executeToolCalls(allowedCalls);
+    const toolResultText = formatToolResults(executed);
+
+    for (const call of allowedCalls) {
+      const exec = executed.find(e => e.name === call.name);
+      await writeAudit({
+        actorType: 'agent',
+        actorId: agentId,
+        actorName: agent.name,
+        action: 'tool.execute',
+        targetType: 'tool',
+        targetId: call.name,
+        detail: { args: call.args, success: exec?.success },
+        ipAddress,
+        result: exec?.success ? 'success' : 'failure',
+        errorMessage: exec?.error,
+      });
+    }
+
+    for (const call of blockedCalls) {
+      await writeAudit({
+        actorType: 'agent',
+        actorId: agentId,
+        actorName: agent.name,
+        action: 'tool.blocked',
+        targetType: 'tool',
+        targetId: call.name,
+        detail: { args: call.args },
+        ipAddress,
+        result: 'failure',
+        errorMessage: 'Tool not allowed',
+      });
+    }
+
+    const blockedText = blockedCalls.length > 0
+      ? `\n[Blocked: ${blockedCalls.map(c => c.name).join(', ')}]`
+      : '';
+
+    messages.push({ role: 'user', content: `${toolResultText}${blockedText}` });
+    finalContent = rawContent;
+  }
+
+  await sessionManager.appendMessage(agentId, sessionKey, 'assistant', finalContent);
+
+  await writeAudit({
+    actorType: 'agent',
+    actorId: agentId,
+    actorName: agent.name,
+    action: 'chat.complete',
+    targetType: 'session',
+    targetId: sessionKey,
+    detail: { toolCalls: toolCallNames, rounds: toolCallNames.length, streaming: true },
+    ipAddress,
+    result: 'success',
+  });
+
+  pushWsResult(agentId, sessionKey, finalContent || '(无回复)');
 }
 
 /**

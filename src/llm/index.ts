@@ -20,11 +20,17 @@ export interface LLMOptions {
   model?: string;
   systemPromptOverride?: string;
   fallbackModelId?: string;
+  stream?: boolean;
 }
 
 export interface LLMResponse {
   content: string | ContentBlock[];
   raw: unknown;
+}
+
+export interface LLMStreamChunk {
+  content: string;
+  done: boolean;
 }
 
 type ProviderType = 'openai' | 'anthropic' | 'minimax';
@@ -94,6 +100,52 @@ export async function agentChat(
     ...messages,
   ];
   return chat(fullMessages, options);
+}
+
+/**
+ * 流式聊天 - async generator
+ */
+export async function* chatStream(
+  messages: LLMMessage[],
+  options: LLMOptions = {}
+): AsyncGenerator<LLMStreamChunk> {
+  if (process.env.MOCK_LLM === 'true') {
+    // Mock 模式直接返回完整内容
+    const result = mockChat(messages);
+    const text = typeof result.content === 'string' ? result.content : result.content.map(b => b.type === 'text' ? b.text : '').join('');
+    yield { content: text, done: true };
+    return;
+  }
+
+  switch (currentProvider) {
+    case 'openai':
+      yield* chatStreamOpenAI(messages, options);
+      break;
+    case 'anthropic':
+      yield* chatStreamAnthropic(messages, options);
+      break;
+    case 'minimax':
+      yield* chatStreamMinimax(messages, options);
+      break;
+    default:
+      throw new Error('No LLM provider configured');
+  }
+}
+
+/**
+ * 流式 agentChat - 带 system prompt
+ */
+export async function* agentChatStream(
+  soul: { personality?: string; role?: string },
+  messages: LLMMessage[],
+  options: LLMOptions = {}
+): AsyncGenerator<LLMStreamChunk> {
+  const systemPrompt = buildSystemPrompt(soul, options.systemPromptOverride);
+  const fullMessages: LLMMessage[] = [
+    { role: 'system', content: systemPrompt },
+    ...messages,
+  ];
+  yield* chatStream(fullMessages, { ...options, stream: true });
 }
 
 function buildSystemPrompt(
@@ -244,4 +296,215 @@ async function chatMinimax(
 
   const data = await res.json() as { choices: Array<{ messages: Array<{ text: string }> }> };
   return { content: data.choices[0]?.messages[0]?.text ?? '', raw: data };
+}
+
+// ─── OpenAI 流式 ───────────────────────────────────────────
+
+async function* chatStreamOpenAI(
+  messages: LLMMessage[],
+  options: LLMOptions
+): AsyncGenerator<LLMStreamChunk> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
+
+  const model = options.model || 'gpt-4o';
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`OpenAI API error: ${res.status} ${err}`);
+  }
+
+  if (!res.body) throw new Error('No response body for streaming');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') {
+          yield { content: '', done: true };
+          return;
+        }
+        try {
+          const chunk = JSON.parse(data) as {
+            choices: Array<{ delta?: { content?: string } }>;
+          };
+          const text = chunk.choices[0]?.delta?.content;
+          if (text) {
+            yield { content: text, done: false };
+          }
+        } catch { /* skip malformed */ }
+      }
+    }
+    yield { content: '', done: true };
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// ─── Anthropic 流式 ─────────────────────────────────────────
+
+async function* chatStreamAnthropic(
+  messages: LLMMessage[],
+  options: LLMOptions
+): AsyncGenerator<LLMStreamChunk> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
+
+  const model = options.model || 'claude-sonnet-4-20250514';
+  const systemMsg = messages.find(m => m.role === 'system');
+  const nonSystem = messages.filter(m => m.role !== 'system');
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: nonSystem,
+      system: systemMsg?.content,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Anthropic API error: ${res.status} ${err}`);
+  }
+
+  if (!res.body) throw new Error('No response body for streaming');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        try {
+          const chunk = JSON.parse(data) as {
+            type: string;
+            delta?: { text?: string };
+          };
+          if (chunk.type === 'content_block_delta' && chunk.delta?.text) {
+            yield { content: chunk.delta.text, done: false };
+          } else if (chunk.type === 'message_stop') {
+            yield { content: '', done: true };
+            return;
+          }
+        } catch { /* skip */ }
+      }
+    }
+    yield { content: '', done: true };
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// ─── MiniMax 流式 ─────────────────────────────────────────
+
+async function* chatStreamMinimax(
+  messages: LLMMessage[],
+  options: LLMOptions
+): AsyncGenerator<LLMStreamChunk> {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const model = options.model || 'MiniMax-Text-01';
+  const systemMsg = messages.find(m => m.role === 'system');
+  const nonSystem = messages.filter(m => m.role !== 'system');
+
+  const res = await fetch('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: nonSystem,
+      system_instruction: systemMsg?.content,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax API error: ${res.status} ${err}`);
+  }
+
+  if (!res.body) throw new Error('No response body for streaming');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.trim() || line.startsWith('data:')) continue;
+        try {
+          const chunk = JSON.parse(line) as {
+            choices?: Array<{ delta?: { text?: string } }>;
+          };
+          const text = chunk.choices?.[0]?.delta?.text;
+          if (text) {
+            yield { content: text, done: false };
+          }
+        } catch { /* skip */ }
+      }
+    }
+    yield { content: '', done: true };
+  } finally {
+    reader.releaseLock();
+  }
 }

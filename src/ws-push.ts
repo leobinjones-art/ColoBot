@@ -23,3 +23,28 @@ export function pushWsResult(
     ws.send(JSON.stringify({ type: 'response', payload: { response: result } }));
   }
 }
+
+export function pushWsChunk(
+  agentId: string,
+  sessionKey: string,
+  chunk: string
+): void {
+  if (!wsClients) return;
+  const clientId = `${agentId}:${sessionKey}`;
+  const ws = wsClients.get(clientId);
+  if (ws && ws.readyState === 1 /* OPEN */) {
+    ws.send(JSON.stringify({ type: 'chunk', payload: { chunk } }));
+  }
+}
+
+export function pushWsDone(
+  agentId: string,
+  sessionKey: string
+): void {
+  if (!wsClients) return;
+  const clientId = `${agentId}:${sessionKey}`;
+  const ws = wsClients.get(clientId);
+  if (ws && ws.readyState === 1 /* OPEN */) {
+    ws.send(JSON.stringify({ type: 'done', payload: {} }));
+  }
+}

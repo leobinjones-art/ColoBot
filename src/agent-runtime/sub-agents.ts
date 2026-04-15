@@ -3,7 +3,7 @@
  * 纯内存存在，TTL自动过期，父子关系权限控制
  */
 
-import type { LLMMessage } from '../llm/index.js';
+import type { LLMMessage, ContentBlock } from '../llm/index.js';
 
 export interface SubAgentConfig {
   name: string;
@@ -11,6 +11,7 @@ export interface SubAgentConfig {
   parentId: string;
   ttlMs?: number;
   allowedTools?: string[];
+  fallbackModelId?: string;
 }
 
 export interface SubAgent {
@@ -22,6 +23,7 @@ export interface SubAgent {
   createdAt: number;
   expiresAt: number;
   status: 'idle' | 'busy' | 'done';
+  fallbackModelId?: string;
 }
 
 const subAgents = new Map<string, SubAgent>();
@@ -56,6 +58,7 @@ export function spawnSubAgent(config: SubAgentConfig): SubAgent {
     createdAt: now,
     expiresAt: now + ttlMs,
     status: 'idle',
+    fallbackModelId: config.fallbackModelId,
   };
 
   subAgents.set(id, agent);
@@ -113,6 +116,19 @@ export async function runSubAgentTask(
   touchSubAgent(subAgent.id, 60_000);
   setSubAgentStatus(subAgent.id, 'busy');
 
+  const { writeAudit } = await import('../services/audit.js');
+
+  await writeAudit({
+    actorType: 'subagent',
+    actorId: subAgent.id,
+    actorName: subAgent.name,
+    action: 'subagent.task.start',
+    targetType: 'task',
+    targetId: subAgent.id,
+    detail: { taskLength: task.length, parentId },
+    result: 'success',
+  }).catch(() => {}); // fire-and-forget
+
   try {
     const { agentChat } = await import('../llm/index.js');
     const soul = JSON.parse(subAgent.soul_content || '{}');
@@ -126,14 +142,16 @@ export async function runSubAgentTask(
     let finalContent = '';
 
     for (let round = 0; round < maxRounds; round++) {
-      const response = await agentChat(soul, messages as any, {});
+      const response = await agentChat(soul, messages as any, {
+        fallbackModelId: subAgent.fallbackModelId,
+      });
       const rawContent = response.content;
 
       // 多模态 content 转为文本供工具解析
       const rawText = typeof rawContent === 'string' ? rawContent
-        : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+        : rawContent.map((b: ContentBlock) => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
 
-      const { parseToolCalls, stripToolCalls, executeToolCalls, formatToolResults } = await import('./tools/executor.js');
+      const { parseToolCalls, executeToolCalls, formatToolResults } = await import('./tools/executor.js');
       const toolCalls = parseToolCalls(rawText);
 
       if (toolCalls.length === 0) {
@@ -150,6 +168,35 @@ export async function runSubAgentTask(
       const executed = await executeToolCalls(allowedCalls);
       const toolResultText = formatToolResults(executed);
 
+      for (const call of allowedCalls) {
+        const exec = executed.find(e => e.name === call.name);
+        await writeAudit({
+          actorType: 'subagent',
+          actorId: subAgent.id,
+          actorName: subAgent.name,
+          action: 'tool.execute',
+          targetType: 'tool',
+          targetId: call.name,
+          detail: { args: call.args, success: exec?.success },
+          result: exec?.success ? 'success' : 'failure',
+          errorMessage: exec?.error,
+        }).catch(() => {});
+      }
+
+      for (const call of blockedCalls) {
+        await writeAudit({
+          actorType: 'subagent',
+          actorId: subAgent.id,
+          actorName: subAgent.name,
+          action: 'tool.blocked',
+          targetType: 'tool',
+          targetId: call.name,
+          detail: { args: call.args },
+          result: 'failure',
+          errorMessage: 'Tool not allowed',
+        }).catch(() => {});
+      }
+
       const blockedText = blockedCalls.length > 0
         ? `\n[Blocked: ${blockedCalls.map(c => c.name).join(', ')} not allowed]`
         : '';
@@ -159,9 +206,31 @@ export async function runSubAgentTask(
     }
 
     setSubAgentStatus(subAgent.id, 'done');
+    await writeAudit({
+      actorType: 'subagent',
+      actorId: subAgent.id,
+      actorName: subAgent.name,
+      action: 'subagent.task.complete',
+      targetType: 'task',
+      targetId: subAgent.id,
+      detail: { rounds: maxRounds },
+      result: 'success',
+    }).catch(() => {});
+
     return finalContent || '(无回复)';
   } catch (e) {
     setSubAgentStatus(subAgent.id, 'idle');
+    await writeAudit({
+      actorType: 'subagent',
+      actorId: subAgent.id,
+      actorName: subAgent.name,
+      action: 'subagent.task.error',
+      targetType: 'task',
+      targetId: subAgent.id,
+      detail: {},
+      result: 'failure',
+      errorMessage: String(e),
+    }).catch(() => {});
     throw e;
   }
 }

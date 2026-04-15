@@ -6,7 +6,7 @@ import 'dotenv/config';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
-import { runAgent, searchAgentMemory } from './agent-runtime/runtime.js';
+import { runAgent, runAgentStream, searchAgentMemory } from './agent-runtime/runtime.js';
 import type { ContentBlock } from './llm/index.js';
 import { listSkills, matchesTrigger, executeSkill } from './agent-runtime/skill-runtime.js';
 import { initTriggerEngine, fireWebhook } from './agent-runtime/trigger-runtime.js';
@@ -348,20 +348,14 @@ wss.on('connection', (ws, req) => {
         const skills = await listSkills();
         const triggeredSkill = skills.find(s => matchesTrigger(s, message as string));
 
-        let response: string | ContentBlock[];
         if (triggeredSkill) {
-          response = await executeSkill(triggeredSkill, agentId, { sessionKey, userMessage: message as string });
+          // Skill 执行（非流式）
+          const response = await executeSkill(triggeredSkill, agentId, { sessionKey, userMessage: message as string });
+          ws.send(JSON.stringify({ type: 'response', payload: { response } }));
         } else {
-          const result = await runAgent({ agentId, sessionKey, userMessage: message as string });
-          if ('pending' in result) {
-            // 等待审批，通知客户端
-            ws.send(JSON.stringify({ type: 'pending', payload: { approvalId: result.approvalId } }));
-            return;
-          }
-          response = result.response;
+          // Agent 流式输出
+          await runAgentStream({ agentId, sessionKey, userMessage: message as string });
         }
-
-        ws.send(JSON.stringify({ type: 'response', payload: { response } }));
       }
     } catch (e) {
       ws.send(JSON.stringify({ type: 'error', payload: { error: String(e) } }));

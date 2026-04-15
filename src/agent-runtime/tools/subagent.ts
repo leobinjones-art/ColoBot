@@ -134,12 +134,13 @@ export function registerTools(): void {
   });
 
   registerTool('spawn_subagent', async (args) => {
-    const { name, soul_content, parent_id, ttl_ms, allowed_tools } = args as {
+    const { name, soul_content, parent_id, ttl_ms, allowed_tools, fallback_model_id } = args as {
       name: string;
       soul_content: string;
       parent_id: string;
       ttl_ms?: number;
       allowed_tools?: string[];
+      fallback_model_id?: string;
     };
     const { spawnSubAgent } = await import('../sub-agents.js');
     const agent = spawnSubAgent({
@@ -148,6 +149,7 @@ export function registerTools(): void {
       parentId: parent_id,
       ttlMs: ttl_ms,
       allowedTools: allowed_tools,
+      fallbackModelId: fallback_model_id,
     });
     return { id: agent.id, name: agent.name };
   });
