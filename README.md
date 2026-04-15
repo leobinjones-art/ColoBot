@@ -100,7 +100,7 @@ npm install
 # 配置环境变量
 cp .env.example .env
 
-# 启动 PostgreSQL
+# 启动 PostgreSQL（需 pgvector 扩展）
 docker compose up -d postgres
 
 # 初始化数据库
@@ -109,6 +109,8 @@ npm run db:init
 # 启动 ColoBot
 npm run dev
 ```
+
+> **注意**：ColoBot 使用 `pgvector` 做向量存储，必须使用带 pgvector 扩展的 PostgreSQL 镜像（如 `pgvector/pgvector:pg18`）。官方 `postgres` 镜像不包含 pgvector，会导致 `agent_memory` 表创建失败。
 
 ---
 
