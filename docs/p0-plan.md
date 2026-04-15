@@ -1,4 +1,4 @@
-# P0 开发计划
+# P0 / P1 开发计划
 
 > 更新日期: 2026-04-15
 > 目标: 完成 MiniMax Coding Plan 全模态能力接入
@@ -11,21 +11,21 @@ ColoBot 使用 MiniMax Coding Plan，需全面接入以下能力：
 - [x] 视觉理解 (coding-plan-vlm) ✅
 - [x] 搜索 (coding-plan-search) ✅
 - [x] TTS HD (speech-2.8-hd) ✅
-- [ ] 音乐生成 (music-2.6)
-- [ ] 视频生成 (Hailuo-2.3)
+- [x] 音乐生成 (music-2.6) ✅
+- [x] 视频生成 (Hailuo-2.3) ✅
 
 ## P0 完成状态
 
 ### ✅ P0-1: vision（视觉理解）
 
 **工具名**: `vision`
-**API**: `https://api.minimaxi.com/v1/coding_plan_vlm`
+**API**: `https://api.minimaxi.com/v1/coding_plan/vlm`
 **文件**: `src/agent-runtime/tools/executor.ts`
 
 ### ✅ P0-2: minimax_search（搜索）
 
 **工具名**: `minimax_search`（避免与 SearXNG 的 web_search 重名）
-**API**: `https://api.minimaxi.com/v1/coding_plan_search`
+**API**: `https://api.minimaxi.com/v1/coding_plan/search`
 **文件**: `src/agent-runtime/tools/executor.ts`
 
 ### ✅ P0-3: speak（TTS HD）
@@ -33,6 +33,40 @@ ColoBot 使用 MiniMax Coding Plan，需全面接入以下能力：
 **工具名**: `speak`
 **API**: `https://api.minimaxi.com/v1/t2a_v2`
 **模型**: speech-2.8-hd / speech-2.8-turbo / speech-2.6-hd / speech-2.6-turbo / speech-02-hd / speech-02-turbo 等
+**文件**: `src/agent-runtime/tools/executor.ts`
+
+## P1 完成状态
+
+### ✅ P1-1: generate_music（音乐生成）
+
+**工具名**: `generate_music`
+**API**: `https://api.minimaxi.com/v1/music_generation`
+**模型**: music-2.6-free / music-2.6 / music-2.5+ / music-2.5
+**参数**: prompt / lyrics / instrumental / lyrics_optimizer / vocals / genre / mood 等
+**文件**: `src/agent-runtime/tools/executor.ts`
+
+### ✅ P1-2: generate_music_cover（音乐翻唱）
+
+**工具名**: `generate_music_cover`
+**API**: `https://api.minimaxi.com/v1/music_cover`
+**模型**: music-cover / music-cover-free
+**参数**: prompt / audio_url / lyrics / seed
+**文件**: `src/agent-runtime/tools/executor.ts`
+
+### ✅ P1-3: generate_video（视频生成）
+
+**工具名**: `generate_video`
+**API**: `https://api.minimaxi.com/v1/video_generation`
+**模型**: MiniMax-Hailuo-2.3 / MiniMax-Hailuo-02 / S2V-01 / I2V-01
+**流程**: 创建任务 → 轮询状态 → 获取下载链接（自动完成，最长 5 分钟）
+**参数**: prompt / model / first_frame_image / last_frame_image / subject_image
+**文件**: `src/agent-runtime/tools/executor.ts`
+
+### ✅ P1-4: query_video_task（查询视频任务）
+
+**工具名**: `query_video_task`
+**API**: `https://api.minimaxi.com/v1/query/video_generation`
+**用途**: 查询视频生成状态，返回 download_url
 **文件**: `src/agent-runtime/tools/executor.ts`
 
 ---
@@ -60,6 +94,6 @@ ColoBot 使用 MiniMax Coding Plan，需全面接入以下能力：
 1. [x] coding-plan-vlm ✅
 2. [x] coding-plan-search ✅
 3. [x] TTS HD ✅
-4. [ ] 音乐生成 (P1)
-5. [ ] 视频生成 (P1)
+4. [x] 音乐生成 (music-2.6) ✅
+5. [x] 视频生成 (Hailuo-2.3) ✅
 6. [ ] (前端 UI 待决策)

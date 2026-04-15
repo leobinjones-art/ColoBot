@@ -442,6 +442,585 @@ registerTool('speak', async (args) => {
   };
 });
 
+/**
+ * MiniMax 音乐生成
+ * POST https://api.minimaxi.com/v1/music_generation
+ *
+ * 模型: music-2.6 / music-2.6-free / music-2.5+ / music-2.5
+ * 支持: lyrics / instrumental / lyrics_optimizer
+ */
+registerTool('generate_music', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const {
+    prompt,
+    lyrics,
+    model,
+    instrumental,
+    lyrics_optimizer,
+    vocals,
+    genre,
+    mood,
+    instruments,
+    tempo,
+    bpm,
+    key,
+    output_format,
+  } = args as {
+    prompt: string;
+    lyrics?: string;
+    model?: string;
+    instrumental?: boolean;
+    lyrics_optimizer?: boolean;
+    vocals?: string;
+    genre?: string;
+    mood?: string;
+    instruments?: string;
+    tempo?: string;
+    bpm?: number;
+    key?: string;
+    output_format?: string;
+  };
+
+  if (!prompt) throw new Error('prompt is required');
+
+  const body: Record<string, unknown> = {
+    model: model || 'music-2.6-free',
+    prompt,
+  };
+
+  if (lyrics) body.lyrics = lyrics;
+  if (instrumental) body.instrumental = true;
+  if (lyrics_optimizer) body.lyrics_optimizer = true;
+  if (vocals) body.vocals = vocals;
+  if (genre) body.genre = genre;
+  if (mood) body.mood = mood;
+  if (instruments) body.instruments = instruments;
+  if (tempo) body.tempo = tempo;
+  if (bpm) body.bpm = bpm;
+  if (key) body.key = key;
+  if (output_format) body.output_format = output_format;
+
+  const res = await fetch('https://api.minimaxi.com/v1/music_generation', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax music generation error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    data?: { audio_url?: string; audio_hex?: string };
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax music failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  return {
+    audio_url: data.data?.audio_url || '',
+    audio_hex: data.data?.audio_hex || '',
+  };
+});
+
+/**
+ * MiniMax 音乐翻唱（参考音频生成翻唱版）
+ * POST https://api.minimaxi.com/v1/music_cover
+ *
+ * 模型: music-cover / music-cover-free
+ * 参考音频: audio_url (公网URL) 或 audio_file (本地路径暂不支持)
+ */
+registerTool('generate_music_cover', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const {
+    prompt,
+    audio_url,
+    lyrics,
+    model,
+    seed,
+    output_format,
+  } = args as {
+    prompt: string;
+    audio_url: string;
+    lyrics?: string;
+    model?: string;
+    seed?: number;
+    output_format?: string;
+  };
+
+  if (!prompt) throw new Error('prompt is required');
+  if (!audio_url) throw new Error('audio_url is required');
+
+  const body: Record<string, unknown> = {
+    model: model || 'music-cover',
+    prompt,
+    audio_url,
+  };
+
+  if (lyrics) body.lyrics = lyrics;
+  if (seed !== undefined) body.seed = seed;
+  if (output_format) body.output_format = output_format;
+
+  const res = await fetch('https://api.minimaxi.com/v1/music_cover', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax music cover error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    data?: { audio_url?: string; audio_hex?: string };
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax music cover failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  return {
+    audio_url: data.data?.audio_url || '',
+    audio_hex: data.data?.audio_hex || '',
+  };
+});
+
+/**
+ * MiniMax 视频生成（异步，需轮询）
+ * POST https://api.minimaxi.com/v1/video_generation
+ *
+ * 模型: MiniMax-Hailuo-2.3 (默认) / MiniMax-Hailuo-02 / S2V-01 / I2V-01 等
+ * 支持: 文生视频(T2V) / 图生视频(I2V) / 首尾帧插值(S2V)
+ *
+ * 注意: 此工具会轮询直到完成，最长等待 5 分钟
+ */
+registerTool('generate_video', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const {
+    prompt,
+    model,
+    first_frame_image,
+    last_frame_image,
+    subject_image,
+  } = args as {
+    prompt: string;
+    model?: string;
+    first_frame_image?: string;
+    last_frame_image?: string;
+    subject_image?: string;
+  };
+
+  if (!prompt) throw new Error('prompt is required');
+
+  // 确定模型
+  let actualModel = model || 'MiniMax-Hailuo-2.3';
+  if (!model) {
+    if (last_frame_image) actualModel = 'MiniMax-Hailuo-02';
+    else if (subject_image) actualModel = 'S2V-01';
+  }
+
+  const body: Record<string, unknown> = {
+    model: actualModel,
+    prompt,
+  };
+
+  if (first_frame_image) body.first_frame_image = first_frame_image;
+  if (last_frame_image) body.last_frame_image = last_frame_image;
+  if (subject_image) {
+    body.subject_reference = [{ type: 'character', image: [subject_image] }];
+  }
+
+  // 1. 创建任务
+  const createRes = await fetch('https://api.minimaxi.com/v1/video_generation', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!createRes.ok) {
+    const err = await createRes.text();
+    throw new Error(`MiniMax video generation error: ${createRes.status} ${err}`);
+  }
+
+  const createData = await createRes.json() as {
+    task_id?: string;
+    status?: string;
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (createData.base_resp && createData.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax video task creation failed: ${createData.base_resp.status_code} ${createData.base_resp.status_msg}`);
+  }
+
+  const taskId = createData.task_id;
+  if (!taskId) throw new Error('No task_id returned');
+
+  // 2. 轮询直到完成
+  const maxWaitMs = 5 * 60 * 1000; // 5 分钟
+  const pollIntervalMs = 5000;
+  const deadline = Date.now() + maxWaitMs;
+
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, pollIntervalMs));
+
+    const statusRes = await fetch(
+      `https://api.minimaxi.com/v1/query/video_generation?task_id=${taskId}`,
+      {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+      }
+    );
+
+    if (!statusRes.ok) {
+      const err = await statusRes.text();
+      throw new Error(`MiniMax video status error: ${statusRes.status} ${err}`);
+    }
+
+    const statusData = await statusRes.json() as {
+      status?: string;
+      file_id?: string;
+      video_url?: string;
+      base_resp?: { status_code: number; status_msg: string };
+    };
+
+    if (statusData.status === 'success' && statusData.file_id) {
+      // 3. 获取下载链接
+      const fileRes = await fetch(
+        `https://api.minimaxi.com/v1/files/retrieve?file_id=${statusData.file_id}`,
+        {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+        }
+      );
+
+      if (fileRes.ok) {
+        const fileData = await fileRes.json() as {
+          file?: { download_url?: string };
+        };
+        return {
+          task_id: taskId,
+          status: 'success',
+          video_url: fileData.file?.download_url || '',
+        };
+      }
+      return {
+        task_id: taskId,
+        status: 'success',
+        file_id: statusData.file_id,
+      };
+    }
+
+    if (statusData.status === 'fail' || statusData.status === 'failed') {
+      throw new Error(`MiniMax video generation failed: ${statusData.base_resp?.status_msg || statusData.status}`);
+    }
+  }
+
+  throw new Error(`Video generation timed out after 5 minutes. task_id: ${taskId}`);
+});
+
+/**
+ * MiniMax 查询视频任务状态
+ * GET https://api.minimaxi.com/v1/query/video_generation?task_id=xxx
+ *
+ * 在 generate_video 超过 5 分钟超时时，可用此工具主动查询
+ */
+registerTool('query_video_task', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const { task_id } = args as { task_id: string };
+  if (!task_id) throw new Error('task_id is required');
+
+  const res = await fetch(
+    `https://api.minimaxi.com/v1/query/video_generation?task_id=${task_id}`,
+    {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax video status error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    task_id?: string;
+    status?: string;
+    file_id?: string;
+    video_url?: string;
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax video query failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  if (data.status === 'success' && data.file_id) {
+    // 尝试获取下载链接
+    const fileRes = await fetch(
+      `https://api.minimaxi.com/v1/files/retrieve?file_id=${data.file_id}`,
+      {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+      }
+    );
+    if (fileRes.ok) {
+      const fileData = await fileRes.json() as {
+        file?: { download_url?: string };
+      };
+      return {
+        task_id: data.task_id,
+        status: 'success',
+        video_url: fileData.file?.download_url || '',
+        file_id: data.file_id,
+      };
+    }
+    return { task_id: task_id, status: data.status, file_id: data.file_id };
+  }
+
+  return { task_id: task_id, status: data.status };
+});
+
+// ─── MiniMax 文件管理 ─────────────────────────────────────────
+
+/**
+ * MiniMax 文件上传
+ * POST https://api.minimaxi.com/v1/files/upload
+ *
+ * purpose: voice_clone / prompt_audio / t2a_async_input / video_generation
+ * 支持 mp3, m4a, wav, text, zip, 图片格式
+ */
+registerTool('upload_file', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const { file_url, file_data, purpose } = args as {
+    file_url?: string;
+    file_data?: string; // base64 文件数据
+    purpose: string;
+  };
+
+  if (!purpose) throw new Error('purpose is required (voice_clone/prompt_audio/t2a_async_input/video_generation)');
+  if (!file_url && !file_data) throw new Error('file_url or file_data (base64) is required');
+
+  let fileBuffer: ArrayBuffer;
+
+  if (file_data) {
+    // base64 解码
+    const binaryString = atob(file_data.replace(/\s/g, ''));
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    fileBuffer = bytes.buffer;
+  } else if (file_url) {
+    // 从 URL 下载
+    const res = await fetch(file_url);
+    if (!res.ok) throw new Error(`Failed to download file: ${res.status}`);
+    fileBuffer = await res.arrayBuffer();
+  } else {
+    throw new Error('No file source provided');
+  }
+
+  const formData = new FormData();
+  const blob = new Blob([fileBuffer]);
+  formData.append('file', blob, 'file');
+  formData.append('purpose', purpose);
+
+  const res = await fetch('https://api.minimaxi.com/v1/files/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax file upload error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    file?: {
+      file_id: string;
+      bytes: number;
+      created_at: number;
+      filename: string;
+      purpose: string;
+    };
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax file upload failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  return {
+    file_id: data.file?.file_id,
+    bytes: data.file?.bytes,
+    filename: data.file?.filename,
+    purpose: data.file?.purpose,
+    created_at: data.file?.created_at,
+  };
+});
+
+/**
+ * MiniMax 文件列表
+ * GET https://api.minimaxi.com/v1/files/list?purpose=xxx
+ *
+ * purpose: voice_clone / prompt_audio / t2a_async_input
+ */
+registerTool('list_files', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const { purpose } = args as { purpose?: string };
+
+  const url = purpose
+    ? `https://api.minimaxi.com/v1/files/list?purpose=${encodeURIComponent(purpose)}`
+    : 'https://api.minimaxi.com/v1/files/list';
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax file list error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    files?: Array<{
+      file_id: string;
+      bytes: number;
+      created_at: number;
+      filename: string;
+      purpose: string;
+    }>;
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax file list failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  return {
+    files: (data.files ?? []).map(f => ({
+      file_id: f.file_id,
+      bytes: f.bytes,
+      filename: f.filename,
+      purpose: f.purpose,
+      created_at: new Date(f.created_at * 1000).toISOString(),
+    })),
+  };
+});
+
+/**
+ * MiniMax 文件检索（查询文件信息 + 下载链接）
+ * GET https://api.minimaxi.com/v1/files/retrieve?file_id=xxx
+ */
+registerTool('retrieve_file', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const { file_id } = args as { file_id: string };
+  if (!file_id) throw new Error('file_id is required');
+
+  const res = await fetch(
+    `https://api.minimaxi.com/v1/files/retrieve?file_id=${encodeURIComponent(file_id)}`,
+    { headers: { 'Authorization': `Bearer ${apiKey}` } }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax file retrieve error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    file?: {
+      file_id: string;
+      bytes: number;
+      created_at: number;
+      filename: string;
+      purpose: string;
+      download_url?: string;
+    };
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax file retrieve failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  return {
+    file_id: data.file?.file_id,
+    bytes: data.file?.bytes,
+    filename: data.file?.filename,
+    purpose: data.file?.purpose,
+    download_url: data.file?.download_url,
+    created_at: data.file?.created_at
+      ? new Date(data.file.created_at * 1000).toISOString()
+      : undefined,
+  };
+});
+
+/**
+ * MiniMax 文件删除
+ * POST https://api.minimaxi.com/v1/files/delete
+ *
+ * purpose: voice_clone / prompt_audio / t2a_async / t2a_async_input / video_generation
+ */
+registerTool('delete_file', async (args) => {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
+
+  const { file_id, purpose } = args as { file_id: string; purpose: string };
+  if (!file_id) throw new Error('file_id is required');
+  if (!purpose) throw new Error('purpose is required');
+
+  const res = await fetch('https://api.minimaxi.com/v1/files/delete', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ file_id, purpose }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax file delete error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json() as {
+    file_id?: string;
+    base_resp?: { status_code: number; status_msg: string };
+  };
+
+  if (data.base_resp && data.base_resp.status_code !== 0) {
+    throw new Error(`MiniMax file delete failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
+  }
+
+  return { file_id: data.file_id, deleted: true };
+});
+
 // ─── 解析 / 格式化 ───────────────────────────────────────────
 
 const TOOL_CALL_REGEX = /<tool_call>\s*([\w_]+)\s*\(([\s\S]*?)\)\s*<\/tool_call>/gi;

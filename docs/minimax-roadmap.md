@@ -10,9 +10,9 @@
 | **文本生成** | M2.7 / M2.5 / M2.1 / M2 | ✅ 已支持 | `src/llm/index.ts` |
 | **图片生成** | image-01 | ✅ 已支持 | `generate_image` 工具 |
 | **TTS 语音合成** | speech-2.8-hd / 2.6 系列 | ✅ 已支持 | `speak` 工具 |
-| **音乐生成** | music-2.6 / music-cover / lyrics_generation | ❌ 未接 | — |
-| **文生视频** | Hailuo-2.3 / 02 | ❌ 未接 | — |
-| **图生视频** | Hailuo-2.3-Fast | ❌ 未接 | — |
+| **音乐生成** | music-2.6 / music-cover | ✅ 已支持 | `generate_music` / `generate_music_cover` |
+| **文生视频** | Hailuo-2.3 / 02 | ✅ 已支持 | `generate_video` 工具 |
+| **图生视频** | I2V-01 / S2V-01 | ✅ 已支持 | `generate_video` 工具 |
 | **视觉理解** | coding-plan-vlm | ✅ 已支持 | `vision` 工具 |
 | **搜索** | coding-plan-search | ✅ 已支持 | `minimax_search` 工具 |
 
@@ -22,7 +22,7 @@
 
 ### 文本生成 (`src/llm/index.ts`)
 
-**基础 URL**: `https://api.minimax.chat/v1/text/chatcompletion_v2`
+**基础 URL**: `https://api.minimaxi.com/v1/text/chatcompletion_v2`
 
 | 模型 | Token | 速度 | 说明 |
 |------|-------|------|------|
@@ -74,119 +74,94 @@
 
 ---
 
-## 待接入清单
+## 已接入工具清单
 
-### P0 — 高价值，低复杂度
+所有工具均注册于 `src/agent-runtime/tools/executor.ts`。
 
-#### 1. coding-plan-vlm（视觉理解）
+### `vision`
 
-让 Agent 能看懂用户上传的图片/截图，对编程和分析场景极有价值。
-
-**建议工具名**: `describe_image` / `vision`
-
-**参数**:
+MiniMax 视觉理解（coding-plan-vlm）
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `prompt` | string | 要问图片的问题 |
-| `image_source` | string | 图片 URL 或 base64 |
+| `image_url` | string | 图片 URL 或 base64 |
+| `file_id` | string | 预上传文件 ID |
 
----
+### `minimax_search`
 
-#### 2. coding-plan-search（搜索）
-
-MiniMax 官方搜索 API，可替代或增强 SearXNG。
-
-**建议工具名**: `web_search`
-
-**参数**:
+MiniMax 官方搜索，支持 Google 高级语法
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `query` | string | 搜索词（支持 Google 高级语法） |
+| `q` | string | 搜索词 |
 
----
+### `speak`
 
-#### 3. TTS HD（语音合成）
-
-**基础 URL**: `https://api.minimaxi.com/v1/t2a_v2`
-
-**模型**: speech-2.8-hd / speech-2.8-turbo / speech-2.6-hd / speech-2.6-turbo
-
-**建议工具名**: `speak` / `text_to_speech`
-
-**参数**:
+MiniMax TTS HD（语音合成）
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `text` | string | 待合成文本，最长 10000 字符 |
 | `model` | string | speech-2.8-hd 等 |
 | `voice_id` | string | 音色 ID |
-| `speed` | number | 语速 |
-| `format` | string | mp3 / pcm / flac / wav |
+| `speed` | number | 语速 0.5-2.0 |
+| `emotion` | string | happy/sad/angry/fearful 等 |
 | `stream` | boolean | 流式输出 |
+| `output_format` | string | url 或 hex |
 
----
+### `generate_music`
 
-### P1 — 中等价值
-
-#### 4. 音乐生成
-
-**基础 URL**: `https://api.minimaxi.com/v1/music_generation`
-
-**模型**: music-2.6
-
-**建议工具名**: `generate_music`
-
-**参数**:
+MiniMax 音乐生成
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `prompt` | string | 歌曲描述/灵感 |
-| `lyrics` | string | 歌词（可选） |
-| `lyrics_optimizer` | boolean | 自动生成歌词 |
+| `lyrics` | string | 歌词 |
+| `model` | string | music-2.6-free 等 |
 | `instrumental` | boolean | 纯器乐 |
+| `lyrics_optimizer` | boolean | 自动生成歌词 |
+| `vocals` | string | 人声音色描述 |
+| `genre` | string | 音乐风格 |
 
-**music-cover**（参考音频生成翻唱版）:
-**基础 URL**: `https://api.minimaxi.com/v1/music_cover`
+### `generate_music_cover`
+
+MiniMax 音乐翻唱（参考音频生成翻唱版）
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `prompt` | string | 描述翻唱风格 |
-| `audio_file` | string | 参考音频 URL 或 base64 |
+| `prompt` | string | 翻唱风格描述 |
+| `audio_url` | string | 参考音频 URL |
+| `lyrics` | string | 歌词（可选） |
+| `seed` | number | 随机种子 |
+
+### `generate_video`
+
+MiniMax 视频生成（异步，自动轮询，最长 5 分钟）
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `prompt` | string | 视频描述 |
+| `model` | string | MiniMax-Hailuo-2.3 等 |
+| `first_frame_image` | string | 首帧图片 URL（I2V） |
+| `last_frame_image` | string | 尾帧图片 URL（S2V with Hailuo-02） |
+| `subject_image` | string | 主体参考图 URL（S2V-01） |
+
+### `query_video_task`
+
+查询视频任务状态
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `task_id` | string | 视频任务 ID |
 
 ---
 
-#### 5. 视频生成（文生视频 / 图生视频）
+### 待接入（P2）
 
-**基础 URL**: `https://api.minimaxi.com/v1/video_generation`
-
-**模型**: Hailuo-2.3 / Hailuo-2.3-Fast / Hailuo-02
-
-**流程**（异步三步曲）:
-1. 创建任务 → 获取 `task_id`
-2. 查询状态 → 状态成功时获取 `file_id`
-3. 文件管理接口 → 下载/查看结果
-
-**建议工具名**: `generate_video`
-
----
-
-### P2 — 低优先级
-
-#### 6. 异步长文本 TTS
-
-单次最大 100 万字符，适合整本书籍。
-
-#### 7. 音色克隆
-
-需个人认证 + 企业认证，复刻音色临时 168h。
-
-#### 8. 视频 Agent
-
-预制模板（跳水/labubu 等），娱乐向。
-
----
+- 异步长文本 TTS（100 万字符）
+- 音色克隆
+- 视频 Agent 模板
 
 ## 附录
 
