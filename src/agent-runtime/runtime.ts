@@ -317,11 +317,9 @@ export async function runAgentStream(
 
     let fullChunk = '';
     for await (const chunk of stream) {
-      if (!chunk.done) {
-        fullChunk += chunk.content;
-        if (streamChunks) {
-          pushWsChunk(agentId, sessionKey, chunk.content);
-        }
+      fullChunk += chunk.content;
+      if (!chunk.done && streamChunks) {
+        pushWsChunk(agentId, sessionKey, chunk.content);
       }
     }
 

@@ -110,10 +110,14 @@ export async function* chatStream(
   options: LLMOptions = {}
 ): AsyncGenerator<LLMStreamChunk> {
   if (process.env.MOCK_LLM === 'true') {
-    // Mock 模式直接返回完整内容
+    // Mock 模式模拟流式输出：分批 yield
     const result = mockChat(messages);
     const text = typeof result.content === 'string' ? result.content : result.content.map(b => b.type === 'text' ? b.text : '').join('');
-    yield { content: text, done: true };
+    const chunkSize = Math.max(1, Math.ceil(text.length / 4));
+    for (let i = 0; i < text.length; i += chunkSize) {
+      yield { content: text.slice(i, i + chunkSize), done: false };
+    }
+    yield { content: '', done: true };
     return;
   }
 
