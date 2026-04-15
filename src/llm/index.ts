@@ -222,7 +222,7 @@ async function chatMinimax(
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  const res = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
+  const res = await fetch('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,

@@ -65,7 +65,7 @@ async function embedMinimax(text: string): Promise<EmbedResult> {
   const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) return { embedding: null, model: '' };
 
-  const res = await fetch('https://api.minimax.chat/v1/embeddings', {
+  const res = await fetch('https://api.minimaxi.com/v1/embeddings', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
