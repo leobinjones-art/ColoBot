@@ -152,8 +152,14 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ response }));
       } else {
         const result = await runAgent({ agentId: agent_id, sessionKey: session_key, userMessage: message as string | ContentBlock[], ipAddress: clientIp });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ response: result.response }));
+        if ('pending' in result) {
+          // 危险工具正在等待审批
+          res.writeHead(202, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ pending: true, approvalId: result.approvalId }));
+        } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ response: result.response }));
+        }
       }
       return;
     }
@@ -222,6 +228,17 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (path === '/api/triggers/condition-fire' && method === 'POST') {
+      const body = await parseBody(req);
+      const trigger_id = String(body.trigger_id || '');
+      const context = (body.context as Record<string, unknown>) || {};
+      const { fireConditionTrigger } = await import('./agent-runtime/trigger-runtime.js');
+      const result = await fireConditionTrigger(trigger_id, context);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+
     // ── Approvals ──
     if (path === '/api/approvals' && method === 'GET') {
       const agentId = url.searchParams.get('agent_id') || undefined;
@@ -243,6 +260,16 @@ const server = http.createServer(async (req, res) => {
       const approver = String(body.approver || 'system');
       if (action === 'approve') {
         result = await approvalFlow.approve(id, approver, (body.result as Record<string, unknown>) || {});
+        // 执行已批准的 dangerous tool
+        if (result) {
+          const execResult = await approvalFlow.executeApproved(id);
+          if (execResult.toolResult !== undefined) {
+            result = { ...result, toolResult: execResult.toolResult };
+          }
+          if (execResult.error) {
+            console.error('[Approval] Tool execution error:', execResult.error);
+          }
+        }
       } else {
         result = await approvalFlow.reject(id, approver, String(body.reason || ''));
       }
@@ -274,9 +301,15 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404);
     res.end('Not found');
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('Invalid JSON')) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      return;
+    }
     console.error('[HTTP Error]', e);
     res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: String(e) }));
+    res.end(JSON.stringify({ error: msg }));
   }
 });
 
@@ -284,6 +317,8 @@ const server = http.createServer(async (req, res) => {
 
 const wss = new WebSocketServer({ server });
 const wsClients = new Map<string, WebSocket>();
+// 设置 wsClients 供 runtime 使用（避免循环导入）
+import('./ws-push.js').then(m => m.setWsClients(wsClients));
 
 wss.on('connection', (ws, req) => {
   // WebSocket 认证
@@ -318,6 +353,11 @@ wss.on('connection', (ws, req) => {
           response = await executeSkill(triggeredSkill, agentId, { sessionKey, userMessage: message as string });
         } else {
           const result = await runAgent({ agentId, sessionKey, userMessage: message as string });
+          if ('pending' in result) {
+            // 等待审批，通知客户端
+            ws.send(JSON.stringify({ type: 'pending', payload: { approvalId: result.approvalId } }));
+            return;
+          }
           response = result.response;
         }
 

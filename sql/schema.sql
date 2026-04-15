@@ -205,3 +205,21 @@ CREATE TABLE IF NOT EXISTS soul_proposals (
 
 CREATE INDEX IF NOT EXISTS idx_soul_proposals_agent ON soul_proposals(agent_id);
 CREATE INDEX IF NOT EXISTS idx_soul_proposals_status ON soul_proposals(status);
+
+-- 待继续的对话（危险工具审批中，LLM 状态暂存）
+CREATE TABLE IF NOT EXISTS pending_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  approval_id UUID NOT NULL REFERENCES approval_requests(id) ON DELETE CASCADE,
+  agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  session_key VARCHAR(500) NOT NULL,
+  messages JSONB NOT NULL,
+  dangerous_calls JSONB NOT NULL,
+  current_round INT NOT NULL DEFAULT 1,
+  allowed_calls JSONB DEFAULT '[]',
+  blocked_calls JSONB DEFAULT '[]',
+  ip_address VARCHAR(45),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_conversations_approval ON pending_conversations(approval_id);
+CREATE INDEX IF NOT EXISTS idx_pending_conversations_agent ON pending_conversations(agent_id);

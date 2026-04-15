@@ -19,6 +19,7 @@ export interface LLMOptions {
   maxTokens?: number;
   model?: string;
   systemPromptOverride?: string;
+  fallbackModelId?: string;
 }
 
 export interface LLMResponse {
@@ -47,14 +48,39 @@ export async function chat(
     return mockChat(messages);
   }
 
-  switch (currentProvider) {
-    case 'openai':
-      return chatOpenAI(messages, options);
-    case 'anthropic':
-      return chatAnthropic(messages, options);
-    case 'minimax':
-      return chatMinimax(messages, options);
+  try {
+    switch (currentProvider) {
+      case 'openai':
+        return await chatOpenAI(messages, options);
+      case 'anthropic':
+        return await chatAnthropic(messages, options);
+      case 'minimax':
+        return await chatMinimax(messages, options);
+    }
+  } catch (primaryError) {
+    // Fallback model retry
+    if (options.fallbackModelId) {
+      console.warn(`[LLM] Primary model failed (${currentProvider}), trying fallback: ${options.fallbackModelId}`);
+      const fallbackOptions = { ...options, model: options.fallbackModelId };
+      delete fallbackOptions.fallbackModelId; // prevent infinite loop
+      try {
+        switch (currentProvider) {
+          case 'openai':
+            return await chatOpenAI(messages, fallbackOptions);
+          case 'anthropic':
+            return await chatAnthropic(messages, fallbackOptions);
+          case 'minimax':
+            return await chatMinimax(messages, fallbackOptions);
+        }
+      } catch (fallbackError) {
+        console.error('[LLM] Fallback model also failed:', fallbackError);
+        throw primaryError; // throw original error
+      }
+    }
+    throw primaryError;
   }
+  // unreachable
+  throw new Error('No LLM provider configured');
 }
 
 export async function agentChat(

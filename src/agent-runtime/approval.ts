@@ -91,7 +91,19 @@ export class ApprovalFlow {
        RETURNING *`,
       [approver, JSON.stringify(result), id]
     );
-    return row ? this.parseRow(row) : null;
+    const approval = row ? this.parseRow(row) : null;
+
+    // 审批通过后，继续执行被阻止的 LLM 流程
+    if (approval) {
+      // 动态导入避免循环依赖
+      const { continueRun } = await import('./runtime.js');
+      // 异步执行，不阻塞 HTTP 响应
+      continueRun(id).catch(err => {
+        console.error('[Approval] continueRun error:', err);
+      });
+    }
+
+    return approval;
   }
 
   async reject(id: string, approver: string, reason: string): Promise<ApprovalRequest | null> {
@@ -103,6 +115,48 @@ export class ApprovalFlow {
       [approver, JSON.stringify({ reason }), id]
     );
     return row ? this.parseRow(row) : null;
+  }
+
+  /**
+   * 执行已批准的 dangerous tool
+   * 审批通过后，提取 payload 中的工具名和参数，实际执行工具
+   */
+  async executeApproved(id: string): Promise<{ approval: ApprovalRequest | null; toolResult?: unknown; error?: string }> {
+    const approval = await this.get(id);
+    if (!approval) {
+      return { approval: null, error: 'Approval not found' };
+    }
+    if (approval.status !== 'approved') {
+      return { approval, error: `Approval status is ${approval.status}, not approved` };
+    }
+
+    // 从 payload 中提取工具名和参数
+    const toolName = (approval.payload as Record<string, unknown>)._toolName as string | undefined;
+    if (!toolName) {
+      return { approval, error: 'No tool name in approval payload' };
+    }
+
+    // 构建工具参数（排除内部字段）
+    const toolArgs: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(approval.payload)) {
+      if (!k.startsWith('_')) {
+        toolArgs[k] = v;
+      }
+    }
+
+    try {
+      // 动态导入避免循环依赖
+      const { executeToolCalls } = await import('./tools/executor.js');
+      const results = await executeToolCalls([{ name: toolName, args: toolArgs }]);
+      const result = results[0];
+      if (!result.success) {
+        return { approval, error: result.error };
+      }
+      return { approval, toolResult: result.result };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      return { approval, error: `Tool execution failed: ${error}` };
+    }
   }
 
   async expireOld(): Promise<number> {
