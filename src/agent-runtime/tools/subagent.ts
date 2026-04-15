@@ -3,121 +3,125 @@
  */
 import { registerTool } from './executor.js';
 
-// 子Agent 模板库
-const SUBAGENT_TEMPLATES: Record<string, {
-  role: string;
-  personality: string;
-  rules: string[];
-  skills: string[];
-  allowedTools: string[];
-  defaultTtlMs: number;
-}> = {
-  code: {
-    role: '代码工程师',
-    personality: '严谨、高效、追求最佳实践。遇到不确定的实现时主动搜索验证。',
-    rules: [
-      '写代码前先理解需求，明确输入输出',
-      '代码要有注释，复杂逻辑要解释',
-      '优先使用标准库和常用框架',
-      '如果需要外部知识，先用搜索工具确认',
-    ],
-    skills: ['代码生成', '代码审查', 'Bug定位', '代码重构'],
-    allowedTools: ['search_memory', 'web_search', 'minimax_search', 'list_memory', 'generate_image'],
-    defaultTtlMs: 5 * 60 * 1000,
-  },
-  search: {
-    role: '搜索分析师',
-    personality: '细心、全面、注重信息准确性。善于交叉验证来源。',
-    rules: [
-      '先明确搜索关键词和范围',
-      '多个来源交叉验证',
-      '整理信息时标注来源',
-      '结论要有依据，不猜测',
-    ],
-    skills: ['信息检索', '多源对比', '总结归纳', '结构化输出'],
-    allowedTools: ['minimax_search', 'web_search', 'list_memory', 'search_memory'],
-    defaultTtlMs: 3 * 60 * 1000,
-  },
-  writing: {
-    role: '写作助手',
-    personality: '流畅、富有创意。注重表达的清晰和吸引力。',
-    rules: [
-      '理解目标读者',
-      '结构清晰，逻辑连贯',
-      '语言简洁，避免冗余',
-      '必要时可搜索参考案例',
-    ],
-    skills: ['文案写作', '文章润色', '结构优化', '风格把控'],
-    allowedTools: ['search_memory', 'list_memory', 'web_search'],
-    defaultTtlMs: 3 * 60 * 1000,
-  },
-  analysis: {
-    role: '数据分析师',
-    personality: '严谨、逻辑清晰。注重数据支撑和推理过程。',
-    rules: [
-      '先收集足够信息',
-      '分析要有数据支撑',
-      '结论要明确，保留推理过程',
-      '不确定时如实说明',
-    ],
-    skills: ['数据分析', '图表生成建议', '逻辑推理', '总结报告'],
-    allowedTools: ['search_memory', 'minimax_search', 'list_memory', 'generate_image'],
-    defaultTtlMs: 5 * 60 * 1000,
-  },
-  general: {
-    role: '通用助手',
-    personality: '友好、灵活、乐于助人。',
-    rules: [
-      '尽力理解用户真实需求',
-      '不确定时主动询问',
-      '复杂任务主动拆解',
-    ],
-    skills: ['综合能力', '任务分解', '信息整理'],
-    allowedTools: ['search_memory', 'add_memory', 'list_memory', 'web_search', 'minimax_search'],
-    defaultTtlMs: 3 * 60 * 1000,
-  },
-};
+// 辅助函数
 
-function inferTaskType(task: string): string {
+function estimateComplexity(task: string): number {
   const t = task.toLowerCase();
-  if (/代码|编译|函数|class|import|def |function|=>|implement|write.*code|programming/i.test(t)) return 'code';
-  if (/搜索|查找|调研|收集.*信息|查一下|多少钱|谁|什么.*最好/i.test(t)) return 'search';
-  if (/写|文章|文案|报告|总结|润色|改写/i.test(t)) return 'writing';
-  if (/分析|对比|评估|判断|拆解.*问题/i.test(t)) return 'analysis';
-  return 'general';
+  let score = 1;
+  // 关键词复杂度
+  if (/分析|拆解|对比|评估|判断/i.test(t)) score = Math.max(score, 3);
+  if (/代码|开发|实现|编写.*程序/i.test(t)) score = Math.max(score, 4);
+  if (/研究|调研|全面.*分析/i.test(t)) score = Math.max(score, 5);
+  // 任务长度
+  if (task.length > 200) score = Math.max(score, 2);
+  if (task.length > 500) score = Math.max(score, 3);
+  // 多步骤
+  if (/先|然后|接着|最后|首先|其次/i.test(t)) score = Math.max(score, 3);
+  return Math.min(score, 5);
 }
+
+function recommendTools(task: string): Array<{ tool: string; reason: string }> {
+  const t = task.toLowerCase();
+  const recs: Array<{ tool: string; reason: string }> = [];
+
+  if (/代码|开发|函数|class|bug|调试/i.test(t)) {
+    recs.push({ tool: 'search_memory', reason: '搜索项目记忆中的相关代码' });
+    recs.push({ tool: 'web_search', reason: '查找技术实现方案' });
+  }
+  if (/搜索|查找|调研|确认.*信息/i.test(t)) {
+    recs.push({ tool: 'minimax_search', reason: 'MiniMax官方搜索，高质量结果' });
+    recs.push({ tool: 'web_search', reason: '补充搜索更广泛来源' });
+  }
+  if (/图片|图像|画图|生成.*图/i.test(t)) {
+    recs.push({ tool: 'generate_image', reason: '生成图片' });
+  }
+  if (/视频|生成.*视频/i.test(t)) {
+    recs.push({ tool: 'generate_video', reason: '生成视频' });
+  }
+  if (/音乐|歌曲|音频/i.test(t)) {
+    recs.push({ tool: 'generate_music', reason: '生成音乐' });
+  }
+  if (/语音|tts|合成.*声音/i.test(t)) {
+    recs.push({ tool: 'speak', reason: '语音合成' });
+  }
+  if (/记忆|记住|存储/i.test(t)) {
+    recs.push({ tool: 'add_memory', reason: '存储关键信息' });
+    recs.push({ tool: 'search_memory', reason: '检索已有记忆' });
+  }
+  // 默认至少要有搜索
+  if (recs.length === 0) {
+    recs.push({ tool: 'search_memory', reason: '先搜索项目记忆' });
+    recs.push({ tool: 'web_search', reason: '补充外部信息' });
+  }
+  return recs;
+}
+
+/**
+ * 全部可用工具清单（供父Agent参考如何选）
+ */
+const ALL_TOOLS = [
+  // 记忆
+  'search_memory', 'add_memory', 'list_memory',
+  // 搜索
+  'web_search', 'image_search', 'video_search', 'minimax_search',
+  // MiniMax 文本/图片
+  'generate_image', 'vision',
+  // MiniMax TTS
+  'speak',
+  // MiniMax 音乐
+  'generate_music', 'generate_music_cover',
+  // MiniMax 视频
+  'generate_video', 'query_video_task',
+  // MiniMax 文件
+  'upload_file', 'list_files', 'retrieve_file', 'delete_file',
+  // MiniMax 语音
+  'list_voices', 'voice_clone', 'voice_design', 'delete_voice',
+];
 
 export function registerTools(): void {
   /**
-   * 根据任务描述，推荐子Agent配置
+   * config_subagent — 提供子Agent配置指导，不预设具体配置
+   * 父Agent根据指导自行决定如何生成 soul_content / allowed_tools / ttl_ms
    */
   registerTool('config_subagent', async (args) => {
-    const { task, task_type } = args as { task: string; task_type?: string };
+    const { task, parent_id } = args as { task: string; parent_id?: string };
 
-    const type = task_type || inferTaskType(task);
-    const template = SUBAGENT_TEMPLATES[type] || SUBAGENT_TEMPLATES.general;
-
-    // 根据任务长度调整 TTL
-    const estimatedMs = Math.max(
-      template.defaultTtlMs,
-      Math.min(task.length * 100, 10 * 60 * 1000)
+    // 估算任务复杂度，决定 TTL
+    const complexityScore = estimateComplexity(task);
+    const ttlMs = Math.min(
+      Math.max(60_000, complexityScore * 60_000),
+      10 * 60 * 1000
     );
 
-    const name = `${template.role}-${Date.now().toString(36).slice(-4)}`;
-    const soul_content = JSON.stringify({
-      role: template.role,
-      personality: template.personality,
-      rules: template.rules,
-      skills: template.skills,
-    });
+    // 推荐工具选择原则
+    const recommendedTools = recommendTools(task);
 
     return {
-      name,
-      task_type: type,
-      soul_content,
-      allowed_tools: template.allowedTools,
-      ttl_ms: estimatedMs,
-      reason: `根据任务类型"${type}"生成：${template.skills.join('/')}，使用工具${template.allowedTools.join('/')}`,
+      // 指导父Agent如何构建 soul_content
+      soul_content_guide: {
+        description: 'soul_content 是 JSON 对象，包含子Agent的角色设定',
+        fields: {
+          role: 'string — 子Agent的身份角色名，如"代码助手"',
+          personality: 'string — 性格描述，影响回答风格',
+          rules: 'string[] — 子Agent的行为规则',
+          skills: 'string[] — 子Agent擅长的技能',
+        },
+        example: JSON.stringify({
+          role: '代码助手',
+          personality: '严谨高效，注重代码质量和可维护性',
+          rules: ['写代码前先理解需求', '复杂逻辑添加注释', '优先使用标准库'],
+          skills: ['代码生成', 'Bug修复', '代码审查'],
+        }, null, 2),
+      },
+      // 可选工具清单
+      available_tools: ALL_TOOLS,
+      // 推荐工具及理由
+      recommended_tools: recommendedTools,
+      // TTL 建议
+      ttl_ms: ttlMs,
+      ttl_reason: `任务复杂度评分 ${complexityScore}/5，建议 TTL ${ttlMs / 1000}秒`,
+      // 父Agent ID
+      parent_id: parent_id || '__parent__',
     };
   });
 
