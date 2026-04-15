@@ -215,7 +215,7 @@ registerTool('generate_image', async (args) => {
 
 /**
  * MiniMax 视觉理解（coding-plan-vlm）
- * POST https://api.minimaxi.com/v1/coding_plan_vlm
+ * POST https://api.minimaxi.com/v1/coding_plan/vlm
  *
  * 根据图片内容回答问题，支持 URL 或 base64 图片输入
  */
@@ -223,21 +223,29 @@ registerTool('vision', async (args) => {
   const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
-  const { prompt, image_source } = args as {
-    prompt: string;
-    image_source: string;
+  const { prompt, image_url, file_id } = args as {
+    prompt?: string;
+    image_url?: string;
+    file_id?: string;
   };
 
   if (!prompt) throw new Error('prompt is required');
-  if (!image_source) throw new Error('image_source is required');
+  if (!image_url && !file_id) throw new Error('image_url or file_id is required');
 
-  const res = await fetch('https://api.minimaxi.com/v1/coding_plan_vlm', {
+  const body: Record<string, unknown> = { prompt };
+  if (file_id) {
+    body.file_id = file_id;
+  } else if (image_url) {
+    body.image_url = image_url;
+  }
+
+  const res = await fetch('https://api.minimaxi.com/v1/coding_plan/vlm', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prompt, image_source }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -246,7 +254,7 @@ registerTool('vision', async (args) => {
   }
 
   const data = await res.json() as {
-    choices?: Array<{ messages: Array<{ text: string }> }>;
+    content?: string;
     base_resp?: { status_code: number; status_msg: string };
   };
 
@@ -254,13 +262,12 @@ registerTool('vision', async (args) => {
     throw new Error(`MiniMax vision failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
   }
 
-  const text = data.choices?.[0]?.messages?.[0]?.text ?? '';
-  return { description: text };
+  return { description: data.content ?? '' };
 });
 
 /**
  * MiniMax 搜索（coding-plan-search）
- * POST https://api.minimaxi.com/v1/coding_plan_search
+ * POST https://api.minimaxi.com/v1/coding_plan/search
  *
  * 支持 Google 高级搜索语法
  * 注意：现有 web_search 为 SearXNG，此工具命名为 minimax_search 避免冲突
@@ -269,17 +276,17 @@ registerTool('minimax_search', async (args) => {
   const apiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
-  const { query } = args as { query: string };
+  const { q } = args as { q: string };
 
-  if (!query) throw new Error('query is required');
+  if (!q) throw new Error('q (query) is required');
 
-  const res = await fetch('https://api.minimaxi.com/v1/coding_plan_search', {
+  const res = await fetch('https://api.minimaxi.com/v1/coding_plan/search', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ q }),
   });
 
   if (!res.ok) {
@@ -288,7 +295,7 @@ registerTool('minimax_search', async (args) => {
   }
 
   const data = await res.json() as {
-    results?: Array<{ title: string; url: string; snippet: string }>;
+    organic?: Array<{ title: string; link: string; snippet: string; date?: string }>;
     base_resp?: { status_code: number; status_msg: string };
   };
 
@@ -296,7 +303,14 @@ registerTool('minimax_search', async (args) => {
     throw new Error(`MiniMax search failed: ${data.base_resp.status_code} ${data.base_resp.status_msg}`);
   }
 
-  return { results: data.results ?? [] };
+  return {
+    results: (data.organic ?? []).map(r => ({
+      title: r.title,
+      url: r.link,
+      snippet: r.snippet,
+      date: r.date,
+    })),
+  };
 });
 
 /**
