@@ -165,16 +165,16 @@ colobot/
 | 模块 | 完成度 | 状态 |
 |------|--------|------|
 | 父Agent 运行时 | 90% | ✅ 审计 + 审批触发 |
-| 子Agent | 60% | 纯内存是设计，多模态支持 |
+| 子Agent | 60% | 纯内存设计，多模态工具支持 |
 | Skill 系统 | 50% | 可用，缺 Schema 验证 |
-| Trigger 引擎 | 50% | interval/cron/webhook 可用 |
+| Trigger 引擎 | 50% | interval/cron/webhook 可用，缺 condition |
 | 向量记忆 | 70% | ✅ embedding 存储 + 混合搜索 |
 | 审批流 | 50% | ✅ 触发已集成，执行待优化 |
 | Soul 自进化 | 70% | ✅ 表已创建，流程可用 |
-| 全模态支持 | ✅ | OpenAI/Anthropic 多模态 |
+| 全模态支持 | ✅ | OpenAI/Anthropic/MiniMax 全模态 |
 | 审计日志 | ✅ | services/audit.ts 全链路写入 |
-| 渠道接入 | 10% | 仅 WebSocket |
-| 前端 Dashboard | 0% | 不存在 |
+| 渠道接入 | 10% | 仅 WebSocket，飞书/TG 等未接入 |
+| 前端 Dashboard | 0% | 待开发 |
 | 认证 | ✅ | API Key 中间件 |
 
 ### 已完成 (P0)
@@ -190,15 +190,24 @@ colobot/
 
 ### 剩余问题
 
-#### 中等问题
+#### 待完成
+
+| # | 模块 | 说明 | 优先级 |
+|---|------|------|--------|
+| 1 | 子Agent | 纯内存设计，重启丢失；多模态工具支持 | P0 |
+| 2 | Skill 系统 | 缺 Schema 验证 | P0 |
+| 3 | Trigger 引擎 | 缺 condition 条件触发 | P0 |
+| 4 | 审批流 | 执行流程待优化 | P1 |
+| 5 | 渠道接入 | 飞书/Telegram/Discord/Slack | P1 |
+| 6 | 前端 Dashboard | Web UI | 待定 |
+
+#### Bug / 改进
 
 | # | 问题 | 位置 |
 |---|------|------|
-| 1 | `parseBody` JSON 失败返回 500 | `colobot-server.ts` |
-| 2 | Trigger timers 内存中 | `trigger-runtime.ts` |
+| 1 | `parseBody` JSON 失败返回 500 | `colobot-server.ts`（应返回 400）|
+| 2 | Trigger timers 内存中，重启丢失 | `trigger-runtime.ts` |
 | 3 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
-| 4 | 条件触发（condition）未实现 | `trigger-runtime.ts` |
-| 5 | 无 fallback model 切换 | `llm/index.ts` |
 
 ---
 
