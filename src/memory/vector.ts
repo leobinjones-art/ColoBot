@@ -77,7 +77,7 @@ export async function searchMemoryText(
      WHERE agent_id = $1 AND memory_value ILIKE $2
      ORDER BY created_at DESC
      LIMIT $3`,
-    [agentId, `%${queryText}%`, topK]
+    [agentId, `%${queryText.replace(/[%_]/g, '\\$&')}%`, topK]
   );
 
   return rows.map(r => ({
