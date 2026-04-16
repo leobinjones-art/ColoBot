@@ -109,83 +109,41 @@ const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
                   ▼
       POST /api/approvals/:id/approve
                   │
-      ┌───────────┴───────────┐
-      │                       │
- approve()              executeApproved()
- → 更新 DB status       → executeToolCalls()
- → 异步 continueRun()   (重复执行工具)
-      │
-      ▼
- continueRun()
- → executeToolCalls()  (第1次执行)
- → agentChat() 非流式继续
- → pushWsResult() 推送
-```
-
----
-
-## 已知问题
-
-| # | 问题 | 影响 |
-|---|------|------|
-| 1 | 工具执行两次（`continueRun` + `executeApproved`） | 重复执行，可能有副作用 |
-| 2 | `pending_conversations` 未清理 | 多次审批后数据膨胀 |
-| 3 | `continueRun` 用非流式 LLM，结果 WebSocket 无人接收 | 用户看不到后续响应 |
-
-详见: [issue: 审批流双重执行问题](https://gitcode.com/Condamnation/ColoBot/issues)
-
----
-
-## 目标实现流程
-
-```
-用户消息 → runAgentStream()
+                  ▼
+      approvalFlow.approve()
+      → 更新 DB status = 'approved'
+      → 异步触发 continueRun()
                   │
                   ▼
-             LLM 生成工具调用
-                  │
-      ┌───────────┴───────────┐
-      │                       │
- 非危险工具              危险工具
-      │                       │
- executeToolCalls()     approvalFlow.create() → DB
-      │                       │
-      └──────┬────────────────┘
-             │
-             ▼
-      savePendingConversation()
-             │
-             ▼
-      pushWsChunk({ pending: true, approvalId, description })
-      → 用户看到 "⏳ 等待审批: {description}"
-             │
-             ▼
-           [流结束]
-
-      ── 管理员审批 ──
-
-      POST /api/approvals/:id/approve
-             │
-             ▼
-      approvalFlow.approve() 更新 DB
-             │
-             ▼
-      异步任务（不等待）
-      → 读取 pending_conversations
-      → 执行危险工具（仅一次）
-      → 构建新消息追加到 session
-        "管理员已批准 {action_type}，执行结果: {result}"
-      → 流式 agentChatStream() 继续对话
+      continueRun() [异步执行]
+      → 从 pending_conversations 读取状态
+      → executeToolCalls() 执行危险工具（仅一次）
+      → agentChatStream() 流式继续 LLM 对话
       → pushWsChunk() 实时推送 LLM 响应
-      → 完成后 DELETE pending_conversations
+      → pushWsDone() 结束流
+      → DELETE pending_conversations
 ```
 
-### 关键改进
+---
 
-1. **一次执行**：只审批，工具在审批后执行一次
-2. **流式继续**：审批通过后用流式 LLM 继续，实时推送
-3. **状态通知**：WebSocket 推送审批状态变化
-4. **自动清理**：完成后删除 pending_conversations
+## 已知问题（已修复）
+
+| # | 问题 | 状态 | 修复版本 |
+|---|------|------|----------|
+| 1 | 工具执行两次 | ✅ 已修复 | v0.1.x |
+| 2 | `pending_conversations` 未清理 | ✅ 已在 continueRun 末尾清理 | v0.1.x |
+| 3 | continueRun 用非流式 LLM | ✅ 已改用 agentChatStream() | v0.1.x |
+
+---
+
+## 待优化项
+
+以下功能尚未实现：
+
+1. **聊天内审批**：用户在对话中直接说"批准 #approvalId"触发审批
+2. **WebSocket 审批通知**：审批状态变化时主动推送通知给用户
+3. **外部通知渠道**：飞书/邮件/Telegram 通知管理员有新的审批请求
+4. **审批结果消息**：审批通过后构建更详细的消息追加到 session
 
 ---
 
