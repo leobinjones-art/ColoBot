@@ -530,7 +530,8 @@ export async function continueRun(
   const maxRounds = agent.max_tool_rounds || DEFAULT_MAX_ROUNDS;
 
   for (let round = startRound + 1; round < maxRounds; round++) {
-    const response = await agentChat(soul, messages, {
+    // 使用流式 LLM 继续对话
+    const stream = agentChatStream(soul, messages, {
       temperature: agent.temperature,
       maxTokens: agent.max_tokens,
       model: agent.primary_model_id ?? undefined,
@@ -538,13 +539,20 @@ export async function continueRun(
       systemPromptOverride: agent.system_prompt_override ?? undefined,
     });
 
-    const rawContent = response.content;
+    let fullChunk: string = '';
+    for await (const chunk of stream) {
+      fullChunk += chunk.content;
+      if (!chunk.done) {
+        pushWsChunk(agentId, sessionKey, chunk.content);
+      }
+    }
+    // 流结束后推送 done
+    pushWsDone(agentId, sessionKey);
+
+    const rawContent: string = fullChunk;
     messages.push({ role: 'assistant', content: rawContent });
 
-    const rawText = typeof rawContent === 'string' ? rawContent
-      : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
-
-    const toolCalls = parseToolCalls(rawText);
+    const toolCalls = parseToolCalls(rawContent);
     if (toolCalls.length === 0) {
       finalContent = rawContent;
       break;

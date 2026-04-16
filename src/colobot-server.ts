@@ -259,17 +259,8 @@ const server = http.createServer(async (req, res) => {
       let result;
       const approver = String(body.approver || 'system');
       if (action === 'approve') {
+        // approve() 内部已异步触发 continueRun()，会执行危险工具并继续 LLM 对话
         result = await approvalFlow.approve(id, approver, (body.result as Record<string, unknown>) || {});
-        // 执行已批准的 dangerous tool
-        if (result) {
-          const execResult = await approvalFlow.executeApproved(id);
-          if (execResult.toolResult !== undefined) {
-            result = { ...result, toolResult: execResult.toolResult };
-          }
-          if (execResult.error) {
-            console.error('[Approval] Tool execution error:', execResult.error);
-          }
-        }
       } else {
         result = await approvalFlow.reject(id, approver, String(body.reason || ''));
       }
