@@ -73,7 +73,7 @@ function register() {
       ok: true,
       result,
       output,
-      executionTime: `<${timeout}ms`,
+      timeoutMs: timeout,
     };
   });
 }
