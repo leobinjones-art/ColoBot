@@ -48,3 +48,21 @@ export function pushWsDone(
     ws.send(JSON.stringify({ type: 'done', payload: {} }));
   }
 }
+
+export function pushWsApproval(
+  agentId: string,
+  sessionKey: string,
+  action: 'approved' | 'rejected' | 'expired',
+  approvalId: string,
+  detail?: Record<string, unknown>
+): void {
+  if (!wsClients) return;
+  const clientId = `${agentId}:${sessionKey}`;
+  const ws = wsClients.get(clientId);
+  if (ws && ws.readyState === 1 /* OPEN */) {
+    ws.send(JSON.stringify({
+      type: 'approval',
+      payload: { action, approvalId, ...detail },
+    }));
+  }
+}

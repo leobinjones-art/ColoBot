@@ -138,12 +138,12 @@ const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
 
 ## 待优化项
 
-以下功能尚未实现：
+以下功能**已全部实现** ✅：
 
-1. **聊天内审批**：用户在对话中直接说"批准 #approvalId"触发审批
-2. **WebSocket 审批通知**：审批状态变化时主动推送通知给用户
-3. **外部通知渠道**：飞书/邮件/Telegram 通知管理员有新的审批请求
-4. **审批结果消息**：审批通过后构建更详细的消息追加到 session
+1. ✅ **聊天内审批**：用户说"批准 #approvalId"/"approve #xxx" 触发审批
+2. ✅ **WebSocket 审批通知**：审批状态变化时推送 `{ type: 'approval', payload: { action, approvalId } }`
+3. ✅ **外部通知渠道**：飞书 Webhook / nodemailer / Telegram Bot（需配置环境变量）
+4. ✅ **审批结果消息**：审批通过后追加详细执行结果消息到 session
 
 ---
 
@@ -186,31 +186,36 @@ Response: ApprovalRequest
 
 ---
 
-## WebSocket 审批通知（待实现）
+## WebSocket 审批通知
 
 审批状态变化时，主动推送通知给连接的用户：
 
 ```typescript
 // 审批通过
-{ type: 'approval', action: 'approved', approvalId: '...', toolResult: {...} }
+{ type: 'approval', payload: { action: 'approved', approvalId: '...' } }
 
 // 审批拒绝
-{ type: 'approval', action: 'rejected', approvalId: '...' }
+{ type: 'approval', payload: { action: 'rejected', approvalId: '...' } }
 
 // 审批超时
-{ type: 'approval', action: 'expired', approvalId: '...' }
+{ type: 'approval', payload: { action: 'expired', approvalId: '...' } }
 ```
 
 ---
 
-## 通知渠道（待实现）
+## 通知渠道
 
-| 渠道 | 说明 |
-|------|------|
-| 飞书 | Webhook 机器人通知 |
-| 邮件 | SMTP 发送邮件 |
-| Telegram | Bot 推送 |
-| Slack | Incoming Webhook |
+可通过环境变量启用以下渠道（需同时配置相关凭据）：
+
+| 渠道 | 环境变量 | 说明 |
+|------|----------|------|
+| 飞书 | `FEISHU_WEBHOOK_URL` | 飞书机器人 Webhook URL |
+| 邮件 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_TO` | SMTP 发邮件（需 `npm i nodemailer`） |
+| Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram Bot 推送 |
+
+所有渠道均**无需安装额外依赖**（飞书/Telegram 使用原生 fetch），邮件需 `npm i nodemailer`。
+
+文件: `src/services/notifications.ts`
 
 ---
 

@@ -12,6 +12,22 @@ import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approv
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
 
+/**
+ * 检测用户消息是否为聊天内审批指令
+ * 匹配格式：批准 #approvalId, approve #approvalId, 拒绝 #approvalId, reject #approvalId
+ */
+function detectInChatApproval(messageText: string): { action: 'approve' | 'reject'; approvalId: string } | null {
+  const approveMatch = messageText.match(/^(批准|approve|审批|通过)\s+#?(\S+)/i);
+  if (approveMatch) {
+    return { action: 'approve', approvalId: approveMatch[2] };
+  }
+  const rejectMatch = messageText.match(/^(拒绝|reject)\s+#?(\S+)/i);
+  if (rejectMatch) {
+    return { action: 'reject', approvalId: rejectMatch[2] };
+  }
+  return null;
+}
+
 // 需要审批的危险工具 → 审批操作类型
 const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
   send_message: 'send',
@@ -104,6 +120,24 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     ipAddress,
     result: 'success',
   });
+
+  // 聊天内审批检测
+  const approvalAction = detectInChatApproval(messageText);
+  if (approvalAction) {
+    const { approvalFlow } = await import('./approval.js');
+    let result;
+    if (approvalAction.action === 'approve') {
+      result = await approvalFlow.approve(approvalAction.approvalId, 'user', {});
+    } else {
+      result = await approvalFlow.reject(approvalAction.approvalId, 'user', '用户在聊天中拒绝');
+    }
+    const responseText = result
+      ? `审批${approvalAction.action === 'approve' ? '已通过' : '已拒绝'}，审批ID: ${approvalAction.approvalId}`
+      : `未找到待审批的请求: ${approvalAction.approvalId}`;
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
+    pushWsResult(agentId, sessionKey, responseText);
+    return { response: responseText, toolCalls: [], finished: true };
+  }
 
   // 获取历史消息
   const history = await sessionManager.getHistory(agentId, sessionKey);
@@ -515,14 +549,20 @@ export async function continueRun(
     });
   }
 
-  // 将工具结果注入 messages，替换掉 LLM 的工具调用消息
-  // 先找到 assistant 消息（包含危险工具调用），将其替换为：assistant消息 + user工具结果
+  // 将工具结果注入 messages
+  // 构建详细的审批执行结果消息
   const blockedText = blockedCalls.length > 0
     ? `\n[Blocked: ${blockedCalls.map(c => c.name).join(', ')} not allowed]`
     : '';
 
+  const dangerousSummary = dangerousCalls.length > 0
+    ? `✅ 危险操作已执行：${dangerousCalls.map(c => `${c.name}(${JSON.stringify(c.args)})`).join(', ')}\n\n`
+    : '';
+
+  const approvalResultMessage = `${dangerousSummary}工具执行结果：\n${toolResultText}${blockedText}`;
+
   // 追加工具结果到 messages
-  messages.push({ role: 'user', content: `${toolResultText}${blockedText}` });
+  messages.push({ role: 'user', content: approvalResultMessage });
 
   // 继续 LLM 循环（从下一轮开始）
   const toolCallNames = [...dangerousCalls.map(c => c.name), ...allowedCalls.map(c => c.name)];

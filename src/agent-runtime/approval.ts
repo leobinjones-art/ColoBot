@@ -59,7 +59,29 @@ export class ApprovalFlow {
       ]
     );
 
-    return this.parseRow(row!);
+    const approval = this.parseRow(row!);
+
+    // 发送外部通知（飞书/邮件/Telegram）
+    await this.notifyExternal({
+      approvalId: approval.id,
+      agentId: approval.agent_id,
+      requester: approval.requester,
+      actionType: approval.action_type,
+      targetResource: approval.target_resource,
+      description: approval.description ?? undefined,
+      status: 'pending',
+    });
+
+    return approval;
+  }
+
+  private async notifyExternal(payload: Parameters<typeof import('../services/notifications.js').sendApprovalNotification>[0]): Promise<void> {
+    try {
+      const { sendApprovalNotification } = await import('../services/notifications.js');
+      await sendApprovalNotification(payload);
+    } catch (err) {
+      console.error('[Approval] External notification error:', err);
+    }
   }
 
   async get(id: string): Promise<ApprovalRequest | null> {
@@ -103,6 +125,23 @@ export class ApprovalFlow {
       });
     }
 
+    // 推送 WebSocket 通知
+    await this.notifyWebSocket(id, 'approved');
+
+    // 发送外部通知
+    if (approval) {
+      await this.notifyExternal({
+        approvalId: approval.id,
+        agentId: approval.agent_id,
+        requester: approval.requester,
+        actionType: approval.action_type,
+        targetResource: approval.target_resource,
+        description: approval.description ?? undefined,
+        status: 'approved',
+        approver,
+      });
+    }
+
     return approval;
   }
 
@@ -114,7 +153,27 @@ export class ApprovalFlow {
        RETURNING *`,
       [approver, JSON.stringify({ reason }), id]
     );
-    return row ? this.parseRow(row) : null;
+    const approval = row ? this.parseRow(row) : null;
+
+    // 推送 WebSocket 通知
+    await this.notifyWebSocket(id, 'rejected');
+
+    // 发送外部通知
+    if (approval) {
+      await this.notifyExternal({
+        approvalId: approval.id,
+        agentId: approval.agent_id,
+        requester: approval.requester,
+        actionType: approval.action_type,
+        targetResource: approval.target_resource,
+        description: approval.description ?? undefined,
+        status: 'rejected',
+        approver,
+        reason,
+      });
+    }
+
+    return approval;
   }
 
   /**
@@ -159,13 +218,54 @@ export class ApprovalFlow {
     }
   }
 
+  /**
+   * 推送审批状态变化到 WebSocket
+   */
+  private async notifyWebSocket(
+    approvalId: string,
+    action: 'approved' | 'rejected' | 'expired',
+    detail?: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const { pushWsApproval } = await import('../ws-push.js');
+      // 查询 pending_conversations 获取 session 信息
+      const rows = await query<{ agent_id: string; session_key: string }>(
+        'SELECT agent_id, session_key FROM pending_conversations WHERE approval_id = $1',
+        [approvalId]
+      );
+      if (rows.length === 0) {
+        // 审批时没有保存 pending_conversations（如一次性审批场景）
+        return;
+      }
+      const { agent_id, session_key } = rows[0];
+      pushWsApproval(agent_id, session_key, action, approvalId, detail);
+    } catch (err) {
+      console.error('[Approval] WebSocket notification error:', err);
+    }
+  }
+
   async expireOld(): Promise<number> {
-    const result = await query(
+    const result = await query<ApprovalRequest>(
       `UPDATE approval_requests
        SET status = 'expired'
-       WHERE status = 'pending' AND expires_at < NOW()`
+       WHERE status = 'pending' AND expires_at < NOW()
+       RETURNING *`
     );
-    return (result as unknown as { rowCount: number }).rowCount;
+    const rows = (result as unknown as { rows: ApprovalRequest[] }).rows;
+    for (const row of rows) {
+      const approval = this.parseRow(row);
+      await this.notifyWebSocket(approval.id, 'expired');
+      await this.notifyExternal({
+        approvalId: approval.id,
+        agentId: approval.agent_id,
+        requester: approval.requester,
+        actionType: approval.action_type,
+        targetResource: approval.target_resource,
+        description: approval.description ?? undefined,
+        status: 'expired',
+      });
+    }
+    return rows.length;
   }
 
   static needsApproval(actionType: ApprovalActionType): boolean {
