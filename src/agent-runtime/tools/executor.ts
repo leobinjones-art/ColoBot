@@ -15,13 +15,45 @@ export interface ToolResult {
   success: boolean;
   result: unknown;
   error?: string;
+  blocked?: boolean;  // policy 拒绝
+  reason?: string;
+}
+
+export interface ToolContext {
+  agentId: string;
+  sessionKey: string;
+  userRole?: string;
+  ipAddress?: string;
+}
+
+export interface ToolPolicy {
+  /** 权限检查函数，返回 'allowed' 或 'denied' */
+  check_fn?: (args: Record<string, unknown>, ctx: ToolContext) => Promise<'allowed' | 'denied'>;
+  /** 要求的最小角色 */
+  required_role?: 'admin' | 'developer' | 'readonly';
+  /** 是否需要审批（不直接拒绝，而是触发审批流程） */
+  require_approval?: boolean;
 }
 
 // 工具注册表
 const toolRegistry = new Map<string, (args: Record<string, unknown>) => Promise<unknown>>();
+const toolPolicyRegistry = new Map<string, ToolPolicy>();
 
 export function registerTool(name: string, fn: (args: Record<string, unknown>) => Promise<unknown>): void {
   toolRegistry.set(name, fn);
+}
+
+export function registerToolWithPolicy(
+  name: string,
+  fn: (args: Record<string, unknown>) => Promise<unknown>,
+  policy: ToolPolicy
+): void {
+  toolRegistry.set(name, fn);
+  toolPolicyRegistry.set(name, policy);
+}
+
+export function getToolPolicy(name: string): ToolPolicy | undefined {
+  return toolPolicyRegistry.get(name);
 }
 
 // ─── 解析 / 格式化 ───────────────────────────────────────────
@@ -83,11 +115,38 @@ export function buildToolCall(name: string, args: Record<string, unknown>): stri
 
 // ─── 执行 ───────────────────────────────────────────────────
 
-export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
+export async function executeToolCall(call: ToolCall, ctx?: ToolContext): Promise<ToolResult> {
   const fn = toolRegistry.get(call.name);
   if (!fn) {
     return { name: call.name, success: false, result: null, error: `Tool not found: ${call.name}` };
   }
+
+  // Policy 检查
+  const policy = toolPolicyRegistry.get(call.name);
+  if (policy) {
+    // RBAC 角色检查
+    if (policy.required_role && ctx?.userRole) {
+      const roleOrder = ['readonly', 'developer', 'admin'];
+      const userLevel = roleOrder.indexOf(ctx.userRole);
+      const requiredLevel = roleOrder.indexOf(policy.required_role);
+      if (userLevel > requiredLevel) {
+        return { name: call.name, success: false, result: null, error: `Insufficient role: need ${policy.required_role}`, blocked: true };
+      }
+    }
+
+    // check_fn 检查
+    if (policy.check_fn) {
+      try {
+        const decision = await policy.check_fn(call.args, ctx ?? { agentId: '', sessionKey: '' });
+        if (decision === 'denied') {
+          return { name: call.name, success: false, result: null, error: 'Denied by policy check', blocked: true };
+        }
+      } catch (e) {
+        return { name: call.name, success: false, result: null, error: `Policy check error: ${e}`, blocked: true };
+      }
+    }
+  }
+
   try {
     const result = await fn(call.args);
     return { name: call.name, success: true, result };
@@ -96,8 +155,14 @@ export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
   }
 }
 
-export async function executeToolCalls(calls: ToolCall[]): Promise<ToolResult[]> {
-  return Promise.all(calls.map(executeToolCall));
+export async function executeToolCalls(calls: ToolCall[], ctx?: ToolContext): Promise<ToolResult[]> {
+  return Promise.all(calls.map(c => executeToolCall(c, ctx)));
+}
+
+/** 检查工具是否需要审批（require_approval: true） */
+export function needsApproval(call: ToolCall): boolean {
+  const policy = toolPolicyRegistry.get(call.name);
+  return policy?.require_approval ?? false;
 }
 
 export function listTools(): string[] {

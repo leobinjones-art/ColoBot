@@ -239,7 +239,6 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 | 优先级 | 方向 | 说明 |
 |--------|------|------|
 | P1 | **钉钉接入** | 对称飞书方案 B，实现钉钉 Bot 交互式卡片 + 审批回调 |
-| P2 | **ToolRegistry check_fn** | 工具权限细粒度控制，支持规则自动审批 + RBAC |
 | P3 | **用户角色体系** | admin / developer / readonly 等角色绑定 |
 | P3 | **飞书命令式 Dashboard** | `/pending` `/approve` 等快捷命令在飞书内完成管理 |
 

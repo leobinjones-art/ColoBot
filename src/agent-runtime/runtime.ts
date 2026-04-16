@@ -6,7 +6,7 @@ import { agentRegistry, type Agent } from '../agents/registry.js';
 import { sessionManager } from '../agents/session.js';
 import { agentChat, agentChatStream, type LLMMessage, type ContentBlock, type LLMStreamChunk } from '../llm/index.js';
 import { compressMessages, estimateMessagesTokens } from './compression.js';
-import { parseToolCalls, executeToolCalls, formatToolResults, isToolAllowed, type ToolCall } from './tools/executor.js';
+import { parseToolCalls, executeToolCalls, formatToolResults, isToolAllowed, type ToolCall, type ToolContext } from './tools/executor.js';
 import { hybridSearch } from '../memory/vector.js';
 import { writeAudit } from '../services/audit.js';
 import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approval.js';
@@ -161,6 +161,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   }
 
   const toolCallNames: string[] = [];
+  const toolCtx: ToolContext = { agentId, sessionKey, ipAddress };
   let finalContent: string | ContentBlock[] = '';
 
   for (let round = 0; round < maxRounds; round++) {
@@ -236,7 +237,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
 
     // 执行自动批准的工具
     if (autoApprovedCalls.length > 0) {
-      const executed = await executeToolCalls(autoApprovedCalls);
+      const executed = await executeToolCalls(autoApprovedCalls, toolCtx);
       const toolResultText = formatToolResults(executed);
       messages.push({ role: 'user', content: toolResultText });
     }
@@ -289,7 +290,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     }
 
     // 执行非危险工具
-    const executed = await executeToolCalls(allowedCalls);
+    const executed = await executeToolCalls(allowedCalls, toolCtx);
     const toolResultText = formatToolResults(executed);
 
     // 审计：工具执行
@@ -403,6 +404,7 @@ export async function runAgentStream(
   }
 
   const toolCallNames: string[] = [];
+  const toolCtx: ToolContext = { agentId, sessionKey, ipAddress };
   let finalContent = '';
 
   for (let round = 0; round < maxRounds; round++) {
@@ -464,7 +466,7 @@ export async function runAgentStream(
     }
 
     if (autoApprovedCalls.length > 0) {
-      const executed = await executeToolCalls(autoApprovedCalls);
+      const executed = await executeToolCalls(autoApprovedCalls, toolCtx);
       const toolResultText = formatToolResults(executed);
       messages.push({ role: 'user', content: toolResultText });
     }
@@ -500,7 +502,7 @@ export async function runAgentStream(
       }
     }
 
-    const executed = await executeToolCalls(allowedCalls);
+    const executed = await executeToolCalls(allowedCalls, toolCtx);
     const toolResultText = formatToolResults(executed);
 
     for (const call of allowedCalls) {
@@ -602,8 +604,10 @@ export async function continueRun(
   }
   const soul = agentRegistry.parseSoul(agent.soul_content);
 
+  const toolCtx: ToolContext = { agentId, sessionKey, ipAddress };
+
   // 执行危险工具
-  const executed = await executeToolCalls(dangerousCalls);
+  const executed = await executeToolCalls(dangerousCalls, toolCtx);
   const toolResultText = formatToolResults(executed);
 
   // 审计危险工具执行
@@ -694,7 +698,7 @@ export async function continueRun(
     const stillAllowed = toolCalls.filter(c => isToolAllowed('__parent__', c.name));
     const stillBlocked = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
 
-    const execRound = await executeToolCalls(stillAllowed);
+    const execRound = await executeToolCalls(stillAllowed, toolCtx);
     const resultText = formatToolResults(execRound);
 
     for (const call of stillAllowed) {
