@@ -12,6 +12,7 @@ export interface SubAgentConfig {
   ttlMs?: number;
   allowedTools?: string[];
   fallbackModelId?: string;
+  workspacePath?: string;
 }
 
 export interface SubAgent {
@@ -20,6 +21,7 @@ export interface SubAgent {
   soul_content: string;
   parentId: string;
   allowedTools: string[];
+  workspacePath: string;
   createdAt: number;
   expiresAt: number;
   status: 'idle' | 'busy' | 'done';
@@ -49,12 +51,15 @@ export function spawnSubAgent(config: SubAgentConfig): SubAgent {
   const ttlMs = config.ttlMs ?? 5 * 60 * 1000;
   const now = Date.now();
 
+const workspacePath = config.workspacePath ?? `/workspace/${config.name}`;
+
   const agent: SubAgent = {
     id,
     name: config.name,
     soul_content: config.soul_content,
     parentId: config.parentId,
-    allowedTools: config.allowedTools ?? ['search_memory', 'add_memory', 'delegate_task'],
+    allowedTools: config.allowedTools ?? ['search_memory', 'add_memory', 'delegate_task', 'read_file', 'write_file', 'list_dir'],
+    workspacePath,
     createdAt: now,
     expiresAt: now + ttlMs,
     status: 'idle',
@@ -62,7 +67,7 @@ export function spawnSubAgent(config: SubAgentConfig): SubAgent {
   };
 
   subAgents.set(id, agent);
-  console.log(`[SubAgent] Spawned: ${agent.name} (${id}) parent=${config.parentId} ttl=${ttlMs}ms`);
+  console.log(`[SubAgent] Spawned: ${agent.name} (${id}) parent=${config.parentId} workspace=${workspacePath} ttl=${ttlMs}ms`);
   return agent;
 }
 
@@ -102,6 +107,11 @@ export function isToolAllowed(subAgentId: string, toolName: string): boolean {
   const agent = subAgents.get(subAgentId);
   if (!agent) return false;
   return agent.allowedTools.includes(toolName);
+}
+
+export function getSubAgentWorkspacePath(subAgentId: string): string | null {
+  const agent = subAgents.get(subAgentId);
+  return agent?.workspacePath ?? null;
 }
 
 export async function runSubAgentTask(
@@ -164,6 +174,11 @@ export async function runSubAgentTask(
 
       const allowedCalls = toolCalls.filter(call => isToolAllowed(subAgent.id, call.name));
       const blockedCalls = toolCalls.filter(call => !isToolAllowed(subAgent.id, call.name));
+
+      // 注入 sub_agent_id 到工具参数（供工作区沙箱使用）
+      for (const call of allowedCalls) {
+        call.args.sub_agent_id = subAgent.id;
+      }
 
       const executed = await executeToolCalls(allowedCalls);
       const toolResultText = formatToolResults(executed);

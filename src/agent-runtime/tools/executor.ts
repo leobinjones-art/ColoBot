@@ -121,6 +121,7 @@ import { registerTools as registerMinimaxMusicTools } from './minimax-music.js';
 import { registerTools as registerMinimaxVideoTools } from './minimax-video.js';
 import { registerTools as registerMinimaxFileTools } from './minimax-file.js';
 import { registerTools as registerMinimaxVoiceTools } from './minimax-voice.js';
+import { registerTools as registerWorkspaceTools } from './workspace.js';
 
 registerMemoryTools();
 registerSubagentTools();
@@ -132,3 +133,4 @@ registerMinimaxMusicTools();
 registerMinimaxVideoTools();
 registerMinimaxFileTools();
 registerMinimaxVoiceTools();
+registerWorkspaceTools();

@@ -64,6 +64,8 @@ const ALL_TOOLS = [
   'search_memory', 'add_memory', 'list_memory',
   // 搜索
   'web_search', 'image_search', 'video_search', 'minimax_search',
+  // 工作区文件
+  'read_file', 'write_file', 'list_dir', 'delete_file',
   // MiniMax 文本/图片
   'generate_image', 'vision',
   // MiniMax TTS
