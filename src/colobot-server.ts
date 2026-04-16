@@ -14,6 +14,7 @@ import { initTriggerEngine, fireWebhook } from './agent-runtime/trigger-runtime.
 import { agentRegistry } from './agents/registry.js';
 import { query } from './memory/db.js';
 import { writeAudit } from './services/audit.js';
+import type { KnowledgeCategory } from './services/knowledge.js';
 import { requireAuth, initAuth } from './middleware/auth.js';
 
 const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
@@ -215,6 +216,75 @@ const server = http.createServer(async (req, res) => {
       );
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ id, name, ok: true }));
+      return;
+    }
+
+    // ── Knowledge ──
+    if (path === '/api/knowledge' && method === 'GET') {
+      const category = url.searchParams.get('category') || undefined;
+      const { listKnowledge } = await import('./services/knowledge.js');
+      const entries = await listKnowledge(category as KnowledgeCategory | undefined);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(entries));
+      return;
+    }
+    if (path === '/api/knowledge' && method === 'POST') {
+      const body = await parseBody(req);
+      const { addKnowledge } = await import('./services/knowledge.js');
+      const entry = await addKnowledge({
+        category: body.category as KnowledgeCategory,
+        name: String(body.name || ''),
+        content: String(body.content || ''),
+        variables: (body.variables as string[]) || [],
+        related: (body.related as string[]) || [],
+      });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, id: entry.id }));
+      return;
+    }
+    if (path === '/api/knowledge/search' && method === 'POST') {
+      const body = await parseBody(req);
+      const { searchKnowledge } = await import('./services/knowledge.js');
+      const q = String(body.query || '');
+      const category = body.category || undefined;
+      const results = await searchKnowledge(q, category as any);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(results));
+      return;
+    }
+    if (path.match(/^\/api\/knowledge\/([^/]+)\/([^/]+)$/)) {
+      const match = path.match(/^\/api\/knowledge\/([^/]+)\/([^/]+)$/)!;
+      const category = match[1];
+      const name = decodeURIComponent(match[2]);
+      if (method === 'GET') {
+        const { getKnowledge } = await import('./services/knowledge.js');
+        const entry = await getKnowledge(category as any, name);
+        if (!entry) { res.writeHead(404); res.end('Not found'); return; }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(entry));
+        return;
+      }
+      if (method === 'DELETE') {
+        const { deleteKnowledge } = await import('./services/knowledge.js');
+        await deleteKnowledge(category as any, name);
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+    }
+
+    // 知识库文件导入
+    if (path === '/api/knowledge/import' && method === 'POST') {
+      const body = await parseBody(req);
+      const { addKnowledge } = await import('./services/knowledge.js');
+      const rawEntries = (body.entries as Array<{ category: string; name: string; content: string; variables?: string[]; related?: string[] }>) || [];
+      const results = [];
+      for (const e of rawEntries) {
+        const entry = await addKnowledge({ ...e, category: e.category as KnowledgeCategory });
+        results.push({ ok: true, id: entry.id, name: entry.name });
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ imported: results.length, results }));
       return;
     }
 
