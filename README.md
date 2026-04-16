@@ -239,7 +239,6 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 | 优先级 | 方向 | 说明 |
 |--------|------|------|
 | P1 | **钉钉接入** | 对称飞书方案 B，实现钉钉 Bot 交互式卡片 + 审批回调 |
-| P2 | **多层审批流** | 参考 hermes-agent 的 Tirith 规则 → Pattern → Smart LLM 三层漏斗，减少误拦 |
 | P2 | **ToolRegistry check_fn** | 工具权限细粒度控制，支持规则自动审批 + RBAC |
 | P3 | **用户角色体系** | admin / developer / readonly 等角色绑定 |
 | P3 | **飞书命令式 Dashboard** | `/pending` `/approve` 等快捷命令在飞书内完成管理 |
@@ -254,6 +253,7 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 |------|------|
 | **父子 Agent 协作** | 父Agent 创建子Agent 处理子任务，TTL 自动过期，工具白名单/黑名单隔离 |
 | **Trigger next_fire_at 持久化** | 每次触发后计算并持久化下次触发时间，重启后自动补偿漏触 |
+| **多层审批漏斗** | Tirith规则(精确) → Pattern历史(7天频率) → Smart LLM裁决，三层漏斗减少误拦 |
 | **审批流双向推送** | 飞书卡片（交互式按钮）+ WebSocket（实时刷新）同时推送 |
 | **跨 Provider Fallback 链** | `provider:modelId` 格式，支持 OpenAI ↔ Anthropic ↔ MiniMax 任意切换 |
 | **DB 驱动热配置** | 飞书/SubAgent 等配置写入 `app_settings` 表，无需重启即可保存 |

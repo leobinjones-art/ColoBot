@@ -156,6 +156,33 @@ CREATE TABLE IF NOT EXISTS approval_requests (
 
 CREATE INDEX IF NOT EXISTS idx_approval_requests_status ON approval_requests(status);
 
+-- 审批规则（Tirith 规则引擎）
+CREATE TABLE IF NOT EXISTS approval_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT '',
+  pattern TEXT NOT NULL,
+  pattern_type VARCHAR(20) NOT NULL DEFAULT 'keyword',
+  action VARCHAR(20) NOT NULL DEFAULT 'require_approval',
+  risk_level VARCHAR(20) NOT NULL DEFAULT 'medium',
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_rules_enabled ON approval_rules(enabled);
+
+-- 审批规则命中历史（用于 Pattern 匹配）
+CREATE TABLE IF NOT EXISTS approval_rule_hits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rule_id UUID REFERENCES approval_rules(id) ON DELETE SET NULL,
+  tool_name VARCHAR(100) NOT NULL,
+  args_text TEXT NOT NULL,
+  hit_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_rule_hits_tool ON approval_rule_hits(tool_name);
+CREATE INDEX IF NOT EXISTS idx_approval_rule_hits_recent ON approval_rule_hits(hit_at DESC);
+
 -- 审计日志
 CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

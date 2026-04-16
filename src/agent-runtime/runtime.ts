@@ -10,6 +10,7 @@ import { parseToolCalls, executeToolCalls, formatToolResults, isToolAllowed, typ
 import { hybridSearch } from '../memory/vector.js';
 import { writeAudit } from '../services/audit.js';
 import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approval.js';
+import { checkDangerousLevel, recordToolHit } from './approval-rules.js';
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
 
@@ -187,14 +188,62 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
 
     toolCallNames.push(...toolCalls.map(c => c.name));
 
-    // 分类：需要审批的危险工具 vs 普通工具
-    const dangerousCalls = toolCalls.filter(c => DANGEROUS_TOOLS[c.name]);
+    // 分类：普通工具 vs 已知危险工具
+    const dangerousCandidates = toolCalls.filter(c => DANGEROUS_TOOLS[c.name]);
     const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
     const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
 
-    // 危险工具：创建审批请求 + 保存状态，不继续执行
-    if (dangerousCalls.length > 0) {
-      for (const call of dangerousCalls) {
+    // 三层漏斗检查（危险工具）
+    const pendingCalls: ToolCall[] = [];
+    const autoApprovedCalls: ToolCall[] = [];
+
+    for (const call of dangerousCandidates) {
+      const decision = await checkDangerousLevel(call);
+
+      if (decision === 'auto_reject') {
+        await writeAudit({
+          actorType: 'agent',
+          actorId: agentId,
+          actorName: agent.name,
+          action: 'tool.auto_rejected',
+          targetType: 'tool',
+          targetId: call.name,
+          detail: { args: call.args, decision: 'auto_reject' },
+          ipAddress,
+          result: 'failure',
+          errorMessage: 'Tirith/Pattern/Smart LLM auto-rejected',
+        });
+        blockedCalls.push(call);
+      } else if (decision === 'auto_approve') {
+        await recordToolHit(call.name, JSON.stringify(call.args));
+        autoApprovedCalls.push(call);
+        allowedCalls.push(call);
+        await writeAudit({
+          actorType: 'agent',
+          actorId: agentId,
+          actorName: agent.name,
+          action: 'tool.auto_approved',
+          targetType: 'tool',
+          targetId: call.name,
+          detail: { args: call.args, decision: 'auto_approve' },
+          ipAddress,
+          result: 'success',
+        });
+      } else {
+        pendingCalls.push(call);
+      }
+    }
+
+    // 执行自动批准的工具
+    if (autoApprovedCalls.length > 0) {
+      const executed = await executeToolCalls(autoApprovedCalls);
+      const toolResultText = formatToolResults(executed);
+      messages.push({ role: 'user', content: toolResultText });
+    }
+
+    // 需要审批的工具：创建审批请求 + 保存状态，不继续执行
+    if (pendingCalls.length > 0) {
+      for (const call of pendingCalls) {
         const actionType = DANGEROUS_TOOLS[call.name];
         const approval = await approvalFlow.create({
           agentId,
@@ -224,7 +273,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
           agentId,
           sessionKey,
           messages,
-          dangerousCalls,
+          pendingCalls,
           round,
           allowedCalls,
           blockedCalls,
@@ -391,10 +440,37 @@ export async function runAgentStream(
 
     toolCallNames.push(...toolCalls.map(c => c.name));
 
-    // 审批流程（不支持流式，等待完成）
-    const dangerousCalls = toolCalls.filter(c => DANGEROUS_TOOLS[c.name]);
-    if (dangerousCalls.length > 0) {
-      for (const call of dangerousCalls) {
+    // 审批流程（不支持流式，等待完成）— 三层漏斗检查
+    const dangerousCandidates = toolCalls.filter(c => DANGEROUS_TOOLS[c.name]);
+    const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
+    const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
+
+    const pendingCalls: ToolCall[] = [];
+    const autoApprovedCalls: ToolCall[] = [];
+
+    for (const call of dangerousCandidates) {
+      const decision = await checkDangerousLevel(call);
+      if (decision === 'auto_reject') {
+        await writeAudit({ actorType: 'agent', actorId: agentId, actorName: agent.name, action: 'tool.auto_rejected', targetType: 'tool', targetId: call.name, detail: { args: call.args, decision: 'auto_reject' }, ipAddress, result: 'failure', errorMessage: 'auto-rejected' });
+        blockedCalls.push(call);
+      } else if (decision === 'auto_approve') {
+        await recordToolHit(call.name, JSON.stringify(call.args));
+        autoApprovedCalls.push(call);
+        allowedCalls.push(call);
+        await writeAudit({ actorType: 'agent', actorId: agentId, actorName: agent.name, action: 'tool.auto_approved', targetType: 'tool', targetId: call.name, detail: { args: call.args, decision: 'auto_approve' }, ipAddress, result: 'success' });
+      } else {
+        pendingCalls.push(call);
+      }
+    }
+
+    if (autoApprovedCalls.length > 0) {
+      const executed = await executeToolCalls(autoApprovedCalls);
+      const toolResultText = formatToolResults(executed);
+      messages.push({ role: 'user', content: toolResultText });
+    }
+
+    if (pendingCalls.length > 0) {
+      for (const call of pendingCalls) {
         const actionType = DANGEROUS_TOOLS[call.name];
         const approval = await approvalFlow.create({
           agentId,
@@ -417,15 +493,12 @@ export async function runAgentStream(
           result: 'success',
         });
         await savePendingConversation(
-          approval.id, agentId, sessionKey, messages, dangerousCalls,
-          round, [], [], ipAddress
+          approval.id, agentId, sessionKey, messages, pendingCalls,
+          round, allowedCalls, blockedCalls, ipAddress
         );
         return; // 等待审批
       }
     }
-
-    const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
-    const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
 
     const executed = await executeToolCalls(allowedCalls);
     const toolResultText = formatToolResults(executed);
