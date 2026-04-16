@@ -188,6 +188,9 @@ import { registerTools as registerMinimaxFileTools } from './minimax-file.js';
 import { registerTools as registerMinimaxVoiceTools } from './minimax-voice.js';
 import { registerTools as registerWorkspaceTools } from './workspace.js';
 import { registerTools as registerKnowledgeTools } from './knowledge.js';
+import { registerTools as registerSendMessageTools } from './send-message.js';
+import { registerTools as registerExecCodeTools } from './exec-code.js';
+import { registerTools as registerAgentTools } from './agent-tools.js';
 
 registerMemoryTools();
 registerSubagentTools();
@@ -201,3 +204,6 @@ registerMinimaxFileTools();
 registerMinimaxVoiceTools();
 registerWorkspaceTools();
 registerKnowledgeTools();
+registerSendMessageTools();
+registerExecCodeTools();
+registerAgentTools();

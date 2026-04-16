@@ -35,6 +35,7 @@ const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
   send_message: 'send',
   exec_code: 'exec',
   delete_agent: 'delete',
+  delete_file: 'delete',
   update_agent: 'update',
   spawn_subagent: 'update',
 };
