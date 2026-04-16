@@ -108,6 +108,11 @@ colobot/
 | `/api/memory/search` | POST | 记忆语义搜索 |
 | `/api/search` | POST | SearXNG 搜索 |
 | `/api/skills` | GET/POST | 列出/创建 Skill |
+| `/api/knowledge` | GET | 获取知识库（?category=concept/template/rule） |
+| `/api/knowledge` | POST | 添加知识条目 |
+| `/api/knowledge/search` | POST | 搜索知识 |
+| `/api/knowledge/:category/:name` | GET/DELETE | 获取/删除单条 |
+| `/api/knowledge/import` | POST | 批量导入 JSON |
 | `/api/triggers/fire` | POST | 触发 Webhook Trigger |
 | `/api/approvals` | GET | 获取审批请求 |
 | `/api/approvals/:id/approve` | POST | 审批通过 |
@@ -119,6 +124,78 @@ colobot/
 | `/api/webhooks/feishu` | GET/POST | 飞书事件回调 |
 | `/api/webhooks/feishu/approve` | GET | 飞书按钮审批回调 |
 | `/health` | GET | 健康检查 |
+
+---
+
+## 知识库调用示例
+
+### 添加知识条目
+
+```bash
+curl -X POST http://localhost:18792/api/knowledge \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "concept",
+    "name": "K8s Deployment",
+    "content": "Kubernetes 部署配置模板，用于快速创建 Deployment。",
+    "variables": ["image", "replicas", "port"],
+    "related": ["docker-build", "helm-template"]
+  }'
+```
+
+### 列出知识库
+
+```bash
+# 全部
+curl http://localhost:18792/api/knowledge -H "Authorization: Bearer $API_KEY"
+
+# 只看 rule
+curl "http://localhost:18792/api/knowledge?category=rule" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+### 搜索
+
+```bash
+curl -X POST http://localhost:18792/api/knowledge/search \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "K8s", "category": "concept"}'
+```
+
+### 批量导入
+
+```bash
+curl -X POST http://localhost:18792/api/knowledge/import \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entries": [
+      {"category": "concept", "name": "弹性伸缩", "content": "HPA 配置规则..."},
+      {"category": "rule", "name": "安全审计", "content": "所有操作必须记录审计日志"},
+      {"category": "template", "name": "服务部署", "content": "标准部署流程模板", "variables": ["env", "image"]}
+    ]
+  }'
+```
+
+### Agent 工具调用
+
+Agent 可直接调用以下工具，无需手动操作：
+
+```xml
+<tool_call>
+add_knowledge(category: 'concept', name: 'XXX', content: '...', variables: ['x'], related: [])
+</tool_call>
+
+<tool_call>
+search_knowledge(query: '部署', category: 'concept')
+</tool_call>
+
+<tool_call>
+list_knowledge(category: 'rule')
+</tool_call>
+```
 
 ---
 
