@@ -240,7 +240,6 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 |--------|------|------|
 | P1 | **钉钉接入** | 对称飞书方案 B，实现钉钉 Bot 交互式卡片 + 审批回调 |
 | P2 | **多层审批流** | 参考 hermes-agent 的 Tirith 规则 → Pattern → Smart LLM 三层漏斗，减少误拦 |
-| P2 | **Context Compression** | 支持超长会话，token 成本可控 |
 | P2 | **ToolRegistry check_fn** | 工具权限细粒度控制，支持规则自动审批 + RBAC |
 | P3 | **用户角色体系** | admin / developer / readonly 等角色绑定 |
 | P3 | **飞书命令式 Dashboard** | `/pending` `/approve` 等快捷命令在飞书内完成管理 |
@@ -261,8 +260,8 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 | **LLM 驱动的子Agent 配置** | 父Agent 自行判断任务难度，生成子Agent 的 soul/工具/TTL，无硬编码策略 |
 | **审批状态卡片更新** | 审批通过/拒绝后，用 `message_id` 更新原飞书卡片颜色，无需重新发消息 |
 | **流式 LLM 继续审批** | `continueRun()` 使用流式 `agentChatStream()` 继续被阻塞的 LLM 对话 |
-| **工作区沙箱隔离** | 父 Agent 全访问，子 Agent 只能读写自身 `/workspace/:name` 目录，工具内部做路径校验 |
 | **知识库** | concept/template/rule 三类知识，Agent 可直接 add/search/list，跨 Agent 共享 |
+| **Context Compression** | 历史超过 context_window * 0.8 时触发，LLM 总结旧消息保留关键信息，保留最近 6 条 |
 
 ---
 

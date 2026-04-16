@@ -5,6 +5,7 @@
 import { agentRegistry, type Agent } from '../agents/registry.js';
 import { sessionManager } from '../agents/session.js';
 import { agentChat, agentChatStream, type LLMMessage, type ContentBlock, type LLMStreamChunk } from '../llm/index.js';
+import { compressMessages, estimateMessagesTokens } from './compression.js';
 import { parseToolCalls, executeToolCalls, formatToolResults, isToolAllowed, type ToolCall } from './tools/executor.js';
 import { hybridSearch } from '../memory/vector.js';
 import { writeAudit } from '../services/audit.js';
@@ -142,13 +143,21 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   // 获取历史消息
   const history = await sessionManager.getHistory(agentId, sessionKey);
 
-  const messages: LLMMessage[] = [
+  let messages: LLMMessage[] = [
     ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
     { role: 'user', content: userMessage },
   ];
 
   // 追加用户消息
   await sessionManager.appendMessage(agentId, sessionKey, 'user', userMessage);
+
+  // Context Compression：超过 80% context window 时压缩
+  const contextTokens = agent.context_window_size || 128_000;
+  const effectiveWindow = Math.max(contextTokens, 32_000);
+  const totalTokens = estimateMessagesTokens(messages);
+  if (totalTokens > effectiveWindow * 0.8) {
+    messages = await compressMessages(messages, effectiveWindow, agent.system_prompt_override || undefined);
+  }
 
   const toolCallNames: string[] = [];
   let finalContent: string | ContentBlock[] = '';
@@ -330,11 +339,19 @@ export async function runAgentStream(
   });
 
   const history = await sessionManager.getHistory(agentId, sessionKey);
-  const messages: LLMMessage[] = [
+  let messages: LLMMessage[] = [
     ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
     { role: 'user', content: userMessage },
   ];
   await sessionManager.appendMessage(agentId, sessionKey, 'user', userMessage);
+
+  // Context Compression
+  const contextTokens = agent.context_window_size || 128_000;
+  const effectiveWindow = Math.max(contextTokens, 32_000);
+  const totalTokens = estimateMessagesTokens(messages);
+  if (totalTokens > effectiveWindow * 0.8) {
+    messages = await compressMessages(messages, effectiveWindow, agent.system_prompt_override || undefined);
+  }
 
   const toolCallNames: string[] = [];
   let finalContent = '';
