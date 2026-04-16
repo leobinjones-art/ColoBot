@@ -233,3 +233,19 @@ CREATE TABLE IF NOT EXISTS app_settings (
   description TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 知识库
+CREATE TABLE IF NOT EXISTS knowledge_base (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category VARCHAR(50) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  variables JSONB DEFAULT '[]',
+  related JSONB DEFAULT '[]',
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_base_category ON knowledge_base(category);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_base_unique ON knowledge_base(category, name);
