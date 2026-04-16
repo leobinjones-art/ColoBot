@@ -193,7 +193,7 @@ export function registerTools(): void {
    *
    * purpose: voice_clone / prompt_audio / t2a_async / t2a_async_input / video_generation
    */
-  registerTool('delete_file', async (args) => {
+  registerTool('minimax_delete_file', async (args) => {
     const apiKey = process.env.MINIMAX_API_KEY;
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
