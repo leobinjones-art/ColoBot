@@ -3,7 +3,7 @@
  */
 
 import { query, queryOne } from '../memory/db.js';
-import { parseToolCalls, executeToolCalls, formatToolResults } from './tools/executor.js';
+import { parseToolCalls, executeToolCalls, formatToolResults, type ToolContext } from './tools/executor.js';
 import { agentChat, type LLMMessage } from '../llm/index.js';
 
 export interface Skill {
@@ -81,6 +81,8 @@ export async function executeSkill(
 
   let finalContent = '';
 
+  const toolCtx: ToolContext = { agentId, sessionKey: context.sessionKey };
+
   for (let round = 0; round < 5; round++) {
     const response = await agentChat({ personality: skill.markdown_content }, messages as any, {});
     const rawContent = response.content;
@@ -96,7 +98,7 @@ export async function executeSkill(
 
     messages.push({ role: 'assistant', content: rawContent });
 
-    const executed = await executeToolCalls(toolCalls);
+    const executed = await executeToolCalls(toolCalls, toolCtx);
     const toolResultText = formatToolResults(executed);
 
     messages.push({ role: 'user', content: toolResultText });

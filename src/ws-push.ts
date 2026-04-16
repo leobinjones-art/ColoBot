@@ -19,8 +19,12 @@ export function pushWsResult(
   if (!wsClients) return;
   const clientId = `${agentId}:${sessionKey}`;
   const ws = wsClients.get(clientId);
-  if (ws && ws.readyState === 1 /* OPEN */) {
-    ws.send(JSON.stringify({ type: 'response', payload: { response: result } }));
+  try {
+    if (ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: 'response', payload: { response: result } }));
+    }
+  } catch (e) {
+    console.warn(`[WS] Failed to send result to ${clientId}:`, e);
   }
 }
 
@@ -32,8 +36,12 @@ export function pushWsChunk(
   if (!wsClients) return;
   const clientId = `${agentId}:${sessionKey}`;
   const ws = wsClients.get(clientId);
-  if (ws && ws.readyState === 1 /* OPEN */) {
-    ws.send(JSON.stringify({ type: 'chunk', payload: { chunk } }));
+  try {
+    if (ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: 'chunk', payload: { chunk } }));
+    }
+  } catch (e) {
+    console.warn(`[WS] Failed to send chunk to ${clientId}:`, e);
   }
 }
 
@@ -44,8 +52,12 @@ export function pushWsDone(
   if (!wsClients) return;
   const clientId = `${agentId}:${sessionKey}`;
   const ws = wsClients.get(clientId);
-  if (ws && ws.readyState === 1 /* OPEN */) {
-    ws.send(JSON.stringify({ type: 'done', payload: {} }));
+  try {
+    if (ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: 'done', payload: {} }));
+    }
+  } catch (e) {
+    console.warn(`[WS] Failed to send done to ${clientId}:`, e);
   }
 }
 
@@ -59,10 +71,14 @@ export function pushWsApproval(
   if (!wsClients) return;
   const clientId = `${agentId}:${sessionKey}`;
   const ws = wsClients.get(clientId);
-  if (ws && ws.readyState === 1 /* OPEN */) {
-    ws.send(JSON.stringify({
-      type: 'approval',
-      payload: { action, approvalId, ...detail },
-    }));
+  try {
+    if (ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'approval',
+        payload: { action, approvalId, ...detail },
+      }));
+    }
+  } catch (e) {
+    console.warn(`[WS] Failed to send approval to ${clientId}:`, e);
   }
 }
