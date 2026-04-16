@@ -261,6 +261,8 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 | **流式 LLM 继续审批** | `continueRun()` 使用流式 `agentChatStream()` 继续被阻塞的 LLM 对话 |
 | **知识库** | concept/template/rule 三类知识，Agent 可直接 add/search/list，跨 Agent 共享 |
 | **Context Compression** | 历史超过 context_window * 0.8 时触发，LLM 总结旧消息保留关键信息，保留最近 6 条 |
+| **ToolRegistry check_fn** | 工具权限细粒度控制，支持 RBAC (admin/developer/readonly) + 自定义权限函数 + require_approval |
+| **危险工具实现** | send_message (多渠道通知) / exec_code (沙箱执行) / delete_agent / update_agent / delete_file |
 
 ---
 
