@@ -1,6 +1,13 @@
 /**
  * LLM 抽象层 - 支持 OpenAI / Anthropic / MiniMax / Mock
+ *
+ * Fallback 特性：
+ * - 链式 fallback：primary → fallback1 → fallback2 → ...
+ * - 跨 provider 切换：openai:gpt-4o → anthropic:claude-sonnet
+ * - 重试 + exponential backoff
  */
+
+import { query } from '../memory/db.js';
 
 // ─── Content Blocks (多模态) ──────────────────────────────────
 
@@ -21,6 +28,10 @@ export interface LLMOptions {
   systemPromptOverride?: string;
   fallbackModelId?: string;
   stream?: boolean;
+  /** 每个 model 的最大重试次数（默认1，不重试） */
+  retries?: number;
+  /** 重试间隔（默认1000ms） */
+  retryDelayMs?: number;
 }
 
 export interface LLMResponse {
@@ -45,48 +56,132 @@ export function getProviderName(): ProviderType {
   return currentProvider;
 }
 
+// ─── Fallback Chain 解析 ──────────────────────────────────────
+
+interface FallbackEntry {
+  provider: ProviderType;
+  modelId: string;
+}
+
+/**
+ * 解析 fallbackModelId 字符串为链式配置
+ * 支持格式：
+ *   "anthropic:claude-sonnet-4-20250514"
+ *   "anthropic:claude-sonnet-4-20250514,openai:gpt-4o-mini"
+ *   "claude-sonnet-4-20250514"  （保持当前 provider）
+ */
+function parseFallbackChain(fallbackModelId: string): FallbackEntry[] {
+  const entries: FallbackEntry[] = [];
+  const parts = fallbackModelId.split(',').map(s => s.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    if (part.includes(':')) {
+      const [provider, modelId] = part.split(':');
+      if (isProvider(provider as ProviderType)) {
+        entries.push({ provider: provider as ProviderType, modelId });
+      }
+    } else {
+      // 无 provider 前缀，保持当前 provider
+      entries.push({ provider: currentProvider, modelId: part });
+    }
+  }
+
+  return entries;
+}
+
+function isProvider(s: string): s is ProviderType {
+  return ['openai', 'anthropic', 'minimax'].includes(s);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function computeBackoff(attempt: number, baseDelayMs: number): number {
+  return Math.min(baseDelayMs * Math.pow(2, attempt - 1), 30_000);
+}
+
+// ─── 执行单个 provider 的 chat ────────────────────────────────
+
+async function executeChat(
+  provider: ProviderType,
+  modelId: string,
+  messages: LLMMessage[],
+  options: LLMOptions
+): Promise<LLMResponse> {
+  switch (provider) {
+    case 'openai':
+      return chatOpenAI(messages, { ...options, model: modelId });
+    case 'anthropic':
+      return chatAnthropic(messages, { ...options, model: modelId });
+    case 'minimax':
+      return chatMinimax(messages, { ...options, model: modelId });
+  }
+}
+
+async function* executeChatStream(
+  provider: ProviderType,
+  modelId: string,
+  messages: LLMMessage[],
+  options: LLMOptions
+): AsyncGenerator<LLMStreamChunk> {
+  switch (provider) {
+    case 'openai':
+      yield* chatStreamOpenAI(messages, { ...options, model: modelId });
+      break;
+    case 'anthropic':
+      yield* chatStreamAnthropic(messages, { ...options, model: modelId });
+      break;
+    case 'minimax':
+      yield* chatStreamMinimax(messages, { ...options, model: modelId });
+      break;
+  }
+}
+
+// ─── 主入口 ───────────────────────────────────────────────────
+
 export async function chat(
   messages: LLMMessage[],
   options: LLMOptions = {}
 ): Promise<LLMResponse> {
-  // Mock mode for local testing (no real API key needed)
   if (process.env.MOCK_LLM === 'true') {
     return mockChat(messages);
   }
 
-  try {
-    switch (currentProvider) {
-      case 'openai':
-        return await chatOpenAI(messages, options);
-      case 'anthropic':
-        return await chatAnthropic(messages, options);
-      case 'minimax':
-        return await chatMinimax(messages, options);
-    }
-  } catch (primaryError) {
-    // Fallback model retry
-    if (options.fallbackModelId) {
-      console.warn(`[LLM] Primary model failed (${currentProvider}), trying fallback: ${options.fallbackModelId}`);
-      const fallbackOptions = { ...options, model: options.fallbackModelId };
-      delete fallbackOptions.fallbackModelId; // prevent infinite loop
+  // 构建 chain：primary model 在前，fallback models 依次在后
+  const chain: FallbackEntry[] = [];
+  if (options.model) {
+    chain.push({ provider: currentProvider, modelId: options.model });
+  }
+  if (options.fallbackModelId) {
+    chain.push(...parseFallbackChain(options.fallbackModelId));
+  }
+
+  if (chain.length === 0) {
+    // 兜底：使用默认 model
+    chain.push({ provider: currentProvider, modelId: getDefaultModel(currentProvider) });
+  }
+
+  const retries = options.retries ?? 1;
+  const baseDelay = options.retryDelayMs ?? 1000;
+  let lastError: Error | null = null;
+
+  for (const { provider, modelId } of chain) {
+    for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      if (attempt > 1) {
+        await sleep(computeBackoff(attempt - 1, baseDelay));
+      }
       try {
-        switch (currentProvider) {
-          case 'openai':
-            return await chatOpenAI(messages, fallbackOptions);
-          case 'anthropic':
-            return await chatAnthropic(messages, fallbackOptions);
-          case 'minimax':
-            return await chatMinimax(messages, fallbackOptions);
-        }
-      } catch (fallbackError) {
-        console.error('[LLM] Fallback model also failed:', fallbackError);
-        throw primaryError; // throw original error
+        return await executeChat(provider, modelId, messages, options);
+      } catch (e) {
+        lastError = e as Error;
+        console.warn(`[LLM] ${provider}/${modelId} attempt ${attempt} failed: ${lastError.message}`);
       }
     }
-    throw primaryError;
+    console.warn(`[LLM] All attempts exhausted for ${provider}/${modelId}, trying next fallback`);
   }
-  // unreachable
-  throw new Error('No LLM provider configured');
+
+  throw lastError ?? new Error('All LLM models exhausted');
 }
 
 export async function agentChat(
@@ -103,37 +198,42 @@ export async function agentChat(
 }
 
 /**
- * 流式聊天 - async generator
+ * 流式聊天 - async generator，支持 fallback
  */
 export async function* chatStream(
   messages: LLMMessage[],
   options: LLMOptions = {}
 ): AsyncGenerator<LLMStreamChunk> {
   if (process.env.MOCK_LLM === 'true') {
-    // Mock 模式模拟流式输出：分批 yield
-    const result = mockChat(messages);
-    const text = typeof result.content === 'string' ? result.content : result.content.map(b => b.type === 'text' ? b.text : '').join('');
-    const chunkSize = Math.max(1, Math.ceil(text.length / 4));
-    for (let i = 0; i < text.length; i += chunkSize) {
-      yield { content: text.slice(i, i + chunkSize), done: false };
-    }
-    yield { content: '', done: true };
+    yield* mockChatStream(messages);
     return;
   }
 
-  switch (currentProvider) {
-    case 'openai':
-      yield* chatStreamOpenAI(messages, options);
-      break;
-    case 'anthropic':
-      yield* chatStreamAnthropic(messages, options);
-      break;
-    case 'minimax':
-      yield* chatStreamMinimax(messages, options);
-      break;
-    default:
-      throw new Error('No LLM provider configured');
+  // 构建 chain
+  const chain: FallbackEntry[] = [];
+  if (options.model) {
+    chain.push({ provider: currentProvider, modelId: options.model });
   }
+  if (options.fallbackModelId) {
+    chain.push(...parseFallbackChain(options.fallbackModelId));
+  }
+  if (chain.length === 0) {
+    chain.push({ provider: currentProvider, modelId: getDefaultModel(currentProvider) });
+  }
+
+  let firstError: Error | null = null;
+
+  for (const { provider, modelId } of chain) {
+    try {
+      yield* executeChatStream(provider, modelId, messages, options);
+      return; // 成功完成
+    } catch (e) {
+      if (!firstError) firstError = e as Error;
+      console.warn(`[LLM] Stream fallback to ${provider}/${modelId}: ${(e as Error).message}`);
+    }
+  }
+
+  throw firstError;
 }
 
 /**
@@ -163,6 +263,14 @@ function buildSystemPrompt(
   return parts.join('\n\n');
 }
 
+function getDefaultModel(provider: ProviderType): string {
+  switch (provider) {
+    case 'openai': return 'gpt-4o';
+    case 'anthropic': return 'claude-sonnet-4-20250514';
+    case 'minimax': return 'MiniMax-Text-01';
+  }
+}
+
 // ─── Mock ───────────────────────────────────────────────────
 
 function getTextContent(content: string | ContentBlock[]): string {
@@ -189,6 +297,18 @@ function mockChat(messages: LLMMessage[]): LLMResponse {
   return { content, raw: { mock: true } };
 }
 
+async function* mockChatStream(
+  messages: LLMMessage[]
+): AsyncGenerator<LLMStreamChunk> {
+  const result = mockChat(messages);
+  const text = typeof result.content === 'string' ? result.content : '';
+  const chunkSize = Math.max(1, Math.ceil(text.length / 4));
+  for (let i = 0; i < text.length; i += chunkSize) {
+    yield { content: text.slice(i, i + chunkSize), done: false };
+  }
+  yield { content: '', done: true };
+}
+
 // ─── OpenAI ────────────────────────────────────────────────
 
 async function chatOpenAI(
@@ -200,7 +320,6 @@ async function chatOpenAI(
 
   const model = options.model || 'gpt-4o';
 
-  // OpenAI 支持多模态 content 数组，原样传递
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -237,7 +356,6 @@ async function chatAnthropic(
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  // Anthropic 支持多模态 content 数组，原样传递
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -260,7 +378,6 @@ async function chatAnthropic(
   }
 
   const data = await res.json() as { content: Array<{ text: string } | { type: string; source: { media_type: string; data: string } }> };
-  // Anthropic 返回 content 数组，转换为统一格式
   const textBlocks = data.content.filter(b => 'text' in b) as Array<{ text: string }>;
   return { content: textBlocks[0]?.text ?? '', raw: data };
 }

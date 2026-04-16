@@ -1,65 +1,28 @@
 # ColoBot
 
-> 单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + SearXNG 搜索
+> 单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + 飞书审批通知
 
 ---
 
 ## 核心功能
 
-| 模块 | 功能 | 优先级 |
-|------|------|--------|
-| **智能体** | 父Agent（全模态：文本/图片/音频/视频） | P0 |
-| | 子智能体（临时任务分解，TTL自动过期） | P0 |
-| | 消息路由 / 会话管理 | P0 |
-| **Trigger + Skill** | Trigger 引擎（cron/interval/webhook等） | P0 |
-| | Skill 编排（Trigger → Skill 自动执行） | P0 |
-| | Markdown Skill 定义 + 触发词激活 | P0 |
-| | Skill 自进化（提案→审批→应用） | P0 |
-| **AI自进化** | Soul 自进化（对话中学习新能力） | P0 |
-| **搜索** | SearXNG 多模态搜索（文本/图片/视频/新闻） | P0 |
-| **记忆** | 向量语义检索 + 文本混合检索 | P0 |
-| **审批** | ApprovalFlow（L2/L3 分级 + 多渠道通知） | P0 |
-| **审计** | 操作审计日志 | P0 |
-| **渠道** | 飞书接入 | P1 |
-| | Telegram/Discord/Slack | P2 |
-| **认证** | API Key | P2 |
-
----
-
-## 核心架构
-
-```
-用户消息 → 父Agent
-              ↓
-    ┌─────────┼─────────┐
-    ↓         ↓         ↓
- 子Agent   Skill     SearXNG  ← 搜索工具
-    ↓         ↓
- Trigger   自进化
-    ↓         ↓
- 审批流   审计日志
-```
-
-### 智能体架构
-
-- **父Agent**：主智能体，处理用户消息，全模态支持
-- **子智能体**：临时创建，处理子任务，TTL 自动过期，工具白名单限制
-
-### Skill 系统
-
-- Markdown 格式定义
-- 触发词激活 / Trigger 触发
-- 自进化：从对话中学习，自动提案→审批→应用
-
-### Trigger 编排
-
-| 触发方式 | 说明 |
-|----------|------|
-| 触发词 | 消息内容匹配自动激活 |
-| 定时（cron） | 定时执行 Skill |
-| 间隔（interval） | 周期执行 Skill |
-| Webhook | HTTP 回调触发 Skill |
-| 条件 | 满足特定条件执行 |
+| 模块 | 功能 | 状态 |
+|------|------|------|
+| **智能体** | 父Agent（全模态：文本/图片/音频/视频） | ✅ |
+| | 子智能体（TTL 自动过期，工具白名单） | ✅ |
+| | 消息路由 / 会话管理 | ✅ |
+| **Trigger + Skill** | Trigger 引擎（cron/interval/webhook/condition） | ✅ |
+| | Markdown Skill 定义 + 触发词激活 | ✅ |
+| | Skill 自进化（提案→审批→应用） | ✅ |
+| **AI 自进化** | Soul 自进化（对话中学习新能力） | ✅ |
+| **搜索** | SearXNG 多模态搜索 | ✅ |
+| **记忆** | 向量语义检索 + 文本混合检索 | ✅ |
+| **审批** | ApprovalFlow（飞书卡片 + Dashboard） | ✅ |
+| **飞书接入** | 交互式卡片 + 快捷审批按钮 | ✅ |
+| **审计** | 操作审计日志 + API 查询 | ✅ |
+| **Dashboard** | 飞书配置 / 模型 / Skill / 审批 / 审计 | ✅ |
+| **Fallback** | 链式 fallback + 跨 provider + 重试 | ✅ |
+| **钉钉接入** | 规划中 | 📋 |
 
 ---
 
@@ -71,19 +34,9 @@
 | 数据库 | PostgreSQL + pgvector |
 | LLM | OpenAI / Anthropic / MiniMax |
 | 搜索 | SearXNG |
-| 前端 | React 19 + Vite + TailwindCSS |
-| 渠道 | 飞书 WebSocket / Telegram / Discord / Slack |
+| 前端 | 单文件 HTML（无框架，零依赖） |
+| 渠道 | 飞书 Bot（方案 B）|
 | 认证 | API Key |
-
----
-
-## 服务端口
-
-| 服务 | 地址 |
-|------|------|
-| ColoBot Runtime | `http://localhost:18792` |
-| Dashboard | `http://localhost:5173` |
-| PostgreSQL | `localhost:5432` |
 
 ---
 
@@ -110,7 +63,9 @@ npm run db:init
 npm run dev
 ```
 
-> **注意**：ColoBot 使用 `pgvector` 做向量存储，必须使用带 pgvector 扩展的 PostgreSQL 镜像（如 `pgvector/pgvector:pg18`）。官方 `postgres` 镜像不包含 pgvector，会导致 `agent_memory` 表创建失败。
+访问 `http://localhost:18792` 打开 Dashboard。
+
+> **注意**：需使用带 pgvector 扩展的 PostgreSQL 镜像（如 `pgvector/pgvector:pg18`）。
 
 ---
 
@@ -119,23 +74,26 @@ npm run dev
 ```
 colobot/
 ├── src/
-│   ├── colobot-server.ts     # HTTP + WebSocket 入口
-│   ├── agent-runtime/        # 智能体运行时
+│   ├── colobot-server.ts      # HTTP + WebSocket 入口 + 静态文件
+│   ├── agent-runtime/         # 智能体运行时
 │   │   ├── runtime.ts        # 消息路由 + LLM 循环
-│   │   ├── sub-agents.ts     # 子智能体管理
-│   │   ├── skill-evolution.ts # Skill 自进化
-│   │   ├── approval.ts        # 审批流
-│   │   └── tools/            # 工具注册
-│   ├── agents/               # Agent 管理
-│   ├── channels/             # 渠道适配器
-│   ├── llm/                  # LLM 抽象层
-│   ├── memory/               # 向量 + 文本检索
-│   ├── auth/                 # 认证
-│   ├── services/             # 审计/通知/心跳
-│   └── middleware/           # 中间件
-├── dashboard/                # React 前端
-└── sql/
-    └── schema.sql            # 数据库 schema
+│   │   ├── sub-agents.ts    # 子智能体管理
+│   │   ├── approval.ts      # 审批流
+│   │   ├── skill-runtime.ts  # Skill 执行
+│   │   ├── trigger-runtime.ts # Trigger 引擎
+│   │   └── tools/           # 工具注册（executor/memory/minimax-*/subagent）
+│   ├── agents/               # Agent 管理（registry）
+│   ├── llm/                 # LLM 抽象层（OpenAI/Anthropic/MiniMax + Fallback）
+│   ├── memory/              # 向量 + 文本检索
+│   ├── middleware/          # 认证中间件
+│   ├── routes/              # 飞书回调路由
+│   ├── services/           # 审计/通知/设置
+│   ├── channels/            # WebSocket 通道
+│   └── dashboard/           # 单文件 Dashboard（index.html）
+├── sql/
+│   └── schema.sql           # 数据库 schema
+└── docs/
+    └── approval-flow.md     # 审批流设计文档
 ```
 
 ---
@@ -146,68 +104,91 @@ colobot/
 |------|------|------|
 | `/api/agents` | GET/POST | 列出/创建 Agent |
 | `/api/agents/:id` | GET/DELETE | 获取/删除单个 Agent |
-| `/api/chat` | POST | 发送消息（自动路由到 Skill 或 Agent） |
+| `/api/chat` | POST | 发送消息 |
 | `/api/memory/search` | POST | 记忆语义搜索 |
 | `/api/search` | POST | SearXNG 搜索 |
 | `/api/skills` | GET/POST | 列出/创建 Skill |
 | `/api/triggers/fire` | POST | 触发 Webhook Trigger |
-| `/api/approvals` | GET | 获取待审批请求 |
+| `/api/approvals` | GET | 获取审批请求 |
 | `/api/approvals/:id/approve` | POST | 审批通过 |
 | `/api/approvals/:id/reject` | POST | 审批拒绝 |
+| `/api/audit` | GET | 审计日志查询 |
+| `/api/tools` | GET | 列出所有工具 |
+| `/api/settings/feishu` | GET/PUT | 飞书配置读写 |
+| `/api/settings/subagent` | GET/PUT | SubAgent 配置读写 |
+| `/api/webhooks/feishu` | GET/POST | 飞书事件回调 |
+| `/api/webhooks/feishu/approve` | GET | 飞书按钮审批回调 |
 | `/health` | GET | 健康检查 |
 
 ---
 
-## 项目状态
+## 核心设计
 
-### 模块完成度
+### Fallback 链
 
-| 模块 | 完成度 | 状态 |
-|------|--------|------|
-| 父Agent 运行时 | 90% | ✅ 审计 + 审批触发 |
-| 子Agent | 60% | 纯内存设计，多模态工具支持 |
-| Skill 系统 | 50% | 可用，缺 Schema 验证 |
-| Trigger 引擎 | 50% | interval/cron/webhook 可用，缺 condition |
-| 向量记忆 | 70% | ✅ embedding 存储 + 混合搜索 |
-| 审批流 | 50% | ✅ 触发已集成，执行待优化 |
-| Soul 自进化 | 70% | ✅ 表已创建，流程可用 |
-| 全模态支持 | ✅ | OpenAI/Anthropic/MiniMax 全模态 |
-| 审计日志 | ✅ | services/audit.ts 全链路写入 |
-| 渠道接入 | 10% | 仅 WebSocket，飞书/TG 等未接入 |
-| 前端 Dashboard | 0% | 待开发 |
-| 认证 | ✅ | API Key 中间件 |
+```
+primary model → fallback1 → fallback2 → ...
+anthropic:claude-xxx,openai:gpt-4o-mini
+支持跨 provider，自动重试 + exponential backoff
+```
 
-### 已完成 (P0)
+### 审批流
 
-| # | 功能 | 文件 |
-|---|------|------|
-| 1 | `soul_proposals` 表 | sql/schema.sql |
-| 2 | `addMemory()` embedding | src/memory/vector.ts |
-| 3 | 全模态支持 | src/llm/index.ts |
-| 4 | 审计日志写入 | src/services/audit.ts |
-| 5 | 审批流触发 | src/agent-runtime/runtime.ts |
-| 6 | API Key 认证 | src/middleware/auth.ts |
+```
+危险工具触发 → 创建审批 → 飞书卡片通知（含批准/拒绝按钮）
+                                    ↓
+用户点击按钮 → /api/webhooks/feishu/approve → approvalFlow.approve()
+                                    ↓
+                         危险工具执行 → LLM 继续对话
+```
 
-### 剩余问题
+### Trigger 持久化
 
-#### 待完成
+```
+每次触发后：计算 next_fire_at → 持久化到 DB
+重启时：检查 next_fire_at，如有错过立即补偿触发
+```
 
-| # | 模块 | 说明 | 优先级 |
-|---|------|------|--------|
-| 1 | 子Agent | 纯内存设计，重启丢失；多模态工具支持 | P0 |
-| 2 | Skill 系统 | 缺 Schema 验证 | P0 |
-| 3 | Trigger 引擎 | 缺 condition 条件触发 | P0 |
-| 4 | 审批流 | 执行流程待优化 | P1 |
-| 5 | 渠道接入 | 飞书/Telegram/Discord/Slack | P1 |
-| 6 | 前端 Dashboard | Web UI | 待定 |
+### Dashboard Tab
 
-#### Bug / 改进
+```
+飞书配置 | 模型设置 | Skill 仓库 | 审批管理 | 审计日志 | SubAgent
+```
 
-| # | 问题 | 位置 |
-|---|------|------|
-| 1 | `parseBody` JSON 失败返回 500 | `colobot-server.ts`（应返回 400）|
-| 2 | Trigger timers 内存中，重启丢失 | `trigger-runtime.ts` |
-| 3 | Cron 只支持分钟/小时 | `trigger-runtime.ts` |
+---
+
+## 原创设计
+
+以下是 ColoBot 独立设计/实现的核心特性：
+
+| 特性 | 说明 |
+|------|------|
+| **父子 Agent 协作** | 父Agent 创建子Agent 处理子任务，TTL 自动过期，工具白名单/黑名单隔离 |
+| **Trigger next_fire_at 持久化** | 每次触发后计算并持久化下次触发时间，重启后自动补偿漏触 |
+| **审批流双向推送** | 飞书卡片（交互式按钮）+ WebSocket（实时刷新）同时推送 |
+| **跨 Provider Fallback 链** | `provider:modelId` 格式，支持 OpenAI ↔ Anthropic ↔ MiniMax 任意切换 |
+| **DB 驱动热配置** | 飞书/SubAgent 等配置写入 `app_settings` 表，无需重启即可保存 |
+| **LLM 驱动的子Agent 配置** | 父Agent 自行判断任务难度，生成子Agent 的 soul/工具/TTL，无硬编码策略 |
+| **审批状态卡片更新** | 审批通过/拒绝后，用 `message_id` 更新原飞书卡片颜色，无需重新发消息 |
+| **流式 LLM 继续审批** | `continueRun()` 使用流式 `agentChatStream()` 继续被阻塞的 LLM 对话 |
+
+---
+
+## 致谢 / 灵感来源
+
+本项目设计参考了以下开源项目和文档：
+
+| 来源 | 参考内容 |
+|------|----------|
+| [hermes-agent](https://github.com/org/hermes-agent) | Skill 自进化（提案→审批→上线）、多层审批流设计（规划中） |
+| [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook) | LLM 调用模式、流式处理、多模态 Content Block |
+| [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) | Tool/Skill 抽象、工具注册机制 |
+| [CrewAI](https://github.com/mistralai/crewai) | 多智能体协作、子 Agent 任务分解 |
+| [AutoGen](https://microsoft.github.io/autogen/) | Agent 对话协作模式 |
+| [Dify](https://github.com/langgenius/dify) | Trigger / Skill 编排、Markdown Skill 定义 |
+| [飞书开放平台文档](https://open.feishu.cn/document/server-docs/bots/bots/bots-overview) | 飞书 Bot 交互式卡片、事件订阅、tenant_access_token 管理 |
+| pgvector + PostgreSQL | 向量存储和混合检索方案 |
+| [SearXNG](https://docs.searxng.org/) | 私有元搜索引擎集成 |
 
 ---
 

@@ -105,11 +105,13 @@ CREATE TABLE IF NOT EXISTS triggers (
   config JSONB NOT NULL DEFAULT '{}',
   active BOOLEAN DEFAULT TRUE,
   last_fired_at TIMESTAMP WITH TIME ZONE,
+  next_fire_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_triggers_agent ON triggers(agent_id);
 CREATE INDEX IF NOT EXISTS idx_triggers_active ON triggers(active);
+CREATE INDEX IF NOT EXISTS idx_triggers_next_fire ON triggers(next_fire_at) WHERE active = true;
 
 -- Trigger 历史
 CREATE TABLE IF NOT EXISTS trigger_history (
@@ -223,3 +225,11 @@ CREATE TABLE IF NOT EXISTS pending_conversations (
 
 CREATE INDEX IF NOT EXISTS idx_pending_conversations_approval ON pending_conversations(approval_id);
 CREATE INDEX IF NOT EXISTS idx_pending_conversations_agent ON pending_conversations(agent_id);
+
+-- 全局配置（飞书/API Key 等）
+CREATE TABLE IF NOT EXISTS app_settings (
+  key VARCHAR(100) PRIMARY KEY,
+  value TEXT NOT NULL,
+  description TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

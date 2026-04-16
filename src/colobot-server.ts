@@ -6,6 +6,7 @@ import 'dotenv/config';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
+import fs from 'fs';
 import { runAgent, runAgentStream, searchAgentMemory } from './agent-runtime/runtime.js';
 import type { ContentBlock } from './llm/index.js';
 import { listSkills, matchesTrigger, executeSkill } from './agent-runtime/skill-runtime.js';
@@ -281,10 +282,108 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // ── Health ──
+// ── Health ──
     if (path === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'ok', ts: new Date().toISOString() }));
+      return;
+    }
+
+    // ── Audit Logs ──
+    if (path === '/api/audit' && method === 'GET') {
+      const { listAudit } = await import('./services/audit.js');
+      const action = url.searchParams.get('action') || undefined;
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      const offset = parseInt(url.searchParams.get('offset') || '0');
+      const from = url.searchParams.get('from') ? new Date(url.searchParams.get('from')!) : undefined;
+      const to = url.searchParams.get('to') ? new Date(url.searchParams.get('to')!) : undefined;
+      const result = await listAudit({ action, from, to, limit, offset });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+
+    // ── Tools List ──
+    if (path === '/api/tools' && method === 'GET') {
+      const { listTools } = await import('./agent-runtime/tools/executor.js');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(listTools()));
+      return;
+    }
+
+    // ── Settings ──
+    if (path === '/api/settings/feishu' && method === 'GET') {
+      const { getFeishuSettings } = await import('./services/settings.js');
+      const result = await getFeishuSettings();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+    if (path === '/api/settings/feishu' && method === 'PUT') {
+      const { saveFeishuSettings } = await import('./services/settings.js');
+      const body = await parseBody(req);
+      await saveFeishuSettings(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ── SubAgent Settings ──
+    if (path === '/api/settings/subagent' && method === 'GET') {
+      const { getSetting, SETTINGS_KEYS } = await import('./services/settings.js');
+      const allowedTools = await getSetting(SETTINGS_KEYS.SUBAGENT_ALLOWED_TOOLS);
+      const blockedTools = await getSetting(SETTINGS_KEYS.SUBAGENT_BLOCKED_TOOLS);
+      const defaultTtlMs = await getSetting(SETTINGS_KEYS.SUBAGENT_DEFAULT_TTL_MS);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        allowedTools: allowedTools ? JSON.parse(allowedTools) : null,
+        blockedTools: blockedTools ? JSON.parse(blockedTools) : null,
+        defaultTtlMs: defaultTtlMs ? parseInt(defaultTtlMs) : 300000,
+      }));
+      return;
+    }
+    if (path === '/api/settings/subagent' && method === 'PUT') {
+      const { setSetting, SETTINGS_KEYS } = await import('./services/settings.js');
+      const body = await parseBody(req);
+      if (body.allowedTools !== undefined) {
+        await setSetting(SETTINGS_KEYS.SUBAGENT_ALLOWED_TOOLS, JSON.stringify(body.allowedTools), 'SubAgent allowed tools whitelist');
+      }
+      if (body.blockedTools !== undefined) {
+        await setSetting(SETTINGS_KEYS.SUBAGENT_BLOCKED_TOOLS, JSON.stringify(body.blockedTools), 'SubAgent blocked tools blacklist');
+      }
+      if (body.defaultTtlMs !== undefined) {
+        await setSetting(SETTINGS_KEYS.SUBAGENT_DEFAULT_TTL_MS, String(body.defaultTtlMs), 'SubAgent default TTL in ms');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ── 飞书回调 ──
+    // GET challenge 验证（飞书事件订阅配置时）
+    if (path === '/api/webhooks/feishu' && method === 'GET') {
+      const challenge = url.searchParams.get('challenge');
+      if (challenge) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ challenge }));
+        return;
+      }
+    }
+
+// POST 飞书事件回调 / GET 按钮回调
+    if (path === '/api/webhooks/feishu' && method === 'POST') {
+      const { handleFeishuEvent } = await import('./routes/feishu-webhook.js');
+      const result = await handleFeishuEvent(req);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+
+    if (path === '/api/webhooks/feishu/approve' && method === 'GET') {
+      const { handleApproveCallback } = await import('./routes/feishu-webhook.js');
+      const result = await handleApproveCallback(url.searchParams);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
       return;
     }
 
@@ -301,6 +400,30 @@ const server = http.createServer(async (req, res) => {
     console.error('[HTTP Error]', e);
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: msg }));
+  }
+});
+
+// ─── Static File Serving ──────────────────────────────────────
+
+// Serve dashboard at /dashboard and / for HTML files
+const distDir = new URL('../dashboard', import.meta.url).pathname;
+server.on('request', (req, res) => {
+  const reqUrl = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const path = reqUrl.pathname;
+
+  // Only serve HTML files, and only from the dashboard directory
+  if ((path === '/' || path === '/dashboard' || path.startsWith('/dashboard/')) && req.method === 'GET') {
+    let filePath = path === '/' ? '/index.html' : path;
+    if (filePath === '/dashboard') filePath = '/index.html';
+    const fullPath = distDir + filePath;
+
+    try {
+      if (fs.existsSync(fullPath)) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fs.readFileSync(fullPath));
+        return;
+      }
+    } catch { /* fall through to 404 */ }
   }
 });
 

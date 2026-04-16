@@ -2,6 +2,8 @@
  * 通知服务 - 支持飞书/邮件/Telegram
  */
 
+import { feishuNotificationsAdapter } from './feishu-notifications.js';
+
 export interface NotificationPayload {
   approvalId: string;
   agentId: string;
@@ -22,7 +24,12 @@ export interface NotificationAdapter {
 function getEnabledChannels(): NotificationAdapter[] {
   const channels: NotificationAdapter[] = [];
 
-  if (process.env.FEISHU_WEBHOOK_URL) {
+  // 方案 B: 飞书应用 Bot（交互式卡片，含批准/拒绝按钮）
+  if (process.env.LARK_APP_ID && process.env.LARK_APP_SECRET) {
+    channels.push(feishuNotificationsAdapter);
+  }
+  // 方案 A: 飞书 Webhook（兼容旧版，仅单向推送）
+  else if (process.env.FEISHU_WEBHOOK_URL) {
     channels.push(feishuAdapter);
   }
   if (process.env.SMTP_HOST) {
