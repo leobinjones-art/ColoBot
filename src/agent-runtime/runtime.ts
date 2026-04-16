@@ -218,7 +218,6 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
       } else if (decision === 'auto_approve') {
         await recordToolHit(call.name, JSON.stringify(call.args));
         autoApprovedCalls.push(call);
-        allowedCalls.push(call);
         await writeAudit({
           actorType: 'agent',
           actorId: agentId,
@@ -353,7 +352,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   return {
     response: finalContent || '(无回复)',
     toolCalls: toolCallNames,
-    finished: toolCallNames.length === 0 || toolCallNames.length >= maxRounds,
+    finished: toolCallNames.length >= maxRounds || (finalContent !== '' && toolCallNames.length === 0),
   };
 }
 
@@ -458,7 +457,6 @@ export async function runAgentStream(
       } else if (decision === 'auto_approve') {
         await recordToolHit(call.name, JSON.stringify(call.args));
         autoApprovedCalls.push(call);
-        allowedCalls.push(call);
         await writeAudit({ actorType: 'agent', actorId: agentId, actorName: agent.name, action: 'tool.auto_approved', targetType: 'tool', targetId: call.name, detail: { args: call.args, decision: 'auto_approve' }, ipAddress, result: 'success' });
       } else {
         pendingCalls.push(call);
@@ -764,7 +762,7 @@ export async function continueRun(
   const runResult: RunResult = {
     response: finalContent || '(无回复)',
     toolCalls: toolCallNames,
-    finished: toolCallNames.length === 0 || toolCallNames.length >= maxRounds,
+    finished: toolCallNames.length >= maxRounds || (finalContent !== '' && toolCallNames.length === 0),
   };
 
   // 通过 WebSocket 推送结果（WebSocket 客户端无需轮询）

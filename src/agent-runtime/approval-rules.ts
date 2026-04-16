@@ -123,14 +123,21 @@ async function smartLLMEval(call: ToolCall): Promise<DecisionLevel> {
     // 提取 JSON
     const match = text.match(/\{[\s\S]*?\}/);
     if (match) {
-      const parsed = JSON.parse(match[0]);
-      const decision = parsed.decision as DecisionLevel;
-      const riskScore = parsed.risk_score as number;
+      try {
+        const parsed = JSON.parse(match[0]);
+        const decision = parsed.decision as DecisionLevel;
+        const riskScore = typeof parsed.risk_score === 'number' ? parsed.risk_score : 5;
 
-      // risk_score >= 8 → auto_reject，<= 3 → auto_approve，中间 → pending
-      if (decision === 'auto_reject' || riskScore >= 8) return 'auto_reject';
-      if (decision === 'auto_approve' || riskScore <= 3) return 'auto_approve';
-      return 'pending';
+        if (!['auto_reject', 'pending', 'auto_approve'].includes(decision)) {
+          return 'pending';
+        }
+        // risk_score >= 8 → auto_reject，<= 3 → auto_approve，中间 → pending
+        if (decision === 'auto_reject' || riskScore >= 8) return 'auto_reject';
+        if (decision === 'auto_approve' || riskScore <= 3) return 'auto_approve';
+        return 'pending';
+      } catch {
+        console.warn('[ApprovalRules] Smart LLM returned invalid JSON, defaulting to pending');
+      }
     }
   } catch (e) {
     console.error('[ApprovalRules] Smart LLM eval failed:', e);

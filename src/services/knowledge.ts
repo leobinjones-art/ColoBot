@@ -71,9 +71,11 @@ export async function listKnowledge(category?: KnowledgeCategory): Promise<Knowl
 
 export async function searchKnowledge(queryText: string, category?: KnowledgeCategory): Promise<KnowledgeEntry[]> {
   type Row = { id: string; category: string; name: string; content: string; variables: string; related: string; metadata: string; created_at: Date; updated_at: Date };
+  const escaped = queryText.replace(/[%_]/g, '\\$&');
+  const pattern = `%${escaped}%`;
   const rows: Row[] = category
-    ? await query(`SELECT * FROM knowledge_base WHERE category = $1 AND (name ILIKE $2 OR content ILIKE $2) ORDER BY name`, [category, `%${queryText}%`])
-    : await query(`SELECT * FROM knowledge_base WHERE name ILIKE $1 OR content ILIKE $1 ORDER BY name`, [`%${queryText}%`]);
+    ? await query(`SELECT * FROM knowledge_base WHERE category = $1 AND (name ILIKE $2 OR content ILIKE $2) ORDER BY name`, [category, pattern])
+    : await query(`SELECT * FROM knowledge_base WHERE name ILIKE $1 OR content ILIKE $1 ORDER BY name`, [pattern]);
   return rows.map(row => ({
     id: row.id,
     category: row.category as KnowledgeCategory,

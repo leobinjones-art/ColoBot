@@ -66,7 +66,12 @@ export async function compressMessages(
   }
 
   // 用 LLM 总结旧消息
-  const oldContent = old.map(m => `[${m.role}]: ${typeof m.content === 'string' ? m.content : m.content.map(b => b.type === 'text' ? b.text : '').join('')}`).join('\n');
+  const oldContent = old.map(m => {
+    const content = typeof m.content === 'string'
+      ? m.content
+      : m.content.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+    return `[${m.role}]: ${content}`;
+  }).join('\n');
   const summaryPrompt = `请简洁地总结以下对话历史，保留所有关键信息、决策、工具调用结果。摘要要用中文：
 
 ${oldContent}

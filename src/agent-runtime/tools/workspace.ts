@@ -53,34 +53,46 @@ function register() {
     if (!safePath) throw new Error(`Access denied: ${file_path} is outside your workspace`);
 
     try {
-      // 确保父目录存在
       await fs.mkdir(path.dirname(safePath), { recursive: true });
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      if (err.code !== 'EEXIST') {
+        throw new Error(`Failed to create directory: ${err.message}`);
+      }
+    }
+    try {
       await fs.writeFile(safePath, content, 'utf-8');
       return { ok: true, path: safePath, size: content.length };
     } catch (e) {
-      throw new Error(`Failed to write file: ${e}`);
+      const err = e as { code?: string; message?: string };
+      throw new Error(`Failed to write file: ${err.message}`);
     }
   });
 
   registerTool('list_dir', async (args) => {
     const { dir_path, sub_agent_id } = args as { dir_path?: string; sub_agent_id?: string };
 
-    const base = sub_agent_id
-      ? (getSubAgentWorkspacePath(sub_agent_id) ?? WORKSPACE_ROOT)
-      : (dir_path || WORKSPACE_ROOT);
+    if (sub_agent_id) {
+      const workspace = getSubAgentWorkspacePath(sub_agent_id);
+      if (!workspace) throw new Error(`Access denied: sub-agent ${sub_agent_id} not found or expired`);
+      const safePath = await sandboxPath(sub_agent_id, dir_path || workspace);
+      if (!safePath) throw new Error(`Access denied: ${dir_path || workspace} is outside your workspace`);
+      try {
+        const entries = await fs.readdir(safePath, { withFileTypes: true });
+        return { path: safePath, entries: entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' })) };
+      } catch (e) {
+        const err = e as { code?: string };
+        if (err.code === 'ENOENT') throw new Error(`Directory not found: ${dir_path || workspace}`);
+        throw e;
+      }
+    }
 
-    const safePath = await sandboxPath(sub_agent_id, base);
-    if (!safePath) throw new Error(`Access denied: ${base} is outside your workspace`);
-
+    // 父 Agent：无限制访问
+    const base = dir_path || WORKSPACE_ROOT;
+    const safePath = path.resolve(base);
     try {
       const entries = await fs.readdir(safePath, { withFileTypes: true });
-      return {
-        path: safePath,
-        entries: entries.map(e => ({
-          name: e.name,
-          type: e.isDirectory() ? 'dir' : 'file',
-        })),
-      };
+      return { path: safePath, entries: entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' })) };
     } catch (e) {
       const err = e as { code?: string };
       if (err.code === 'ENOENT') throw new Error(`Directory not found: ${base}`);

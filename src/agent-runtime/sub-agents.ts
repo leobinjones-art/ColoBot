@@ -4,6 +4,7 @@
  */
 
 import type { LLMMessage, ContentBlock } from '../llm/index.js';
+import type { ToolContext } from './tools/executor.js';
 
 export interface SubAgentConfig {
   name: string;
@@ -180,7 +181,8 @@ export async function runSubAgentTask(
         call.args.sub_agent_id = subAgent.id;
       }
 
-      const executed = await executeToolCalls(allowedCalls);
+      const toolCtx: ToolContext = { agentId: subAgent.id, sessionKey: '' };
+      const executed = await executeToolCalls(allowedCalls, toolCtx);
       const toolResultText = formatToolResults(executed);
 
       for (const call of allowedCalls) {

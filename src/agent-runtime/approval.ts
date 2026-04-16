@@ -117,19 +117,7 @@ export class ApprovalFlow {
 
     // 审批通过后，继续执行被阻止的 LLM 流程
     if (approval) {
-      // 动态导入避免循环依赖
-      const { continueRun } = await import('./runtime.js');
-      // 异步执行，不阻塞 HTTP 响应
-      continueRun(id).catch(err => {
-        console.error('[Approval] continueRun error:', err);
-      });
-    }
-
-    // 推送 WebSocket 通知
-    await this.notifyWebSocket(id, 'approved');
-
-    // 发送外部通知
-    if (approval) {
+      // 先发送外部通知（让审批者知道操作即将执行），再执行危险工具
       await this.notifyExternal({
         approvalId: approval.id,
         agentId: approval.agent_id,
@@ -140,7 +128,16 @@ export class ApprovalFlow {
         status: 'approved',
         approver,
       });
+      // 动态导入避免循环依赖
+      const { continueRun } = await import('./runtime.js');
+      // 异步执行，不阻塞 HTTP 响应
+      continueRun(id).catch(err => {
+        console.error('[Approval] continueRun error:', err);
+      });
     }
+
+    // 推送 WebSocket 通知
+    await this.notifyWebSocket(id, 'approved');
 
     return approval;
   }
@@ -206,7 +203,8 @@ export class ApprovalFlow {
     try {
       // 动态导入避免循环依赖
       const { executeToolCalls } = await import('./tools/executor.js');
-      const results = await executeToolCalls([{ name: toolName, args: toolArgs }]);
+      const toolCtx = { agentId: approval.agent_id, sessionKey: '' };
+      const results = await executeToolCalls([{ name: toolName, args: toolArgs }], toolCtx);
       const result = results[0];
       if (!result.success) {
         return { approval, error: result.error };
@@ -235,6 +233,7 @@ export class ApprovalFlow {
       );
       if (rows.length === 0) {
         // 审批时没有保存 pending_conversations（如一次性审批场景）
+        console.warn(`[Approval] No pending_conversation for approval ${approvalId}, skipping WebSocket push`);
         return;
       }
       const { agent_id, session_key } = rows[0];
@@ -251,7 +250,7 @@ export class ApprovalFlow {
        WHERE status = 'pending' AND expires_at < NOW()
        RETURNING *`
     );
-    const rows = (result as unknown as { rows: ApprovalRequest[] }).rows;
+    const rows = result;
     for (const row of rows) {
       const approval = this.parseRow(row);
       await this.notifyWebSocket(approval.id, 'expired');
