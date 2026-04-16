@@ -505,6 +505,11 @@ const wsClients = new Map<string, WebSocket>();
 import('./ws-push.js').then(m => m.setWsClients(wsClients));
 
 wss.on('connection', (ws, req) => {
+  // 支持 WS URL query 参数传递 api_key
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const qsApiKey = url.searchParams.get('api_key');
+  if (qsApiKey) req.headers['authorization'] = `Bearer ${qsApiKey}`;
+
   // WebSocket 认证
   try {
     requireAuth(req as any);
@@ -514,7 +519,6 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const sessionKey = url.searchParams.get('session') || 'default';
   const agentId = url.searchParams.get('agent_id') || 'default';
 

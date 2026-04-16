@@ -5,8 +5,9 @@
 
 import { WebSocket } from 'ws';
 
+const API_KEY = process.env.TEST_API_KEY || 'test-key-123';
 const BASE_URL = 'http://localhost:18792';
-const WS_URL = 'ws://localhost:18792';
+const WS_URL = `ws://localhost:18792?api_key=${API_KEY}`;
 
 interface TestAgent {
   id: string;
@@ -20,7 +21,10 @@ async function wait(ms: number): Promise<void> {
 async function api(path: string, method = 'GET', body?: unknown) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`,
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -88,7 +92,7 @@ describe('ColoBot E2E', () => {
   });
 
   it('07 - WebSocket chat', async () => {
-    const ws = new WebSocket(`${WS_URL}?agent_id=${agent.id}&session=ws-test`);
+    const ws = new WebSocket(`${WS_URL}&agent_id=${agent.id}&session=ws-test`);
 
     await new Promise<void>((resolve, reject) => {
       ws.on('open', () => resolve());
