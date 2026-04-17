@@ -104,6 +104,7 @@ colobot/
 |------|------|------|
 | `/api/agents` | GET/POST | 列出/创建 Agent |
 | `/api/agents/:id` | GET/DELETE | 获取/删除单个 Agent |
+| `/api/agents/import` | POST | 导入 OpenClaw SOUL.md，返回或创建 Agent |
 | `/api/chat` | POST | 发送消息 |
 | `/api/memory/search` | POST | 记忆语义搜索 |
 | `/api/search` | POST | SearXNG 搜索 |
@@ -263,6 +264,7 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 | **Context Compression** | 历史超过 context_window * 0.8 时触发，LLM 总结旧消息保留关键信息，保留最近 6 条 |
 | **ToolRegistry check_fn** | 工具权限细粒度控制，支持 RBAC (admin/developer/readonly) + 自定义权限函数 + require_approval |
 | **危险工具实现** | send_message (多渠道通知) / exec_code (沙箱执行) / delete_agent / update_agent / delete_file |
+| **OpenClaw SOUL.md 导入** | API + Agent 工具直接导入 OpenClaw SOUL.md，自动转换为 JSON soul |
 
 ---
 

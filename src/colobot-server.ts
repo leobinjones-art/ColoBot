@@ -288,6 +288,54 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // OpenClaw SOUL.md 导入
+    if (path === '/api/agents/import' && method === 'POST') {
+      const body = await parseBody(req);
+      const { parseOpenClawSoul, toColoBotSoul } = await import('./agent-runtime/tools/openclaw.js');
+
+      if (!body.markdown && !body.url) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Either markdown or url is required' }));
+        return;
+      }
+
+      let markdown = body.markdown as string;
+
+      // 支持从 URL 拉取
+      if (!markdown && body.url) {
+        try {
+          const fetched = await fetch(body.url as string);
+          if (!fetched.ok) throw new Error(`HTTP ${fetched.status}`);
+          markdown = await fetched.text();
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Failed to fetch URL: ${e}` }));
+          return;
+        }
+      }
+
+      const parsed = parseOpenClawSoul(markdown, body.name as string);
+      const soulContent = toColoBotSoul(parsed);
+
+      // 可选：直接创建 Agent
+      if (body.create === true) {
+        const { agentRegistry } = await import('./agents/registry.js');
+        const agent = await agentRegistry.create({
+          name: String(body.name || parsed.role || 'imported-agent'),
+          soul_content: soulContent,
+          primary_model_id: body.primary_model_id ? String(body.primary_model_id) : undefined,
+          fallback_model_id: body.fallback_model_id ? String(body.fallback_model_id) : undefined,
+        });
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, agent, soul: parsed }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ soul: parsed }));
+      return;
+    }
+
     // ── Triggers ──
     if (path === '/api/triggers/fire' && method === 'POST') {
       const body = await parseBody(req);

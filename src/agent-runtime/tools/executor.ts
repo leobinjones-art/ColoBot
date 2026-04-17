@@ -191,6 +191,7 @@ import { registerTools as registerKnowledgeTools } from './knowledge.js';
 import { registerTools as registerSendMessageTools } from './send-message.js';
 import { registerTools as registerExecCodeTools } from './exec-code.js';
 import { registerTools as registerAgentTools } from './agent-tools.js';
+import { registerTools as registerImportSoulTools } from './import-soul.js';
 
 registerMemoryTools();
 registerSubagentTools();
@@ -207,3 +208,4 @@ registerKnowledgeTools();
 registerSendMessageTools();
 registerExecCodeTools();
 registerAgentTools();
+registerImportSoulTools();
