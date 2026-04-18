@@ -13,6 +13,19 @@ import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approv
 import { checkDangerousLevel, recordToolHit } from './approval-rules.js';
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
+import { checkAcademicTrigger, checkAcademicResponse } from '../content-policy/index.js';
+import { getSop } from '../content-policy/sops.js';
+import {
+  getSopState,
+  initSop,
+  getCurrentStepPrompt,
+  completeStep,
+  getSopProgress,
+  getSopCompletion,
+  checkContinueSop,
+  cancelSop,
+  generateDraft,
+} from './sop.js';
 
 /**
  * 检测用户消息是否为聊天内审批指令
@@ -142,6 +155,77 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     return { response: responseText, toolCalls: [], finished: true };
   }
 
+  // SOP 检测：检查是否继续进行中的 SOP
+  const shouldContinueSop = await checkContinueSop(agentId, sessionKey, messageText);
+
+  // 检查是否有进行中的 SOP
+  const existingSop = await getSopState(agentId, sessionKey);
+  if (existingSop) {
+    // 特殊命令处理
+    const cancelMatch = messageText.match(/^(取消|退出|end)\s*sop/i);
+    if (cancelMatch) {
+      await cancelSop(agentId, sessionKey);
+      const responseText = 'SOP 已取消，已切换回普通对话模式。';
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
+      pushWsResult(agentId, sessionKey, responseText);
+      return { response: responseText, toolCalls: [], finished: true };
+    }
+
+    if (shouldContinueSop) {
+      const sopPrompt = await getCurrentStepPrompt(agentId, sessionKey);
+      const responseText = `[继续 SOP]\n\n${sopPrompt ?? '请继续当前步骤。'}`;
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
+      pushWsResult(agentId, sessionKey, responseText);
+      return { response: responseText, toolCalls: [], finished: true };
+    }
+
+    // 处理 SOP 步骤：保存用户回答，推进到下一步
+    const { state, isComplete } = await completeStep(agentId, sessionKey, messageText);
+
+    if (isComplete) {
+      // 生成草稿
+      let draftContent = '';
+      try {
+        draftContent = await generateDraft(agentId, sessionKey, async (prompt) => {
+          const resp = await agentChat(soul, [{ role: 'user', content: prompt }], {
+            temperature: 0.7,
+            maxTokens: 8192,
+            model: agent.primary_model_id ?? undefined,
+            fallbackModelId: agent.fallback_model_id ?? undefined,
+          });
+          const text = typeof resp.content === 'string' ? resp.content
+            : (resp.content as ContentBlock[]).map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+          return text;
+        });
+      } catch (e) {
+        draftContent = '(草稿生成失败，请稍后重试)';
+      }
+      const sop = getSop(state.category);
+      const completionText = await getSopCompletion(agentId, sessionKey) ?? '流程已完成。';
+      const fullResponse = `${completionText}\n\n=== ${sop.name}草稿 ===\n\n${draftContent}`;
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', fullResponse);
+      return { response: fullResponse, toolCalls: [], finished: true };
+    }
+
+    // 返回下一步引导
+    const nextPrompt = await getCurrentStepPrompt(agentId, sessionKey);
+    const totalSteps = getSop(state.category).steps.length;
+    const responseText = `【步骤 ${state.currentStep}/${totalSteps}】\n\n${nextPrompt ?? '请继续。'}`;
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
+    pushWsResult(agentId, sessionKey, responseText);
+    return { response: responseText, toolCalls: [], finished: true };
+  }
+
+  // 内容策略检测：触发学术 SOP（仅在无进行中 SOP 时检测）
+  const triggerCheck = checkAcademicTrigger(messageText);
+  if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
+    await initSop(agentId, sessionKey, triggerCheck.category!);
+    const welcome = triggerCheck.sop.welcome;
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', welcome);
+    pushWsResult(agentId, sessionKey, welcome);
+    return { response: welcome, toolCalls: [], finished: true };
+  }
+
   // 获取历史消息
   const history = await sessionManager.getHistory(agentId, sessionKey);
 
@@ -195,14 +279,14 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
     const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
 
-    // 三层漏斗检查（危险工具）
-    const pendingCalls: ToolCall[] = [];
+    // 四层漏斗检查（危险工具）
     const autoApprovedCalls: ToolCall[] = [];
+    const commercialDocCalls: ToolCall[] = [];
 
     for (const call of dangerousCandidates) {
-      const decision = await checkDangerousLevel(call);
+      const { level, isCommercialDocument } = await checkDangerousLevel(call);
 
-      if (decision === 'auto_reject') {
+      if (level === 'auto_reject') {
         await writeAudit({
           actorType: 'agent',
           actorId: agentId,
@@ -216,77 +300,40 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
           errorMessage: 'Tirith/Pattern/Smart LLM auto-rejected',
         });
         blockedCalls.push(call);
-      } else if (decision === 'auto_approve') {
+      } else if (level === 'auto_approve') {
         await recordToolHit(call.name, JSON.stringify(call.args));
-        autoApprovedCalls.push(call);
+        if (isCommercialDocument) {
+          commercialDocCalls.push(call);
+        } else {
+          autoApprovedCalls.push(call);
+        }
         await writeAudit({
           actorType: 'agent',
           actorId: agentId,
           actorName: agent.name,
-          action: 'tool.auto_approved',
+          action: isCommercialDocument ? 'tool.commercial_doc' : 'tool.auto_approved',
           targetType: 'tool',
           targetId: call.name,
-          detail: { args: call.args, decision: 'auto_approve' },
+          detail: { args: call.args, decision: level, isCommercialDocument },
           ipAddress,
           result: 'success',
         });
-      } else {
-        pendingCalls.push(call);
       }
     }
 
-    // 执行自动批准的工具
+    // 执行普通自动批准的工具
     if (autoApprovedCalls.length > 0) {
       const executed = await executeToolCalls(autoApprovedCalls, toolCtx);
       const toolResultText = formatToolResults(executed);
       messages.push({ role: 'user', content: toolResultText });
     }
 
-    // 需要审批的工具：创建审批请求 + 保存状态，不继续执行
-    if (pendingCalls.length > 0) {
-      for (const call of pendingCalls) {
-        const actionType = DANGEROUS_TOOLS[call.name];
-        const approval = await approvalFlow.create({
-          agentId,
-          requester: agent.name,
-          channel: 'api',
-          actionType,
-          targetResource: JSON.stringify(call.args),
-          description: `危险操作: ${call.name}`,
-          payload: { ...call.args, _toolName: call.name },
-        });
-
-        await writeAudit({
-          actorType: 'agent',
-          actorId: agentId,
-          actorName: agent.name,
-          action: 'approval.requested',
-          targetType: 'tool',
-          targetId: call.name,
-          detail: { args: call.args, actionType },
-          ipAddress,
-          result: 'success',
-        });
-
-        // 保存 LLM 状态，以便审批后继续
-        await savePendingConversation(
-          approval.id,
-          agentId,
-          sessionKey,
-          messages,
-          pendingCalls,
-          round,
-          allowedCalls,
-          blockedCalls,
-          ipAddress
-        );
-
-        // 返回 pending 状态
-        return {
-          pending: true,
-          approvalId: approval.id,
-        };
-      }
+    // 商业文书：执行 + 附免责声明
+    if (commercialDocCalls.length > 0) {
+      const executed = await executeToolCalls(commercialDocCalls, toolCtx);
+      const toolResultText = formatToolResults(executed);
+      const disclaimer = '\n\n---\n[本内容由AI辅助生成，仅供参考，不构成法律意见]';
+      messages.push({ role: 'user', content: toolResultText + disclaimer });
     }
 
     // 执行非危险工具
@@ -336,6 +383,20 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
 
   // 保存助手回复
   await sessionManager.appendMessage(agentId, sessionKey, 'assistant', finalContent);
+
+  // 内容策略检测（LLM 响应后拦截）
+  const responseText = typeof finalContent === 'string' ? finalContent : '';
+  const responseCheck = checkAcademicResponse(responseText);
+  if (responseCheck.shouldIntercept && responseCheck.interceptResponse) {
+    // 覆盖之前的响应，重定向到 SOP
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseCheck.interceptResponse);
+    pushWsResult(agentId, sessionKey, responseCheck.interceptResponse);
+    return {
+      response: responseCheck.interceptResponse,
+      toolCalls: [],
+      finished: true,
+    };
+  }
 
   // 审计：聊天完成
   await writeAudit({
@@ -387,6 +448,70 @@ export async function runAgentStream(
     ipAddress,
     result: 'success',
   });
+
+  // SOP 检测（WebSocket 模式）
+  const existingSop = await getSopState(agentId, sessionKey);
+  if (existingSop) {
+    const shouldContinue = await checkContinueSop(agentId, sessionKey, messageText);
+    const cancelMatch = messageText.match(/^(取消|退出|end)\s*sop/i);
+    if (cancelMatch) {
+      await cancelSop(agentId, sessionKey);
+      const responseText = 'SOP 已取消，已切换回普通对话模式。';
+      pushWsResult(agentId, sessionKey, responseText);
+      pushWsDone(agentId, sessionKey);
+      return;
+    }
+    if (shouldContinue) {
+      const sopPrompt = await getCurrentStepPrompt(agentId, sessionKey);
+      const responseText = `[继续 SOP]\n\n${sopPrompt ?? '请继续当前步骤。'}`;
+      pushWsResult(agentId, sessionKey, responseText);
+      pushWsDone(agentId, sessionKey);
+      return;
+    }
+    // 处理 SOP 步骤推进
+    const { state, isComplete } = await completeStep(agentId, sessionKey, messageText);
+    if (isComplete) {
+      // 生成草稿
+      let draftContent = '';
+      try {
+        draftContent = await generateDraft(agentId, sessionKey, async (prompt) => {
+          const resp = await agentChat(soul, [{ role: 'user', content: prompt }], {
+            temperature: 0.7,
+            maxTokens: 8192,
+            model: agent.primary_model_id ?? undefined,
+            fallbackModelId: agent.fallback_model_id ?? undefined,
+          });
+          const text = typeof resp.content === 'string' ? resp.content
+            : (resp.content as ContentBlock[]).map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+          return text;
+        });
+      } catch (e) {
+        draftContent = '(草稿生成失败，请稍后重试)';
+      }
+      const sop = getSop(state.category);
+      const completionText = await getSopCompletion(agentId, sessionKey) ?? '流程已完成。';
+      const fullResponse = `${completionText}\n\n=== ${sop.name}草稿 ===\n\n${draftContent}`;
+      pushWsResult(agentId, sessionKey, fullResponse);
+      pushWsDone(agentId, sessionKey);
+      return;
+    }
+    const nextPrompt = await getCurrentStepPrompt(agentId, sessionKey);
+    const totalSteps = getSop(state.category).steps.length;
+    const responseText = `【步骤 ${state.currentStep}/${totalSteps}】\n\n${nextPrompt ?? '请继续。'}`;
+    pushWsResult(agentId, sessionKey, responseText);
+    pushWsDone(agentId, sessionKey);
+    return;
+  }
+
+  // 内容策略检测：触发学术 SOP（仅在无进行中 SOP 时检测）
+  const triggerCheck = checkAcademicTrigger(messageText);
+  if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
+    await initSop(agentId, sessionKey, triggerCheck.category!);
+    const welcome = triggerCheck.sop.welcome;
+    pushWsResult(agentId, sessionKey, welcome);
+    pushWsDone(agentId, sessionKey);
+    return;
+  }
 
   const history = await sessionManager.getHistory(agentId, sessionKey);
   let messages: LLMMessage[] = [
@@ -447,20 +572,22 @@ export async function runAgentStream(
     const allowedCalls = toolCalls.filter(c => isToolAllowed('__parent__', c.name) && !DANGEROUS_TOOLS[c.name]);
     const blockedCalls = toolCalls.filter(c => !isToolAllowed('__parent__', c.name));
 
-    const pendingCalls: ToolCall[] = [];
     const autoApprovedCalls: ToolCall[] = [];
+    const commercialDocCalls: ToolCall[] = [];
 
     for (const call of dangerousCandidates) {
-      const decision = await checkDangerousLevel(call);
-      if (decision === 'auto_reject') {
+      const { level, isCommercialDocument } = await checkDangerousLevel(call);
+      if (level === 'auto_reject') {
         await writeAudit({ actorType: 'agent', actorId: agentId, actorName: agent.name, action: 'tool.auto_rejected', targetType: 'tool', targetId: call.name, detail: { args: call.args, decision: 'auto_reject' }, ipAddress, result: 'failure', errorMessage: 'auto-rejected' });
         blockedCalls.push(call);
-      } else if (decision === 'auto_approve') {
+      } else if (level === 'auto_approve') {
         await recordToolHit(call.name, JSON.stringify(call.args));
-        autoApprovedCalls.push(call);
-        await writeAudit({ actorType: 'agent', actorId: agentId, actorName: agent.name, action: 'tool.auto_approved', targetType: 'tool', targetId: call.name, detail: { args: call.args, decision: 'auto_approve' }, ipAddress, result: 'success' });
-      } else {
-        pendingCalls.push(call);
+        if (isCommercialDocument) {
+          commercialDocCalls.push(call);
+        } else {
+          autoApprovedCalls.push(call);
+        }
+        await writeAudit({ actorType: 'agent', actorId: agentId, actorName: agent.name, action: isCommercialDocument ? 'tool.commercial_doc' : 'tool.auto_approved', targetType: 'tool', targetId: call.name, detail: { args: call.args, decision: level, isCommercialDocument }, ipAddress, result: 'success' });
       }
     }
 
@@ -470,35 +597,11 @@ export async function runAgentStream(
       messages.push({ role: 'user', content: toolResultText });
     }
 
-    if (pendingCalls.length > 0) {
-      for (const call of pendingCalls) {
-        const actionType = DANGEROUS_TOOLS[call.name];
-        const approval = await approvalFlow.create({
-          agentId,
-          requester: agent.name,
-          channel: 'api',
-          actionType,
-          targetResource: JSON.stringify(call.args),
-          description: `危险操作: ${call.name}`,
-          payload: { ...call.args, _toolName: call.name },
-        });
-        await writeAudit({
-          actorType: 'agent',
-          actorId: agentId,
-          actorName: agent.name,
-          action: 'approval.requested',
-          targetType: 'tool',
-          targetId: call.name,
-          detail: { args: call.args, actionType },
-          ipAddress,
-          result: 'success',
-        });
-        await savePendingConversation(
-          approval.id, agentId, sessionKey, messages, pendingCalls,
-          round, allowedCalls, blockedCalls, ipAddress
-        );
-        return; // 等待审批
-      }
+    if (commercialDocCalls.length > 0) {
+      const executed = await executeToolCalls(commercialDocCalls, toolCtx);
+      const toolResultText = formatToolResults(executed);
+      const disclaimer = '\n\n---\n[本内容由AI辅助生成，仅供参考，不构成法律意见]';
+      messages.push({ role: 'user', content: toolResultText + disclaimer });
     }
 
     const executed = await executeToolCalls(allowedCalls, toolCtx);

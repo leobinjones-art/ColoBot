@@ -166,8 +166,42 @@ CREATE TABLE IF NOT EXISTS approval_rules (
   action VARCHAR(20) NOT NULL DEFAULT 'require_approval',
   risk_level VARCHAR(20) NOT NULL DEFAULT 'medium',
   enabled BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- 自进化置信度（基于用户历史行为）
+  user_approve_count INT NOT NULL DEFAULT 0,
+  user_reject_count INT NOT NULL DEFAULT 0,
+  auto_approve_threshold INT NOT NULL DEFAULT 3,
+  auto_reject_threshold INT NOT NULL DEFAULT 3,
+  confidence_decay_days INT NOT NULL DEFAULT 14,
+  last_decided_at TIMESTAMP WITH TIME ZONE,
+  priority INT NOT NULL DEFAULT 100  -- 越小优先级越高，0=最高
 );
+
+-- 迁移：为已存在的 approval_rules 表添加自进化字段（幂等）
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'user_approve_count') THEN
+    ALTER TABLE approval_rules ADD COLUMN user_approve_count INT NOT NULL DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'user_reject_count') THEN
+    ALTER TABLE approval_rules ADD COLUMN user_reject_count INT NOT NULL DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'auto_approve_threshold') THEN
+    ALTER TABLE approval_rules ADD COLUMN auto_approve_threshold INT NOT NULL DEFAULT 3;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'auto_reject_threshold') THEN
+    ALTER TABLE approval_rules ADD COLUMN auto_reject_threshold INT NOT NULL DEFAULT 3;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'confidence_decay_days') THEN
+    ALTER TABLE approval_rules ADD COLUMN confidence_decay_days INT NOT NULL DEFAULT 14;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'last_decided_at') THEN
+    ALTER TABLE approval_rules ADD COLUMN last_decided_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'approval_rules' AND column_name = 'priority') THEN
+    ALTER TABLE approval_rules ADD COLUMN priority INT NOT NULL DEFAULT 100;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_approval_rules_enabled ON approval_rules(enabled);
 

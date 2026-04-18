@@ -15,7 +15,9 @@ import { agentRegistry } from './agents/registry.js';
 import { query } from './memory/db.js';
 import { writeAudit } from './services/audit.js';
 import type { KnowledgeCategory } from './services/knowledge.js';
-import { requireAuth, initAuth } from './middleware/auth.js';
+import { requireAuth, initAuth, hasKeys, isAuthConfigured, validateKey } from './middleware/auth.js';
+import { getSopState } from './agent-runtime/sop.js';
+import { getSop } from './content-policy/sops.js';
 
 const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
 
@@ -26,6 +28,39 @@ function getClientIp(req: http.IncomingMessage): string {
   if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
   if (Array.isArray(forwarded)) return String(forwarded[0]).split(',')[0].trim();
   return req.socket.remoteAddress?.replace('::ffff:', '') || '';
+}
+
+// ─── Static File Serving ──────────────────────────────────────
+
+const distDir = new URL('../dashboard', import.meta.url).pathname;
+
+function serveStatic(req: http.IncomingMessage, res: http.ServerResponse): boolean {
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const path = url.pathname;
+
+  if ((path === '/' || path === '/dashboard' || path.startsWith('/dashboard/')) && req.method === 'GET') {
+    let filePath = path === '/' ? '/index.html' : path;
+    if (filePath === '/dashboard') filePath = '/index.html';
+    const fullPath = distDir + filePath;
+
+    try {
+      if (fs.existsSync(fullPath)) {
+        const ext = fullPath.split('.').pop()?.toLowerCase();
+        const contentTypes: Record<string, string> = {
+          html: 'text/html; charset=utf-8',
+          js: 'application/javascript',
+          css: 'text/css',
+          json: 'application/json',
+          png: 'image/png',
+          ico: 'image/x-icon',
+        };
+        res.writeHead(200, { 'Content-Type': contentTypes[ext || 'html'] || 'text/plain; charset=utf-8' });
+        res.end(fs.readFileSync(fullPath));
+        return true;
+      }
+    } catch { /* file not found */ }
+  }
+  return false;
 }
 
 // ─── HTTP 服务器 ─────────────────────────────────────────────
@@ -44,6 +79,29 @@ const server = http.createServer(async (req, res) => {
   if (method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  // 静态文件：dashboard /
+  if (serveStatic(req, res)) return;
+
+  // ── Login（无需认证） ──
+  if (path === '/api/login' && method === 'POST') {
+    const body = await parseBody(req);
+    const key = String(body.key || '');
+    if (!isAuthConfigured() || !hasKeys()) {
+      // 未配置 key，无需登录
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, devMode: true }));
+      return;
+    }
+    if (validateKey(key)) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid API Key' }));
+    }
     return;
   }
 
@@ -191,7 +249,8 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(result));
       } catch (err) {
         const error = err instanceof Error ? err.message : String(err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        const status = error.includes('429') || error.includes('503') ? 429 : 500;
+        res.writeHead(status, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error }));
       }
       return;
@@ -477,6 +536,106 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── SearXNG Settings ──
+    if (path === '/api/settings/searxng' && method === 'GET') {
+      const { getSearXNGSettings } = await import('./services/settings.js');
+      const result = await getSearXNGSettings();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+    if (path === '/api/settings/searxng' && method === 'PUT') {
+      const { saveSearXNGSettings } = await import('./services/settings.js');
+      const body = await parseBody(req);
+      await saveSearXNGSettings(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ── LLM Settings ──
+    if (path === '/api/settings/llm' && method === 'GET') {
+      const { getLlmSettings } = await import('./services/settings-cache.js');
+      const settings = await getLlmSettings();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(settings));
+      return;
+    }
+    if (path === '/api/settings/llm' && method === 'PUT') {
+      const { saveLlmSettings } = await import('./services/settings-cache.js');
+      const body = await parseBody(req);
+      await saveLlmSettings(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ── Notification Settings ──
+    if (path === '/api/settings/notifications' && method === 'GET') {
+      const { getNotificationSettings } = await import('./services/settings-cache.js');
+      const settings = await getNotificationSettings();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(settings));
+      return;
+    }
+    if (path === '/api/settings/notifications' && method === 'PUT') {
+      const { saveNotificationSettings } = await import('./services/settings-cache.js');
+      const body = await parseBody(req);
+      await saveNotificationSettings(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ── Debug: raw DB check ──
+    // GET /api/debug/sop/:agentId/:sessionKey
+    if (path.startsWith('/api/debug/sop/') && method === 'GET') {
+      const parts = path.split('/');
+      // ["", "api", "debug", "sop", "{agentId}", "{sessionKey}"]
+      const agentId = parts[4] || '';
+      const sessionKey = parts[5] ? decodeURIComponent(parts[5]) : '';
+      const rows = await query<{ memory_key: string; memory_value: string; created_at: string }>(
+        `SELECT id, memory_key, memory_value, created_at FROM agent_memory
+         WHERE agent_id = $1 AND memory_key = $2
+         ORDER BY created_at DESC LIMIT 1`,
+        [agentId, 'sop_state:' + sessionKey]
+      );
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ count: rows.length, rows: rows.map(r => ({ key: r.memory_key, value: r.memory_value.slice(0, 80), created: r.created_at })) }));
+      return;
+    }
+
+    // ── SOP Progress ──
+    // GET /api/sop/:agentId/:sessionKey/progress
+    if (path.startsWith('/api/sop/') && method === 'GET') {
+      const parts = path.split('/');
+      // ["", "api", "sop", "{agentId}", "{sessionKey}", "progress"]
+      if (parts.length >= 6 && parts[2] === 'sop') {
+        const agentId = parts[3];
+        const sessionKey = parts[4] ? decodeURIComponent(parts[4]) : '';
+        const action = parts[5];
+        if (action === 'progress' && agentId && sessionKey) {
+          const state = await getSopState(agentId, sessionKey);
+          if (!state) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'No active SOP' }));
+            return;
+          }
+          const sop = getSop(state.category);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            category: state.category,
+            sopName: sop.name,
+            currentStep: state.currentStep,
+            totalSteps: sop.steps.length,
+            steps: state.steps,
+            startedAt: state.startedAt,
+          }));
+          return;
+        }
+      }
+    }
+
     // ── 飞书回调 ──
     // GET challenge 验证（飞书事件订阅配置时）
     if (path === '/api/webhooks/feishu' && method === 'GET') {
@@ -518,30 +677,6 @@ const server = http.createServer(async (req, res) => {
     console.error('[HTTP Error]', e);
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: msg }));
-  }
-});
-
-// ─── Static File Serving ──────────────────────────────────────
-
-// Serve dashboard at /dashboard and / for HTML files
-const distDir = new URL('../dashboard', import.meta.url).pathname;
-server.on('request', (req, res) => {
-  const reqUrl = new URL(req.url || '/', `http://localhost:${PORT}`);
-  const path = reqUrl.pathname;
-
-  // Only serve HTML files, and only from the dashboard directory
-  if ((path === '/' || path === '/dashboard' || path.startsWith('/dashboard/')) && req.method === 'GET') {
-    let filePath = path === '/' ? '/index.html' : path;
-    if (filePath === '/dashboard') filePath = '/index.html';
-    const fullPath = distDir + filePath;
-
-    try {
-      if (fs.existsSync(fullPath)) {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(fs.readFileSync(fullPath));
-        return;
-      }
-    } catch { /* fall through to 404 */ }
   }
 });
 
@@ -627,6 +762,14 @@ async function main() {
   // 初始化认证（CLI 参数或交互式）
   await initAuth();
 
+  // 初始化审批规则（仅首次运行填充默认规则）
+  try {
+    const { seedDefaultRules } = await import('./agent-runtime/approval-rules.js');
+    await seedDefaultRules();
+  } catch (e) {
+    console.error('[ApprovalRules] Seed failed:', e);
+  }
+
   // 初始化数据库
   try {
     await query('SELECT 1');
@@ -634,6 +777,15 @@ async function main() {
   } catch (e) {
     console.error('[DB] Connection failed:', e);
     process.exit(1);
+  }
+
+  // 加载 DB 设置缓存
+  try {
+    const { refreshCache } = await import('./services/settings-cache.js');
+    await refreshCache();
+    console.log('[Settings] Cache loaded');
+  } catch (e) {
+    console.warn('[Settings] Cache load failed (will use env fallback):', e);
   }
 
   // 初始化 Trigger 引擎
