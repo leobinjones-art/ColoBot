@@ -27,7 +27,11 @@ export async function addMemory(
 
   await query(
     `INSERT INTO agent_memory (agent_id, memory_key, memory_value, embedding, metadata)
-     VALUES ($1, $2, $3, $4, $5)`,
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (agent_id, memory_key) DO UPDATE SET
+       memory_value = EXCLUDED.memory_value,
+       embedding = EXCLUDED.embedding,
+       metadata = EXCLUDED.metadata`,
     [agentId, key, value, JSON.stringify(embedding), JSON.stringify(metadata)]
   );
 }

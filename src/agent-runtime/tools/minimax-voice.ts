@@ -6,6 +6,7 @@
  * - delete_voice: 删除音色
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
 
 export function registerTools(): void {
   /**
@@ -15,7 +16,7 @@ export function registerTools(): void {
    * voice_type: system / voice_cloning / voice_generation / all
    */
   registerTool('list_voices', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { voice_type = 'all' } = args as { voice_type?: string };
@@ -83,7 +84,7 @@ export function registerTools(): void {
    * 复刻得到的音色若 7 天内未正式调用则会被删除
    */
   registerTool('voice_clone', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { file_id, voice_id, clone_prompt_file_id, text, model } = args as {
@@ -142,7 +143,7 @@ export function registerTools(): void {
    * POST https://api.minimaxi.com/v1/voice_design
    */
   registerTool('voice_design', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { prompt, preview_text, voice_id, aigc_watermark } = args as {
@@ -194,7 +195,7 @@ export function registerTools(): void {
    * POST https://api.minimaxi.com/v1/delete_voice
    */
   registerTool('delete_voice', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { voice_id } = args as { voice_id: string };

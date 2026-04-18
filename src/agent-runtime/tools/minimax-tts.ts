@@ -3,6 +3,7 @@
  * - speak: 语音合成
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
 
 export function registerTools(): void {
   /**
@@ -15,7 +16,7 @@ export function registerTools(): void {
    * 返回: { audio_url: string } 或 { audio: hex string, ...metadata }
    */
   registerTool('speak', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const {

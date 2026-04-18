@@ -4,6 +4,7 @@
  * - query_video_task: 查询视频任务状态
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
 
 export function registerTools(): void {
   /**
@@ -15,7 +16,7 @@ export function registerTools(): void {
    * 注意: 此工具会轮询直到完成，最长等待 5 分钟
    */
   registerTool('generate_video', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const {
@@ -140,7 +141,7 @@ export function registerTools(): void {
    * GET https://api.minimaxi.com/v1/query/video_generation?task_id=xxx
    */
   registerTool('query_video_task', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { task_id } = args as { task_id: string };

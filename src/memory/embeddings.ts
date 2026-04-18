@@ -2,6 +2,8 @@
  * 向量嵌入 - 使用 OpenAI / MiniMax Embeddings
  */
 
+import { getMockLLM, getOpenAIApiKey, getMinimaxApiKey } from '../services/settings-cache.js';
+
 let embeddingProvider: 'openai' | 'minimax' = 'openai';
 
 export function setEmbedProvider(provider: 'openai' | 'minimax'): void {
@@ -15,7 +17,7 @@ export interface EmbedResult {
 
 export async function embed(text: string): Promise<EmbedResult> {
   // Mock mode for local testing (no real API key needed)
-  if (process.env.MOCK_LLM === 'true') {
+  if (getMockLLM()) {
     return mockEmbed(text);
   }
 
@@ -37,7 +39,7 @@ function mockEmbed(_text: string): EmbedResult {
 }
 
 async function embedOpenAI(text: string): Promise<EmbedResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getOpenAIApiKey();
   if (!apiKey) return { embedding: null, model: '' };
 
   const res = await fetch('https://api.openai.com/v1/embeddings', {
@@ -62,7 +64,7 @@ async function embedOpenAI(text: string): Promise<EmbedResult> {
 }
 
 async function embedMinimax(text: string): Promise<EmbedResult> {
-  const apiKey = process.env.MINIMAX_API_KEY;
+  const apiKey = getMinimaxApiKey();
   if (!apiKey) return { embedding: null, model: '' };
 
   const res = await fetch('https://api.minimaxi.com/v1/embeddings', {

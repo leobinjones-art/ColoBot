@@ -44,16 +44,16 @@ export interface LLMStreamChunk {
   done: boolean;
 }
 
-type ProviderType = 'openai' | 'anthropic' | 'minimax';
+import { getMockLLM, getLlmProvider as getCachedProvider, getOpenAIApiKey, getAnthropicApiKey, getMinimaxApiKey } from '../services/settings-cache.js';
 
-let currentProvider: ProviderType = 'openai';
+export type ProviderType = 'openai' | 'anthropic' | 'minimax';
 
 export function setProvider(provider: ProviderType): void {
-  currentProvider = provider;
+  // Provider is now driven by DB settings, this is kept for backward compat
 }
 
 export function getProviderName(): ProviderType {
-  return currentProvider;
+  return getCachedProvider();
 }
 
 // ─── Fallback Chain 解析 ──────────────────────────────────────
@@ -70,7 +70,7 @@ interface FallbackEntry {
  *   "anthropic:claude-sonnet-4-20250514,openai:gpt-4o-mini"
  *   "claude-sonnet-4-20250514"  （保持当前 provider）
  */
-function parseFallbackChain(fallbackModelId: string): FallbackEntry[] {
+function parseFallbackChain(fallbackModelId: string, currentProvider: ProviderType): FallbackEntry[] {
   const entries: FallbackEntry[] = [];
   const parts = fallbackModelId.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -144,22 +144,22 @@ export async function chat(
   messages: LLMMessage[],
   options: LLMOptions = {}
 ): Promise<LLMResponse> {
-  if (process.env.MOCK_LLM === 'true') {
+  if (getMockLLM()) {
     return mockChat(messages);
   }
 
   // 构建 chain：primary model 在前，fallback models 依次在后
   const chain: FallbackEntry[] = [];
   if (options.model) {
-    chain.push({ provider: currentProvider, modelId: options.model });
+    chain.push({ provider: getCachedProvider(), modelId: options.model });
   }
   if (options.fallbackModelId) {
-    chain.push(...parseFallbackChain(options.fallbackModelId));
+    chain.push(...parseFallbackChain(options.fallbackModelId, getCachedProvider()));
   }
 
   if (chain.length === 0) {
     // 兜底：使用默认 model
-    chain.push({ provider: currentProvider, modelId: getDefaultModel(currentProvider) });
+    chain.push({ provider: getCachedProvider(), modelId: getDefaultModel(getCachedProvider()) });
   }
 
   const retries = options.retries ?? 1;
@@ -204,7 +204,7 @@ export async function* chatStream(
   messages: LLMMessage[],
   options: LLMOptions = {}
 ): AsyncGenerator<LLMStreamChunk> {
-  if (process.env.MOCK_LLM === 'true') {
+  if (getMockLLM()) {
     yield* mockChatStream(messages);
     return;
   }
@@ -212,13 +212,13 @@ export async function* chatStream(
   // 构建 chain
   const chain: FallbackEntry[] = [];
   if (options.model) {
-    chain.push({ provider: currentProvider, modelId: options.model });
+    chain.push({ provider: getCachedProvider(), modelId: options.model });
   }
   if (options.fallbackModelId) {
-    chain.push(...parseFallbackChain(options.fallbackModelId));
+    chain.push(...parseFallbackChain(options.fallbackModelId, getCachedProvider()));
   }
   if (chain.length === 0) {
-    chain.push({ provider: currentProvider, modelId: getDefaultModel(currentProvider) });
+    chain.push({ provider: getCachedProvider(), modelId: getDefaultModel(getCachedProvider()) });
   }
 
   let firstError: Error | null = null;
@@ -315,7 +315,7 @@ async function chatOpenAI(
   messages: LLMMessage[],
   options: LLMOptions
 ): Promise<LLMResponse> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getOpenAIApiKey();
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
   const model = options.model || 'gpt-4o';
@@ -349,7 +349,7 @@ async function chatAnthropic(
   messages: LLMMessage[],
   options: LLMOptions
 ): Promise<LLMResponse> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = getAnthropicApiKey();
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
   const model = options.model || 'claude-sonnet-4-20250514';
@@ -388,7 +388,7 @@ async function chatMinimax(
   messages: LLMMessage[],
   options: LLMOptions
 ): Promise<LLMResponse> {
-  const apiKey = process.env.MINIMAX_API_KEY;
+  const apiKey = getMinimaxApiKey();
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
   const model = options.model || 'MiniMax-Text-01';
@@ -425,7 +425,7 @@ async function* chatStreamOpenAI(
   messages: LLMMessage[],
   options: LLMOptions
 ): AsyncGenerator<LLMStreamChunk> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getOpenAIApiKey();
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
   const model = options.model || 'gpt-4o';
@@ -495,7 +495,7 @@ async function* chatStreamAnthropic(
   messages: LLMMessage[],
   options: LLMOptions
 ): AsyncGenerator<LLMStreamChunk> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = getAnthropicApiKey();
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
   const model = options.model || 'claude-sonnet-4-20250514';
@@ -568,7 +568,7 @@ async function* chatStreamMinimax(
   messages: LLMMessage[],
   options: LLMOptions
 ): AsyncGenerator<LLMStreamChunk> {
-  const apiKey = process.env.MINIMAX_API_KEY;
+  const apiKey = getMinimaxApiKey();
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
   const model = options.model || 'MiniMax-Text-01';

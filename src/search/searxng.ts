@@ -70,6 +70,9 @@ export async function searxngSearch(
   });
 
   if (!response.ok) {
+    if (response.status === 429 || response.status === 503) {
+      return { query, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    }
     throw new Error(`SearXNG search failed: ${response.status} ${response.statusText}`);
   }
 

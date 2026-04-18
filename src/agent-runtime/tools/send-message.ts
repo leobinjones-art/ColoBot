@@ -6,6 +6,12 @@
  */
 
 import { registerTool } from './executor.js';
+import {
+  getMessageWebhookUrl,
+  getFeishuWebhookUrl,
+  getSmtpConfig,
+  getTelegramConfig,
+} from '../../services/settings-cache.js';
 
 function register() {
   /**
@@ -36,8 +42,8 @@ function register() {
 
     switch (channel) {
       case 'webhook': {
-        const url = webhook_url || process.env.MESSAGE_WEBHOOK_URL;
-        if (!url) throw new Error('webhook_url is required or MESSAGE_WEBHOOK_URL env var not set');
+        const url = webhook_url || getMessageWebhookUrl();
+        if (!url) throw new Error('webhook_url is required or MESSAGE_WEBHOOK_URL not configured');
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -56,28 +62,23 @@ function register() {
         } catch {
           throw new Error('nodemailer not installed. Run: npm i nodemailer');
         }
-        const host = process.env.SMTP_HOST;
-        const port = parseInt(process.env.SMTP_PORT || '587');
-        const user = process.env.SMTP_USER;
-        const pass = process.env.SMTP_PASS;
-        const from = process.env.SMTP_FROM || user;
-        const recipient = to || process.env.SMTP_TO;
-        if (!host || !user || !pass || !recipient) {
-          throw new Error('SMTP env vars (SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_TO) are required');
+        const smtp = getSmtpConfig();
+        if (!smtp.host || !smtp.user || !smtp.pass || !smtp.to) {
+          throw new Error('SMTP not configured. Set SMTP settings in Dashboard.');
         }
-        const transporter = nodemailer.createTransport({ host, port, auth: { user, pass } });
+        const transporter = nodemailer.createTransport({ host: smtp.host, port: smtp.port, auth: { user: smtp.user, pass: smtp.pass } });
         await transporter.sendMail({
-          from,
-          to: recipient,
+          from: smtp.from || smtp.user,
+          to: to || smtp.to,
           subject: subject || '[ColoBot] 通知',
           text: content,
         });
-        return { ok: true, channel: 'email', to: recipient };
+        return { ok: true, channel: 'email', to: to || smtp.to };
       }
 
       case 'feishu': {
-        const webhook = webhook_url || process.env.FEISHU_WEBHOOK_URL;
-        if (!webhook) throw new Error('webhook_url is required or FEISHU_WEBHOOK_URL env var not set');
+        const webhook = webhook_url || getFeishuWebhookUrl();
+        if (!webhook) throw new Error('webhook_url is required or FEISHU_WEBHOOK_URL not configured');
         const res = await fetch(webhook, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -91,12 +92,12 @@ function register() {
       }
 
       case 'telegram': {
-        const token = process.env.TELEGRAM_BOT_TOKEN;
-        const chatId = to || process.env.TELEGRAM_CHAT_ID;
-        if (!token || !chatId) {
-          throw new Error('TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID env vars are required');
+        const tg = getTelegramConfig();
+        const chatId = to || tg.chatId;
+        if (!tg.botToken || !chatId) {
+          throw new Error('Telegram not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Dashboard.');
         }
-        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        const res = await fetch(`https://api.telegram.org/bot${tg.botToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: chatId, text: content }),

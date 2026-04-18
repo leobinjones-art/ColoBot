@@ -74,6 +74,7 @@ export const SETTINGS_KEYS = {
   SUBAGENT_ALLOWED_TOOLS: 'subagent_allowed_tools',
   SUBAGENT_BLOCKED_TOOLS: 'subagent_blocked_tools',
   SUBAGENT_DEFAULT_TTL_MS: 'subagent_default_ttl_ms',
+  SEARXNG_URL: 'searxng_url',
 } as const;
 
 export type FeishuSettings = {
@@ -108,5 +109,27 @@ export async function saveFeishuSettings(settings: Partial<FeishuSettings>): Pro
   const entries = Object.entries(settings).filter(([, v]) => v !== undefined);
   for (const [key, value] of entries) {
     await setSetting(key, value);
+  }
+}
+
+export type SearXNGSettings = {
+  searxng_url: string;
+};
+
+/**
+ * 获取 SearXNG 配置
+ */
+export async function getSearXNGSettings(): Promise<SearXNGSettings> {
+  return {
+    searxng_url: (await getSetting(SETTINGS_KEYS.SEARXNG_URL)) || process.env.SEARXNG_URL || 'http://127.0.0.1:8080',
+  };
+}
+
+/**
+ * 保存 SearXNG 配置
+ */
+export async function saveSearXNGSettings(settings: Partial<SearXNGSettings>): Promise<void> {
+  if (settings.searxng_url !== undefined) {
+    await setSetting(SETTINGS_KEYS.SEARXNG_URL, settings.searxng_url);
   }
 }

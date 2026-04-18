@@ -3,6 +3,12 @@
  */
 
 import { feishuNotificationsAdapter } from './feishu-notifications.js';
+import {
+  getMessageWebhookUrl,
+  getFeishuWebhookUrl,
+  getSmtpConfig,
+  getTelegramConfig,
+} from './settings-cache.js';
 
 export interface NotificationPayload {
   approvalId: string;
@@ -23,19 +29,17 @@ export interface NotificationAdapter {
 
 function getEnabledChannels(): NotificationAdapter[] {
   const channels: NotificationAdapter[] = [];
+  const smtp = getSmtpConfig();
+  const tg = getTelegramConfig();
 
-  // 方案 B: 飞书应用 Bot（交互式卡片，含批准/拒绝按钮）
-  if (process.env.LARK_APP_ID && process.env.LARK_APP_SECRET) {
-    channels.push(feishuNotificationsAdapter);
-  }
-  // 方案 A: 飞书 Webhook（兼容旧版，仅单向推送）
-  else if (process.env.FEISHU_WEBHOOK_URL) {
+  // 飞书 Webhook（兼容旧版，仅单向推送）
+  if (getFeishuWebhookUrl()) {
     channels.push(feishuAdapter);
   }
-  if (process.env.SMTP_HOST) {
+  if (smtp.host) {
     channels.push(emailAdapter);
   }
-  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+  if (tg.botToken && tg.chatId) {
     channels.push(telegramAdapter);
   }
 
@@ -56,7 +60,7 @@ export async function sendApprovalNotification(payload: NotificationPayload): Pr
 const feishuAdapter: NotificationAdapter = {
   name: 'feishu',
   async send(payload) {
-    const url = process.env.FEISHU_WEBHOOK_URL!;
+    const url = getFeishuWebhookUrl();
     const emoji = payload.status === 'pending' ? '⏳'
       : payload.status === 'approved' ? '✅'
       : payload.status === 'rejected' ? '❌' : '⏰';
@@ -102,12 +106,13 @@ const emailAdapter: NotificationAdapter = {
       return;
     }
 
-    const host = process.env.SMTP_HOST!;
-    const port = parseInt(process.env.SMTP_PORT || '587');
-    const user = process.env.SMTP_USER!;
-    const pass = process.env.SMTP_PASS!;
-    const to = process.env.SMTP_TO!;
-    const from = process.env.SMTP_FROM || user;
+    const smtp = getSmtpConfig();
+    const host = smtp.host;
+    const port = smtp.port;
+    const user = smtp.user;
+    const pass = smtp.pass;
+    const to = smtp.to;
+    const from = smtp.from || user;
 
     const emoji = payload.status === 'pending' ? '⏳'
       : payload.status === 'approved' ? '✅'
@@ -136,8 +141,9 @@ const emailAdapter: NotificationAdapter = {
 const telegramAdapter: NotificationAdapter = {
   name: 'telegram',
   async send(payload) {
-    const token = process.env.TELEGRAM_BOT_TOKEN!;
-    const chatId = process.env.TELEGRAM_CHAT_ID!;
+    const tg = getTelegramConfig();
+    const token = tg.botToken;
+    const chatId = tg.chatId;
 
     const emoji = payload.status === 'pending' ? '⏳'
       : payload.status === 'approved' ? '✅'

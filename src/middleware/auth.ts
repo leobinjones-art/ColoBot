@@ -54,19 +54,35 @@ export function hasKeys(): boolean {
 }
 
 /**
- * 初始化认证：解析 CLI 参数或交互式输入
+ * 验证 API Key 是否有效
+ */
+export function validateKey(key: string): boolean {
+  if (!configured || apiKeys.size === 0) return true; // 未配置则直接通过
+  return apiKeys.has(key);
+}
+
+/**
+ * 初始化认证：解析 CLI 参数、环境变量或交互式输入
  */
 export async function initAuth(): Promise<void> {
   const cliKeys = parseCliArgs();
   if (cliKeys.length > 0) {
     setApiKeys(cliKeys);
-    console.log(`[Auth] API Keys 已从启动参数加载 (${apiKeys.size} 个)`);
+    console.log(`[Auth] API Keys loaded from CLI args (${apiKeys.size})`);
+    return;
+  }
+
+  // 从环境变量加载
+  const envKey = process.env.COLOBOT_API_KEY;
+  if (envKey && envKey.trim()) {
+    setApiKeys([envKey.trim()]);
+    console.log('[Auth] API Key loaded from COLOBOT_API_KEY env');
     return;
   }
 
   configured = true;
 
-  // 非 TTY 环境（如测试、后台进程）跳过交互式输入
+  // 非 TTY 环境（如 systemd 后台进程）跳过交互式输入
   if (!process.stdin.isTTY) {
     console.log('[Auth] 非交互模式，未设置 API Keys（跳过认证）');
     return;

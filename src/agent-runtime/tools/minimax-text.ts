@@ -4,6 +4,7 @@
  * - vision: 视觉理解
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
 
 export function registerTools(): void {
   /**
@@ -16,7 +17,7 @@ export function registerTools(): void {
    * aspect_ratio: 1:1 16:9 4:3 3:2 2:3 3:4 9:16 21:9 (仅 image-01)
    */
   registerTool('generate_image', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const {
@@ -110,7 +111,7 @@ export function registerTools(): void {
    * POST https://api.minimaxi.com/v1/coding_plan/vlm
    */
   registerTool('vision', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { prompt, image_url, file_id } = args as {

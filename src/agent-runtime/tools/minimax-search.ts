@@ -3,6 +3,7 @@
  * - minimax_search: 官方搜索（coding-plan-search）
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
 
 export function registerTools(): void {
   /**
@@ -12,7 +13,7 @@ export function registerTools(): void {
    * 支持 Google 高级搜索语法
    */
   registerTool('minimax_search', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { q } = args as { q: string };

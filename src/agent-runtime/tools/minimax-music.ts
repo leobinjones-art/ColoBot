@@ -4,6 +4,7 @@
  * - generate_music_cover: 音乐翻唱
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
 
 export function registerTools(): void {
   /**
@@ -13,7 +14,7 @@ export function registerTools(): void {
    * 模型: music-2.6 / music-2.6-free / music-2.5+ / music-2.5
    */
   registerTool('generate_music', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const {
@@ -101,7 +102,7 @@ export function registerTools(): void {
    * 模型: music-cover / music-cover-free
    */
   registerTool('generate_music_cover', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const {
