@@ -40,8 +40,8 @@ function register() {
       return { ok: true, path: safePath, content, size: content.length };
     } catch (e) {
       const err = e as { code?: string };
-      if (err.code === 'ENOENT') throw new Error(`File not found: ${file_path}`);
-      if (err.code === 'EISDIR') throw new Error(`Path is a directory: ${file_path}`);
+      if (err.code === 'ENOENT') throw new Error(`File not found: ${file_path}`, { cause: e });
+      if (err.code === 'EISDIR') throw new Error(`Path is a directory: ${file_path}`, { cause: e });
       throw e;
     }
   });
@@ -57,7 +57,7 @@ function register() {
     } catch (e) {
       const err = e as { code?: string; message?: string };
       if (err.code !== 'EEXIST') {
-        throw new Error(`Failed to create directory: ${err.message}`);
+        throw new Error(`Failed to create directory: ${err.message}`, { cause: e });
       }
     }
     try {
@@ -65,7 +65,7 @@ function register() {
       return { ok: true, path: safePath, size: content.length };
     } catch (e) {
       const err = e as { code?: string; message?: string };
-      throw new Error(`Failed to write file: ${err.message}`);
+      throw new Error(`Failed to write file: ${err.message}`, { cause: e });
     }
   });
 
@@ -82,7 +82,7 @@ function register() {
         return { path: safePath, entries: entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' })) };
       } catch (e) {
         const err = e as { code?: string };
-        if (err.code === 'ENOENT') throw new Error(`Directory not found: ${dir_path || workspace}`);
+        if (err.code === 'ENOENT') throw new Error(`Directory not found: ${dir_path || workspace}`, { cause: e });
         throw e;
       }
     }
@@ -95,7 +95,7 @@ function register() {
       return { path: safePath, entries: entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' })) };
     } catch (e) {
       const err = e as { code?: string };
-      if (err.code === 'ENOENT') throw new Error(`Directory not found: ${base}`);
+      if (err.code === 'ENOENT') throw new Error(`Directory not found: ${base}`, { cause: e });
       throw e;
     }
   });
@@ -111,7 +111,7 @@ function register() {
       return { ok: true, path: safePath };
     } catch (e) {
       const err = e as { code?: string };
-      if (err.code === 'ENOENT') throw new Error(`File not found: ${file_path}`);
+      if (err.code === 'ENOENT') throw new Error(`File not found: ${file_path}`, { cause: e });
       throw e;
     }
   });

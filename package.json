@@ -11,19 +11,24 @@
     "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "eslint src/ --max-warnings 200",
     "test:e2e": "vitest run src/__tests__/e2e.test.ts",
     "test:e2e:watch": "vitest src/__tests__/e2e.test.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "ws": "^8.18.0",
     "pg": "^8.13.0",
-    "pgvector": "^0.2.0"
+    "pgvector": "^0.2.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
-    "@types/ws": "^8.5.12",
     "@types/pg": "^8.11.10",
+    "@types/ws": "^8.5.12",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^10.2.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"

@@ -14,10 +14,6 @@ interface TestAgent {
   name: string;
 }
 
-async function wait(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 async function api(path: string, method = 'GET', body?: unknown) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -123,7 +119,7 @@ describe('ColoBot E2E', () => {
 
   it('08 - create and execute skill', async () => {
     // 创建 skill
-    const { status: createStatus } = await api('/api/skills', 'POST', {
+    const { status: _createStatus } = await api('/api/skills', 'POST', {
       name: 'EchoSkill',
       description: '回声技能',
       markdown_content: `# EchoSkill

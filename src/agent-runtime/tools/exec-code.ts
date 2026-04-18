@@ -60,9 +60,9 @@ function register() {
     } catch (e) {
       const err = e as { message?: string; code?: string };
       if (err.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
-        throw new Error(`Execution timed out after ${timeout}ms`);
+        throw new Error(`Execution timed out after ${timeout}ms`, { cause: e });
       }
-      throw new Error(`Execution error: ${err.message}`);
+      throw new Error(`Execution error: ${err.message}`, { cause: e });
     }
 
     const result = sandbox.result !== undefined

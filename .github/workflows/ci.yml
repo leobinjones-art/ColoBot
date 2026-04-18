@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Type Check + Unit Tests
+    name: Type Check + Lint + Tests
     runs-on: ubuntu-latest
 
     services:
@@ -46,18 +46,12 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit --skipLibCheck
 
+      - name: Prettier check
+        run: npx prettier --check .
+        ignore-path: .gitignore
+
+      - name: ESLint
+        run: npm run lint
+
       - name: Run unit tests
         run: npm test -- --run
-
-  lint:
-    name: Prettier Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx prettier --check .
-        ignore-path: .gitignore
