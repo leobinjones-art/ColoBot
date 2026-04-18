@@ -8,7 +8,9 @@
     "dev": "tsx watch src/colobot-server.ts",
     "build": "tsc",
     "start": "node dist/colobot-server.js",
-    "db:init": "psql -U colonies -d colobot < sql/schema.sql",
+    "db:init": "psql -U colobot -d colobot < sql/schema.sql",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "vitest run src/__tests__/e2e.test.ts",
     "test:e2e:watch": "vitest src/__tests__/e2e.test.ts"
   },
