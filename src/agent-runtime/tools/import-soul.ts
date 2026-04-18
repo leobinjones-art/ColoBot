@@ -9,6 +9,7 @@
  */
 import { registerTool } from './executor.js';
 import { parseOpenClawSoul, toColoBotSoul } from './openclaw.js';
+import { safeFetch } from '../../utils/safe-fetch.js';
 
 function register() {
   registerTool('import_soul', async (args) => {
@@ -26,7 +27,7 @@ function register() {
     let content = markdown;
 
     if (!content && url) {
-      const res = await fetch(url);
+      const res = await safeFetch(url);
       if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
       content = await res.text();
     }

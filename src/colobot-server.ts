@@ -18,6 +18,8 @@ import type { KnowledgeCategory } from './services/knowledge.js';
 import { requireAuth, initAuth, hasKeys, isAuthConfigured, validateKey } from './middleware/auth.js';
 import { getSopState } from './agent-runtime/sop.js';
 import { getSop } from './content-policy/sops.js';
+import { safeFetch } from './utils/safe-fetch.js';
+import { checkRateLimit, getClientIP, rateLimitResponse, DEFAULTS } from './utils/rate-limit.js';
 
 const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
 
@@ -85,8 +87,18 @@ const server = http.createServer(async (req, res) => {
   // 静态文件：dashboard /
   if (serveStatic(req, res)) return;
 
-  // ── Login（无需认证） ──
+  // ── Login（无需认证，但有 Rate Limit） ──
   if (path === '/api/login' && method === 'POST') {
+    // Rate limit: 60s 内最多 5 次
+    const ip = getClientIP(req);
+    const rl = checkRateLimit(`login:${ip}`, DEFAULTS.login);
+    if (!rl.allowed) {
+      const { status, headers, body } = rateLimitResponse(rl.retryAfterMs!);
+      res.writeHead(status, headers);
+      res.end(body);
+      return;
+    }
+
     const body = await parseBody(req);
     const key = String(body.key || '');
     if (!isAuthConfigured() || !hasKeys()) {
@@ -186,6 +198,15 @@ const server = http.createServer(async (req, res) => {
 
     // ── 消息处理 ──
     if (path === '/api/chat' && method === 'POST') {
+      // Rate limit: 60s 内最多 30 次
+      const rl = checkRateLimit(`chat:${clientIp}`, DEFAULTS.chat);
+      if (!rl.allowed) {
+        const { status, headers, body } = rateLimitResponse(rl.retryAfterMs!);
+        res.writeHead(status, headers);
+        res.end(body);
+        return;
+      }
+
       const body = await parseBody(req);
       const agent_id = String(body.agent_id || '');
       const session_key = String(body.session_key || '');
@@ -363,7 +384,7 @@ const server = http.createServer(async (req, res) => {
       // 支持从 URL 拉取
       if (!markdown && body.url) {
         try {
-          const fetched = await fetch(body.url as string);
+          const fetched = await safeFetch(body.url as string);
           if (!fetched.ok) throw new Error(`HTTP ${fetched.status}`);
           markdown = await fetched.text();
         } catch (e) {

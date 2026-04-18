@@ -1,17 +1,18 @@
 /**
  * 飞书回调路由
- * 处理飞书事件订阅回调（challenge 验证 + 按钮点击）
+ * 处理飞书事件订阅回调（challenge 验证 + 事件验签 + 按钮点击）
  */
 
 import { queryOne } from '../memory/db.js';
+import { createHmac } from 'crypto';
 
-function parseBody(req: import('http').IncomingMessage): Promise<Record<string, unknown>> {
+function parseBody(req: import('http').IncomingMessage): Promise<{ raw: string; json: Record<string, unknown> }> {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
       try {
-        resolve(body ? JSON.parse(body) : {});
+        resolve({ raw: body, json: body ? JSON.parse(body) : {} });
       } catch {
         reject(new Error('Invalid JSON'));
       }
@@ -21,15 +22,58 @@ function parseBody(req: import('http').IncomingMessage): Promise<Record<string, 
 }
 
 /**
+ * 验证飞书事件签名
+ * 签名算法：HMAC-SHA256(timestamp + body, LARK_VERIFICATION_TOKEN)
+ * 飞书将签名放在 X-Feishu-Signature header 中
+ */
+async function verifyFeishuSignature(
+  req: import('http').IncomingMessage,
+  rawBody: string
+): Promise<boolean> {
+  const token = process.env.LARK_VERIFICATION_TOKEN;
+  if (!token) {
+    // 未配置 token 时跳过验证（开发模式）
+    console.warn('[FeishuWebhook] LARK_VERIFICATION_TOKEN not set, skipping signature verification');
+    return true;
+  }
+
+  const timestamp = req.headers['x-feishu-timestamp'] as string | undefined;
+  const signature = req.headers['x-feishu-signature'] as string | undefined;
+
+  if (!timestamp || !signature) {
+    console.warn('[FeishuWebhook] Missing timestamp or signature header');
+    return false;
+  }
+
+  // 签名时效：5 分钟内有效，防止重放攻击
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - parseInt(timestamp)) > 300) {
+    console.warn('[FeishuWebhook] Signature timestamp expired');
+    return false;
+  }
+
+  const encoded = timestamp + rawBody;
+  const expected = createHmac('sha256', token).update(encoded).digest('hex');
+  return expected === signature;
+}
+
+/**
  * 处理 GET /api/webhooks/feishu（challenge 验证）
- * 或 POST /api/webhooks/feishu（飞书事件回调）
+ * 或 POST /api/webhooks/feishu（飞书事件回调 + 验签）
  */
 export async function handleFeishuEvent(req: import('http').IncomingMessage): Promise<Record<string, unknown>> {
-  const body = await parseBody(req);
+  const { raw: rawBody, json: body } = await parseBody(req);
 
   // challenge 验证（飞书事件订阅配置时）
   if (body.challenge) {
     return { challenge: body.challenge as string };
+  }
+
+  // 验签（非 challenge 事件必须验签）
+  const valid = await verifyFeishuSignature(req, rawBody);
+  if (!valid) {
+    console.warn('[FeishuWebhook] Signature verification failed');
+    throw Object.assign(new Error('Signature verification failed'), { status: 403 });
   }
 
   // 飞书事件回调（暂不处理自动逻辑，依赖按钮回调）

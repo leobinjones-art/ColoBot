@@ -6,6 +6,8 @@
  * - delete_file: 文件删除
  */
 import { registerTool } from './executor.js';
+import { getMinimaxApiKey, getOpenAIApiKey } from '../../services/settings-cache.js';
+import { safeFetch } from '../../utils/safe-fetch.js';
 
 export function registerTools(): void {
   /**
@@ -16,7 +18,7 @@ export function registerTools(): void {
    * 支持 mp3, m4a, wav, text, zip, 图片格式
    */
   registerTool('upload_file', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { file_url, file_data, purpose } = args as {
@@ -38,7 +40,7 @@ export function registerTools(): void {
       }
       fileBuffer = bytes.buffer;
     } else if (file_url) {
-      const res = await fetch(file_url);
+      const res = await safeFetch(file_url);
       if (!res.ok) throw new Error(`Failed to download file: ${res.status}`);
       fileBuffer = await res.arrayBuffer();
     } else {
@@ -94,7 +96,7 @@ export function registerTools(): void {
    * purpose: voice_clone / prompt_audio / t2a_async_input
    */
   registerTool('list_files', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { purpose } = args as { purpose?: string };
@@ -143,7 +145,7 @@ export function registerTools(): void {
    * GET https://api.minimaxi.com/v1/files/retrieve?file_id=xxx
    */
   registerTool('retrieve_file', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { file_id } = args as { file_id: string };
@@ -194,7 +196,7 @@ export function registerTools(): void {
    * purpose: voice_clone / prompt_audio / t2a_async / t2a_async_input / video_generation
    */
   registerTool('minimax_delete_file', async (args) => {
-    const apiKey = process.env.MINIMAX_API_KEY;
+    const apiKey = getMinimaxApiKey();
     if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
     const { file_id, purpose } = args as { file_id: string; purpose: string };
