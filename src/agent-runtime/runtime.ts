@@ -267,36 +267,117 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
     const welcome = triggerCheck.sop.welcome;
 
-    // 如果用户消息较长（>100字符），说明已提供详细内容，直接处理第一步
-    if (messageText.length > 100) {
-      // 初始化并直接完成第一步
+    // 如果用户消息较长（>200字符），说明已提供详细研究内容
+    // 直接完成前两步，进入任务分解
+    if (messageText.length > 200) {
+      console.log(`[SOP] 长消息检测，直接进入任务分解`);
       const state = await initSop(agentId, sessionKey, triggerCheck.category!);
       const sop = triggerCheck.sop;
-      const step1 = sop.steps[0];
 
-      // 手动更新状态（避免重新查询）
+      // 完成步骤1：收集主题
       state.steps.push({
         step: 1,
-        name: step1.name,
+        name: sop.steps[0].name,
         content: messageText,
         completed_at: new Date().toISOString(),
       });
-      state.currentStep = 2;
 
-      // 保存更新后的状态
+      // 完成步骤2：补充资料（标记为"用户已提供研究内容"）
+      state.steps.push({
+        step: 2,
+        name: sop.steps[1].name,
+        content: '用户已在研究任务中提供详细内容',
+        completed_at: new Date().toISOString(),
+      });
+
+      state.currentStep = 3;
+
+      // 保存状态
       const { addMemory } = await import('../memory/vector.js');
       await addMemory(agentId, `sop_state:${sessionKey}`, JSON.stringify(state), {
         type: 'sop_state',
         category: triggerCheck.category!,
       });
 
-      const step2Prompt = sop.steps[1]?.prompt ?? '请继续。';
-      const fullResponse = `${welcome}\n\n---\n\n已收到你的研究内容，正在处理...\n\n**${step1.name}** 已完成。\n\n${step2Prompt}`;
+      // AI 生成任务拆解
+      const taskBreakdownPrompt = `基于以下研究任务，生成详细的学术研究任务拆解。
+
+研究任务：
+"""
+${messageText}
+"""
+
+请将研究工作拆分为 4-6 个阶段，每个阶段列出具体工作内容。
+
+格式要求：
+**阶段1：XXX**
+- 任务1
+- 任务2
+
+**阶段2：XXX**
+- 任务1
+- 任务2
+
+...`;
+
+      const taskBreakdownResult = await agentChat(soul, [{ role: 'user', content: taskBreakdownPrompt }], {
+        temperature: 0.7,
+        maxTokens: 2000,
+        model: agent.primary_model_id ?? undefined,
+        fallbackModelId: agent.fallback_model_id ?? undefined,
+      });
+      const taskBreakdown = typeof taskBreakdownResult.content === 'string' ? taskBreakdownResult.content : '任务拆解生成中...';
+
+      // AI 生成操作手册
+      const operationManualPrompt = `基于以下研究任务，生成研究操作手册。
+
+研究任务：
+"""
+${messageText}
+"""
+
+请提供：
+1. 关键研究方法/工具
+2. 具体操作步骤
+3. 关键参数设置建议
+4. 注意事项
+
+格式清晰，便于执行。`;
+
+      const operationManualResult = await agentChat(soul, [{ role: 'user', content: operationManualPrompt }], {
+        temperature: 0.7,
+        maxTokens: 2000,
+        model: agent.primary_model_id ?? undefined,
+        fallbackModelId: agent.fallback_model_id ?? undefined,
+      });
+      const operationManual = typeof operationManualResult.content === 'string' ? operationManualResult.content : '操作手册生成中...';
+
+      const fullResponse = `✅ **已收到你的研究任务**
+
+---
+
+**已完成的步骤：**
+- ✅ 步骤1：收集主题
+- ✅ 步骤2：补充资料
+
+---
+
+**【步骤 3/7】任务拆解**
+
+${taskBreakdown}
+
+---
+
+**【步骤 4/7】操作手册**
+
+${operationManual}`;
+
       await sessionManager.appendMessage(agentId, sessionKey, 'assistant', fullResponse);
       pushWsResult(agentId, sessionKey, fullResponse);
       return { response: fullResponse, toolCalls: [], finished: true };
     }
 
+    // 短消息：正常进入 SOP 流程
     await initSop(agentId, sessionKey, triggerCheck.category!);
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', welcome);
     pushWsResult(agentId, sessionKey, welcome);
