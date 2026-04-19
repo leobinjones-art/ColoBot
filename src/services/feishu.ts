@@ -134,6 +134,38 @@ class FeishuClient {
       throw new Error(`Feishu update error: ${data.code} - ${data.msg || 'unknown'}`);
     }
   }
+
+  /**
+   * 发送文本消息
+   */
+  async sendTextMessage(receiveId: string, text: string): Promise<string> {
+    const token = await this.getToken();
+
+    const res = await fetch(FEISHU_MESSAGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        receive_id: receiveId,
+        msg_type: 'text',
+        content: JSON.stringify({ text }),
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Feishu message API error: ${res.status}`);
+    }
+
+    const data = await res.json() as FeishuMessageResponse;
+
+    if (data.code !== 0) {
+      throw new Error(`Feishu send error: ${data.code} - ${data.msg || 'unknown'}`);
+    }
+
+    return data.data?.message_id || '';
+  }
 }
 
 export const feishuClient = FeishuClient.getInstance();

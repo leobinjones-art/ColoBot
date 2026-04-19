@@ -194,19 +194,27 @@
         <div class="settings-row">
           <label data-i18n="Approver Open ID">Approver Open ID</label>
           <input type="text" id="feishu-approver-open-id" placeholder="ou_xxxxxxxx">
-        </div>
-        <div class="settings-row">
-          <label data-i18n="Callback URL">Callback URL</label>
-          <input type="text" id="feishu-callback-url" placeholder="https://your-domain.com" readonly>
+          <small>审批人飞书 Open ID，用于审批通知</small>
         </div>
         <div class="settings-row">
           <label data-i18n="Verification Token">Verification Token</label>
           <input type="text" id="feishu-verify-token" placeholder="xxxxxxxx">
+          <small>可选，用于验证飞书回调签名</small>
         </div>
         <div class="settings-status">
           <span class="status-dot" id="feishu-status-dot"></span>
           <span id="feishu-status-text" data-i18n="Not configured">Not configured</span>
         </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Agent Binding">Agent Binding</h3>
+        <div class="settings-row">
+          <label data-i18n="Bound Agent">Bound Agent</label>
+          <select id="feishu-agent-id" style="padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+            <option value="">-- Select Agent --</option>
+          </select>
+        </div>
+        <p style="font-size:12px;color:var(--text-dim);margin-top:8px">飞书收到的消息将由该 Agent 处理</p>
       </div>
       <div class="settings-section">
         <h3 data-i18n="Webhook (Method A - Legacy)">Webhook (Method A - Legacy)</h3>
@@ -215,9 +223,18 @@
           <input type="text" id="feishu-webhook-url" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx">
         </div>
       </div>
-      <p style="font-size:13px;color:var(--text-dim);margin-top:12px">
-        Settings are stored in database and take effect immediately. Environment variables are used as fallbacks if database values are empty.
-      </p>
+      <div style="background:var(--bg);padding:12px;border-radius:8px;margin-top:12px">
+        <h4 style="font-size:14px;margin-bottom:8px">📋 配置步骤</h4>
+        <ol style="font-size:13px;color:var(--text-dim);margin-left:16px">
+          <li>在 <a href="https://open.feishu.cn" target="_blank" style="color:var(--accent)">飞书开放平台</a> 创建企业自建应用</li>
+          <li>获取 App ID 和 App Secret，填入上方表单</li>
+          <li>在「事件订阅」中选择 <strong>"使用长连接接收事件"</strong></li>
+          <li>添加事件：<code>im.message.receive_v1</code></li>
+          <li>选择要绑定的 Agent，点击保存</li>
+          <li>发布应用版本，添加到企业可用范围</li>
+        </ol>
+        <p style="font-size:12px;color:var(--success);margin-top:8px">✅ 长连接模式已启用，无需公网 IP</p>
+      </div>
     </div>
 
     <!-- Model Settings -->
@@ -571,6 +588,10 @@ const I18N = {
     'Verification Token': '验证 Token',
     'Configured': '已配置',
     'Not configured': '未配置',
+    'Agent Binding': 'Agent 绑定',
+    'Bound Agent': '绑定 Agent',
+    'Messages received from Feishu': '飞书收到的消息将由该 Agent 处理',
+    'Select Agent': '选择 Agent',
     'Webhook (Method A - Legacy)': 'Webhook (方式 A - 旧版)',
     'Webhook URL': 'Webhook URL',
     'Settings are stored in database': '设置存储在数据库中',
@@ -781,6 +802,10 @@ const I18N = {
     'Verification Token': 'Verification Token',
     'Configured': 'Configured',
     'Not configured': 'Not configured',
+    'Agent Binding': 'Agent Binding',
+    'Bound Agent': 'Bound Agent',
+    'Messages received from Feishu': 'Messages received from Feishu will be processed by this Agent',
+    'Select Agent': 'Select Agent',
     'Webhook (Method A - Legacy)': 'Webhook (Method A - Legacy)',
     'Webhook URL': 'Webhook URL',
     'Settings are stored in database': 'Settings are stored in database',
@@ -1126,10 +1151,21 @@ function checkFeishuStatus() {
     const configured = settings.lark_app_id && settings.lark_app_secret;
     document.getElementById('feishu-status-text').textContent = configured ? 'Configured' : 'Not configured';
     document.getElementById('feishu-status-dot').classList.toggle('error', !configured);
+
+    // Load agents for binding
+    loadFeishuAgentSelect(settings.feishu_agent_id);
   }).catch(() => {
     document.getElementById('feishu-status-text').textContent = 'Error loading';
     document.getElementById('feishu-status-dot').classList.add('error');
   });
+}
+
+function loadFeishuAgentSelect(selectedId) {
+  api('/api/agents').then(agents => {
+    const select = document.getElementById('feishu-agent-id');
+    select.innerHTML = '<option value="">-- Select Agent --</option>' +
+      agents.map(a => `<option value="${esc(a.id)}" ${a.id === selectedId ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
+  }).catch(() => {});
 }
 
 function saveFeishuSettings() {
@@ -1140,6 +1176,7 @@ function saveFeishuSettings() {
     lark_verification_token: document.getElementById('feishu-verify-token').value,
     feishu_webhook_url: document.getElementById('feishu-webhook-url').value,
     colobot_public_url: document.getElementById('feishu-callback-url').value.replace('/api/webhooks/feishu', ''),
+    feishu_agent_id: document.getElementById('feishu-agent-id').value,
   };
   api('/api/settings/feishu', 'PUT', settings).then(() => toast('Settings saved')).catch(() => toast('Failed to save', 'error'));
 }
@@ -1172,34 +1209,98 @@ function loadAgents() {
 }
 
 function showCreateAgentModal() {
-  showModal('Create Agent', `
-    <div class="form-group">
-      <label>Name</label>
-      <input type="text" id="agent-name" placeholder="my-agent">
-    </div>
-    <div class="form-group">
-      <label>Primary Model ID</label>
-      <input type="text" id="agent-primary-model" placeholder="gpt-4o">
-    </div>
-    <div class="form-group">
-      <label>Fallback Model ID</label>
-      <input type="text" id="agent-fallback-model" placeholder="anthropic:claude-sonnet-4-20250514,openai:gpt-4o-mini">
-      <small>Comma-separated chain, prefix with provider: for cross-provider</small>
-    </div>
-    <div class="form-group">
-      <label>Temperature</label>
-      <input type="number" id="agent-temp" value="0.7" step="0.1" min="0" max="2">
-    </div>
-  `, [
-    { label: 'Cancel', class: 'secondary', onClick: closeModal },
-    { label: 'Create', onClick: createAgent },
-  ]);
+  // Fetch available models first
+  api('/api/llm/models').then(data => {
+    const modelOptions = (data.models || []).map(m =>
+      `<option value="${esc(m.id)}">${esc(m.name || m.id)}</option>`
+    ).join('');
+
+    showModal('Create Agent', `
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="agent-name" placeholder="my-agent">
+      </div>
+      <div class="form-group">
+        <label>Primary Model</label>
+        <select id="agent-primary-model" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px">
+          <option value="">-- Select Model --</option>
+          ${modelOptions || '<option value="gpt-4o">gpt-4o (default)</option>'}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fallback Models (Optional)</label>
+        <div id="fallback-models-list" style="margin-bottom:8px"></div>
+        <button class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="addFallbackModel()">+ Add Fallback</button>
+        <small style="display:block;margin-top:4px">When primary fails, try fallbacks in order</small>
+      </div>
+      <div class="form-group">
+        <label>Temperature</label>
+        <input type="number" id="agent-temp" value="0.7" step="0.1" min="0" max="2">
+      </div>
+    `, [
+      { label: 'Cancel', class: 'secondary', onClick: closeModal },
+      { label: 'Create', onClick: createAgent },
+    ]);
+
+    // Store model options for fallback selection
+    window._agentModelOptions = modelOptions;
+  }).catch(() => {
+    showModal('Create Agent', `
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="agent-name" placeholder="my-agent">
+      </div>
+      <div class="form-group">
+        <label>Primary Model ID</label>
+        <input type="text" id="agent-primary-model" placeholder="gpt-4o">
+      </div>
+      <div class="form-group">
+        <label>Fallback Model ID</label>
+        <input type="text" id="agent-fallback-model" placeholder="anthropic:claude-sonnet-4-20250514">
+      </div>
+      <div class="form-group">
+        <label>Temperature</label>
+        <input type="number" id="agent-temp" value="0.7" step="0.1" min="0" max="2">
+      </div>
+    `, [
+      { label: 'Cancel', class: 'secondary', onClick: closeModal },
+      { label: 'Create', onClick: createAgent },
+    ]);
+  });
+}
+
+let fallbackModelCount = 0;
+
+function addFallbackModel() {
+  const list = document.getElementById('fallback-models-list');
+  const modelOptions = window._agentModelOptions || '<option value="gpt-4o-mini">gpt-4o-mini</option>';
+  const idx = fallbackModelCount++;
+
+  const div = document.createElement('div');
+  div.className = 'fallback-model-item';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  div.innerHTML = `
+    <select id="fallback-model-${idx}" style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+      <option value="">-- Select --</option>
+      ${modelOptions}
+    </select>
+    <button class="btn secondary" style="padding:4px 8px;font-size:12px" onclick="this.parentElement.remove()">✕</button>
+  `;
+  list.appendChild(div);
 }
 
 function createAgent() {
   const name = document.getElementById('agent-name').value;
-  const primary = document.getElementById('agent-primary-model').value;
-  const fallback = document.getElementById('agent-fallback-model').value;
+  const primaryEl = document.getElementById('agent-primary-model');
+  const primary = primaryEl ? primaryEl.value : '';
+
+  // Collect fallback models
+  const fallbacks = [];
+  document.querySelectorAll('.fallback-model-item select').forEach(function(sel) {
+    if (sel.value) fallbacks.push(sel.value);
+  });
+  const fallback = fallbacks.join(',');
+
   const temp = parseFloat(document.getElementById('agent-temp').value);
   if (!name) return toast('Name is required', 'error');
   api('/api/agents', 'POST', { name, primary_model_id: primary || undefined, fallback_model_id: fallback || undefined, temperature: temp })

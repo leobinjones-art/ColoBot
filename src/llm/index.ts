@@ -267,7 +267,7 @@ function getDefaultModel(provider: ProviderType): string {
   switch (provider) {
     case 'openai': return 'gpt-4o';
     case 'anthropic': return 'claude-sonnet-4-20250514';
-    case 'minimax': return 'MiniMax-Text-01';
+    case 'minimax': return 'MiniMax-M2.7-highspeed';
   }
 }
 

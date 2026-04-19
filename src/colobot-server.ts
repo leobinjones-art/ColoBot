@@ -21,6 +21,7 @@ import { getSopState } from './agent-runtime/sop.js';
 import { getSop } from './content-policy/sops.js';
 import { safeFetch } from './utils/safe-fetch.js';
 import { checkRateLimit, getClientIP, rateLimitResponse, DEFAULTS } from './utils/rate-limit.js';
+import { startLongPolling } from './services/feishu-long-polling.js';
 
 const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
 
@@ -835,8 +836,8 @@ const server = http.createServer(async (req, res) => {
         );
       } else if (provider === 'minimax') {
         models.push(
-          { id: 'MiniMax-Text-01', name: 'MiniMax Text 01', provider: 'minimax' },
-          { id: 'abab6.5s-chat', name: 'ABAB 6.5s Chat', provider: 'minimax' },
+          { id: 'MiniMax-M2.7-highspeed', name: 'MiniMax M2.7 Highspeed', provider: 'minimax' },
+          { id: 'MiniMax-M2.7', name: 'MiniMax M2.7', provider: 'minimax' },
         );
       }
 
@@ -1065,6 +1066,9 @@ async function main() {
 
   // 初始化 Trigger 引擎
   await initTriggerEngine();
+
+  // 启动飞书长连接（无需公网 IP）
+  startLongPolling().catch(e => console.error('[FeishuLongPolling] Start error:', e));
 
   server.listen(PORT, () => {
     console.log(`[ColoBot] Server running at http://localhost:${PORT}`);

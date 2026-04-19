@@ -1,9 +1,9 @@
 /**
  * 飞书回调路由
- * 处理飞书事件订阅回调（challenge 验证 + 事件验签 + 按钮点击）
+ * 处理飞书事件订阅回调（challenge 验证 + 事件验签 + 按钮点击 + 消息对话）
  */
 
-import { queryOne } from '../memory/db.js';
+import { queryOne, query } from '../memory/db.js';
 import { createHmac } from 'crypto';
 
 function parseBody(req: import('http').IncomingMessage): Promise<{ raw: string; json: Record<string, unknown> }> {
@@ -76,10 +76,89 @@ export async function handleFeishuEvent(req: import('http').IncomingMessage): Pr
     throw Object.assign(new Error('Signature verification failed'), { status: 403 });
   }
 
-  // 飞书事件回调（暂不处理自动逻辑，依赖按钮回调）
+  // 飞书事件回调
   console.log('[FeishuWebhook] Event received:', JSON.stringify(body).slice(0, 200));
 
+  // 处理消息事件
+  const event = body.event as Record<string, unknown> | undefined;
+  if (event && event.type === 'message') {
+    await handleFeishuMessage(event);
+  }
+
   return { ok: true };
+}
+
+/**
+ * 处理飞书消息，调用 Agent 回复
+ */
+async function handleFeishuMessage(event: Record<string, unknown>): Promise<void> {
+  const message = event.message as Record<string, unknown> | undefined;
+  if (!message) return;
+
+  const content = message.content as string;
+  const sender = message.sender as Record<string, unknown> | undefined;
+  const senderId = sender?.id as string || 'unknown';
+  const chatType = message.chat_type as string;
+
+  // 只处理私聊和群聊文本消息
+  if (chatType !== 'p2p' && chatType !== 'group') return;
+
+  // 解析消息内容
+  let text = '';
+  try {
+    const contentJson = JSON.parse(content);
+    text = contentJson.text || '';
+  } catch {
+    text = content;
+  }
+
+  if (!text.trim()) return;
+
+  console.log(`[FeishuWebhook] Message from ${senderId}: ${text.slice(0, 50)}...`);
+
+  // 获取绑定的 Agent
+  const { getSetting, SETTINGS_KEYS } = await import('../services/settings.js');
+  const agentId = await getSetting(SETTINGS_KEYS.FEISHU_AGENT_ID);
+
+  if (!agentId) {
+    console.warn('[FeishuWebhook] No agent bound to Feishu, set feishu_agent_id in settings');
+    return;
+  }
+
+  // 获取 Agent 信息
+  const agent = await queryOne<{ id: string; name: string; primary_model_id: string; fallback_model_id: string }>(
+    'SELECT id, name, primary_model_id, fallback_model_id FROM agents WHERE id = $1',
+    [agentId]
+  );
+
+  if (!agent) {
+    console.warn(`[FeishuWebhook] Agent ${agentId} not found`);
+    return;
+  }
+
+  try {
+    // 调用 Agent 运行时
+    const { runAgent } = await import('../agent-runtime/runtime.js');
+    const result = await runAgent({
+      agentId,
+      sessionKey: `feishu-${senderId}`,
+      userMessage: text,
+    });
+
+    // 发送回复
+    const { feishuClient } = await import('../services/feishu.js');
+
+    if ('pending' in result && result.pending) {
+      // 需要审批，发送等待消息
+      await feishuClient.sendTextMessage(senderId, '您的请求需要审批，请等待审批人处理。');
+    } else if ('response' in result) {
+      const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result.response);
+      await feishuClient.sendTextMessage(senderId, responseText);
+    }
+    console.log(`[FeishuWebhook] Replied to ${senderId}`);
+  } catch (e) {
+    console.error('[FeishuWebhook] Failed to process message:', e);
+  }
 }
 
 /**

@@ -75,6 +75,7 @@ export const SETTINGS_KEYS = {
   SUBAGENT_BLOCKED_TOOLS: 'subagent_blocked_tools',
   SUBAGENT_DEFAULT_TTL_MS: 'subagent_default_ttl_ms',
   SEARXNG_URL: 'searxng_url',
+  FEISHU_AGENT_ID: 'feishu_agent_id',
 } as const;
 
 export type FeishuSettings = {
@@ -84,6 +85,7 @@ export type FeishuSettings = {
   feishu_approver_open_id: string;
   feishu_webhook_url: string;
   colobot_public_url: string;
+  feishu_agent_id: string;
 };
 
 /**
@@ -99,6 +101,7 @@ export async function getFeishuSettings(): Promise<FeishuSettings> {
     feishu_approver_open_id: settings[SETTINGS_KEYS.FEISHU_APPROVER_OPEN_ID] || process.env.FEISHU_APPROVER_OPEN_ID || '',
     feishu_webhook_url: settings[SETTINGS_KEYS.FEISHU_WEBHOOK_URL] || process.env.FEISHU_WEBHOOK_URL || '',
     colobot_public_url: settings[SETTINGS_KEYS.COLOBOT_PUBLIC_URL] || process.env.COLOBOT_PUBLIC_URL || '',
+    feishu_agent_id: settings[SETTINGS_KEYS.FEISHU_AGENT_ID] || '',
   };
 }
 
