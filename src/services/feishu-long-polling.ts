@@ -41,7 +41,7 @@ export async function startLongPolling(): Promise<void> {
     wsClient = new lark.WSClient({
       appId: config.appId,
       appSecret: config.appSecret,
-      loggerLevel: lark.LoggerLevel.error,
+      domain: lark.Domain.Feishu, // 国内版飞书
     });
 
     // 创建事件分发器
