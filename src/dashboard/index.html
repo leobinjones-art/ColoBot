@@ -167,6 +167,7 @@
     <div class="tab" data-tab="approvals" data-i18n="Approvals">Approvals</div>
     <div class="tab" data-tab="audit" data-i18n="Audit">Audit</div>
     <div class="tab" data-tab="subagent" data-i18n="SubAgent">SubAgent</div>
+    <div class="tab" data-tab="workspace" data-i18n="Workspace">Workspace</div>
     <div class="tab" data-tab="sop" data-i18n="SOP">SOP</div>
     <div class="tab" data-tab="search" data-i18n="Search">Search</div>
     <div class="tab" data-tab="llm" data-i18n="LLM">LLM</div>
@@ -325,6 +326,32 @@
           <label data-i18n="Default TTL (ms)">Default TTL (ms)</label>
           <input type="number" id="subagent-default-ttl" value="300000" step="60000">
           <small>SubAgent 默认存活时间，单位毫秒。默认 5 分钟。</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Browser -->
+    <div class="section" id="sec-workspace">
+      <div class="page-header">
+        <h2 data-i18n="Workspace Browser">Workspace Browser</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="ws-agent-select" onchange="loadWorkspaceList()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="" data-i18n="Select SubAgent">Select SubAgent</option>
+          </select>
+          <button class="btn secondary" onclick="loadWorkspaceList()" data-i18n="Refresh">Refresh</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 id="ws-current-path" data-i18n="Current Path:">Current Path:</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn secondary" onclick="wsUploadFile()" data-i18n="Upload">Upload</button>
+            <button class="btn secondary" onclick="wsGoUp()" data-i18n="Go Up">Go Up</button>
+          </div>
+        </div>
+        <input type="file" id="ws-file-input" style="display:none" onchange="wsHandleFileSelect(event)">
+        <div id="ws-file-list">
+          <div class="empty"><p data-i18n="Select a SubAgent to browse its workspace">Select a SubAgent to browse its workspace</p></div>
         </div>
       </div>
     </div>
@@ -513,6 +540,7 @@ const I18N = {
     'Approvals': '审批',
     'Audit': '审计',
     'SubAgent': '子Agent',
+    'Workspace': '工作区',
     'SOP': 'SOP',
     'Search': '搜索',
     'LLM': 'LLM',
@@ -714,6 +742,7 @@ const I18N = {
     'Approvals': 'Approvals',
     'Audit': 'Audit',
     'SubAgent': 'SubAgent',
+    'Workspace': 'Workspace',
     'SOP': 'SOP',
     'Search': 'Search',
     'LLM': 'LLM',
@@ -818,6 +847,14 @@ const I18N = {
     'Default TTL (ms)': 'Default TTL (ms)',
     'Saved': 'Saved',
     'Failed to save': 'Failed to save',
+    // Workspace
+    'Workspace Browser': 'Workspace Browser',
+    'Select SubAgent': 'Select SubAgent',
+    'Refresh': 'Refresh',
+    'Current Path:': 'Current Path:',
+    'Upload': 'Upload',
+    'Go Up': 'Go Up',
+    'Select a SubAgent to browse its workspace': 'Select a SubAgent to browse its workspace',
     // SOP
     'SOP 进度': 'SOP Progress',
     '选择 Agent': 'Select Agent',
@@ -1005,6 +1042,7 @@ function initDashboard() {
       else stopApprovalPolling();
       // Load SubAgent settings when tab is shown
       if (tab.dataset.tab === 'subagent') { loadSubAgentSettings(); loadToolList(); }
+      if (tab.dataset.tab === 'workspace') { loadSubAgentsForWorkspace(); }
       if (tab.dataset.tab === 'knowledge') loadKnowledge();
       if (tab.dataset.tab === 'search') loadSearchSettings();
       if (tab.dataset.tab === 'llm') loadLlmSettings();
@@ -1409,6 +1447,18 @@ function loadAuditLogs() {
   });
 }
 
+// ─── Workspace Browser ────────────────────────────────────────
+
+function loadSubAgentsForWorkspace() {
+  api('/api/subagents').then(agents => {
+    const select = document.getElementById('ws-agent-select');
+    const currentVal = select.value;
+    select.innerHTML = '<option value="" data-i18n="Select SubAgent">Select SubAgent</option>' +
+      agents.map(a => `<option value="${esc(a.id)}">${esc(a.name)} (${esc(a.status)})</option>`).join('');
+    if (currentVal) select.value = currentVal;
+  }).catch(() => {});
+}
+
 // ─── SubAgent Settings ─────────────────────────────────────────
 
 function loadSubAgentSettings() {
@@ -1448,6 +1498,147 @@ function loadToolList() {
       tools.map(t => `<span style="background:var(--surface2);padding:3px 8px;border-radius:4px;font-size:12px;font-family:monospace">${esc(t)}</span>`).join('') +
       '</div>';
   }).catch(() => {});
+}
+
+// ─── Workspace Browser ───────────────────────────────────────
+
+let wsCurrentPath = '/';
+let wsSubAgentId = null;
+
+function loadWorkspaceList() {
+  const select = document.getElementById('ws-agent-select');
+  wsSubAgentId = select.value;
+  if (!wsSubAgentId) {
+    document.getElementById('ws-file-list').innerHTML = '<div class="empty"><p>Select a SubAgent to browse its workspace</p></div>';
+    return;
+  }
+  wsCurrentPath = '/';
+  fetchWsDirectory();
+}
+
+function fetchWsDirectory() {
+  if (!wsSubAgentId) return;
+  document.getElementById('ws-file-list').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('ws-current-path').textContent = 'Current Path: ' + wsCurrentPath;
+
+  fetch(`/api/workspace/${wsSubAgentId}`, {
+    headers: { 'Authorization': `Bearer ${apiKey}` }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('Failed to load workspace');
+      return r.json();
+    })
+    .then(data => {
+      renderWsFileList(data);
+    })
+    .catch(e => {
+      document.getElementById('ws-file-list').innerHTML = `<div class="empty"><p>Error: ${esc(e.message)}</p></div>`;
+    });
+}
+
+function renderWsFileList(data) {
+  const container = document.getElementById('ws-file-list');
+  if (!data.entries || data.entries.length === 0) {
+    container.innerHTML = '<div class="empty"><p>This directory is empty</p></div>';
+    return;
+  }
+
+  let html = '<table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid var(--border)"><th style="padding:8px">Name</th><th style="padding:8px;width:80px">Type</th><th style="padding:8px;width:100px">Actions</th></tr></thead><tbody>';
+
+  data.entries.sort((a, b) => {
+    if (a.type === b.type) return a.name.localeCompare(b.name);
+    return a.type === 'dir' ? -1 : 1;
+  }).forEach(entry => {
+    const icon = entry.type === 'dir' ? '📁' : '📄';
+    const rowStyle = 'border-bottom:1px solid var(--border)';
+    const cellStyle = 'padding:8px';
+    html += `<tr style="${rowStyle}">`;
+    html += `<td style="${cellStyle}"><span style="cursor:pointer" onclick="wsNavigate('${esc(entry.name)}', '${entry.type}')">${icon} ${esc(entry.name)}</span></td>`;
+    html += `<td style="${cellStyle};color:var(--text-dim)">${entry.type === 'dir' ? 'Dir' : 'File'}</td>`;
+    html += `<td style="${cellStyle}">`;
+    if (entry.type === 'file') {
+      html += `<button class="btn secondary" style="padding:4px 8px;font-size:12px" onclick="wsDownload('${esc(entry.name)}')">Download</button>`;
+    }
+    html += '</td></tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function wsNavigate(name, type) {
+  if (type === 'dir') {
+    // Navigate into directory
+    if (wsCurrentPath === '/') {
+      wsCurrentPath = '/' + name;
+    } else {
+      wsCurrentPath = wsCurrentPath + '/' + name;
+    }
+    fetchWsDirectory();
+  }
+  // For files, clicking does nothing (use download button)
+}
+
+function wsGoUp() {
+  if (wsCurrentPath === '/') return;
+  const parts = wsCurrentPath.split('/').filter(Boolean);
+  parts.pop();
+  wsCurrentPath = parts.length === 0 ? '/' : '/' + parts.join('/');
+  fetchWsDirectory();
+}
+
+function wsDownload(fileName) {
+  if (!wsSubAgentId) return;
+  const filePath = wsCurrentPath === '/' ? fileName : wsCurrentPath.slice(1) + '/' + fileName;
+  const url = `/api/workspace/${wsSubAgentId}/files/${filePath}`;
+  fetch(url, {
+    headers: { 'Authorization': `Bearer ${apiKey}` }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('Download failed');
+      return r.blob();
+    })
+    .then(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(e => toast('Download failed: ' + e.message, 'error'));
+}
+
+function wsUploadFile() {
+  document.getElementById('ws-file-input').click();
+}
+
+function wsHandleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file || !wsSubAgentId) return;
+
+  const filePath = wsCurrentPath === '/' ? file.name : wsCurrentPath.slice(1) + '/' + file.name;
+  const url = `/api/workspace/${wsSubAgentId}/files/${filePath}`;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: formData
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('Upload failed');
+      return r.json();
+    })
+    .then(data => {
+      toast('File uploaded successfully');
+      fetchWsDirectory();
+    })
+    .catch(e => toast('Upload failed: ' + e.message, 'error'));
+
+  // Reset input
+  event.target.value = '';
 }
 
 // ─── Search / SearXNG Settings ───────────────────────────────

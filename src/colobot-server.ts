@@ -4,6 +4,7 @@
 
 import 'dotenv/config';
 import http from 'http';
+import * as nodePath from 'path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
 import fs from 'fs';
@@ -526,6 +527,22 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── SubAgent List ──
+    if (path === '/api/subagents' && method === 'GET') {
+      const { listSubAgents } = await import('./agent-runtime/sub-agents.js');
+      const agents = listSubAgents('');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(agents.map(a => ({
+        id: a.id,
+        name: a.name,
+        status: a.status,
+        workspacePath: a.workspacePath,
+        expiresAt: a.expiresAt,
+        createdAt: a.createdAt,
+      }))));
+      return;
+    }
+
     // ── SubAgent Settings ──
     if (path === '/api/settings/subagent' && method === 'GET') {
       const { getSetting, SETTINGS_KEYS } = await import('./services/settings.js');
@@ -555,6 +572,123 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
       return;
+    }
+
+    // ── Workspace File Browser ──
+    // GET /api/workspace/:subAgentId - list workspace contents
+    // GET /api/workspace/:subAgentId/files/*path - download file
+    // POST /api/workspace/:subAgentId/files/*path - upload file
+    if (path.startsWith('/api/workspace/') && method === 'GET') {
+      const parts = path.split('/');
+      // ["", "api", "workspace", "{subAgentId}", "files", "...path"]
+      if (parts.length >= 4 && parts[2] === 'workspace') {
+        const subAgentId = parts[3];
+        const { getSubAgent, getSubAgentWorkspacePath } = await import('./agent-runtime/sub-agents.js');
+        const agent = getSubAgent(subAgentId);
+        if (!agent) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'SubAgent not found or expired' }));
+          return;
+        }
+        const workspacePath = getSubAgentWorkspacePath(subAgentId);
+        if (!workspacePath) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Workspace not found' }));
+          return;
+        }
+
+        import('fs/promises').then(async (fsP) => {
+          try {
+            const isDownload = parts[4] === 'files';
+            const filePath = isDownload && parts[5]
+              ? '/' + parts.slice(5).join('/')
+              : '/';
+            const fullPath = workspacePath + filePath;
+
+            const stats = await fsP.stat(fullPath);
+            if (stats.isDirectory()) {
+              const entries = await fsP.readdir(fullPath, { withFileTypes: true });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                path: filePath,
+                entries: entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file', size: e.isDirectory() ? null : stats.size }))
+              }));
+            } else {
+              const content = await fsP.readFile(fullPath);
+              const fileName = filePath.split('/').pop() || 'file';
+              res.writeHead(200, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': `attachment; filename="${fileName}"`,
+                'Content-Length': content.length
+              });
+              res.end(content);
+            }
+          } catch (e) {
+            const err = e as { code?: string };
+            if (err.code === 'ENOENT') {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'File not found' }));
+            } else {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: String(e) }));
+            }
+          }
+        });
+        return;
+      }
+    }
+
+    // POST /api/workspace/:subAgentId/files/*path - upload file
+    if (path.startsWith('/api/workspace/') && method === 'POST') {
+      const parts = path.split('/');
+      if (parts.length >= 5 && parts[2] === 'workspace' && parts[4] === 'files') {
+        const subAgentId = parts[3];
+        const { getSubAgent, getSubAgentWorkspacePath } = await import('./agent-runtime/sub-agents.js');
+        const agent = getSubAgent(subAgentId);
+        if (!agent) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'SubAgent not found or expired' }));
+          return;
+        }
+        const workspacePath = getSubAgentWorkspacePath(subAgentId);
+        if (!workspacePath) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Workspace not found' }));
+          return;
+        }
+
+        const filePath = '/' + parts.slice(5).join('/');
+        const fullPath = workspacePath + filePath;
+
+        // 获取上传的文件
+        const { parseMultipart } = await import('./utils/multipart.js').catch(() => ({ parseMultipart: null }));
+        if (!parseMultipart) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Multipart parser not available' }));
+          return;
+        }
+
+        try {
+          const { files } = await parseMultipart(req);
+          if (!files || files.length === 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'No file uploaded' }));
+            return;
+          }
+
+          const file = files[0];
+          const dirPath = nodePath.dirname(fullPath);
+          await fs.promises.mkdir(dirPath, { recursive: true });
+          await fs.promises.writeFile(fullPath, file.content);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, path: filePath, size: file.content.length }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: String(e) }));
+        }
+        return;
+      }
     }
 
     // ── SearXNG Settings ──
