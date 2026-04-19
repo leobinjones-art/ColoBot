@@ -66,9 +66,14 @@ export async function startLongPolling(): Promise<void> {
     await wsClient.start({ eventDispatcher });
     console.log('[FeishuLongPolling] Started with Feishu SDK WSClient');
   } catch (e) {
-    console.error('[FeishuLongPolling] Start failed:', (e as Error).message);
-    // 5秒后重试
-    setTimeout(() => startLongPolling(), 5000);
+    const errMsg = (e as Error).message;
+    if (errMsg.includes('404')) {
+      console.error('[FeishuLongPolling] 长连接未启用。请在飞书开放平台 -> 事件订阅 中选择"使用长连接接收事件"');
+    } else {
+      console.error('[FeishuLongPolling] Start failed:', errMsg);
+    }
+    // 30秒后重试
+    setTimeout(() => startLongPolling(), 30000);
   }
 }
 
