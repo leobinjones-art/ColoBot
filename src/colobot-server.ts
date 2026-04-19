@@ -749,6 +749,102 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── LLM Test & Models ──
+    if (path === '/api/llm/test' && method === 'POST') {
+      const body = await parseBody(req);
+      const provider = body.provider || 'openai';
+      const apiKey = String(body.api_key || '');
+      try {
+        if (provider === 'openai') {
+          const res2 = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          });
+          if (!res2.ok) throw new Error(`OpenAI API error: ${res2.status}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, provider: 'openai' }));
+        } else if (provider === 'anthropic') {
+          const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
+          });
+          if (!res2.ok) throw new Error(`Anthropic API error: ${res2.status}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, provider: 'anthropic' }));
+        } else if (provider === 'minimax') {
+          const res2 = await fetch('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model: 'MiniMax-Text-01', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
+          });
+          if (!res2.ok) throw new Error(`MiniMax API error: ${res2.status}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, provider: 'minimax' }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Unknown provider' }));
+        }
+      } catch (e) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: (e as Error).message }));
+      }
+      return;
+    }
+
+    if (path === '/api/llm/models' && method === 'GET') {
+      const { getLlmProvider, getOpenAIApiKey } = await import('./services/settings-cache.js');
+      const provider = getLlmProvider();
+      const models: { id: string; name: string; provider: string }[] = [];
+
+      if (provider === 'openai') {
+        const apiKey = getOpenAIApiKey();
+        if (apiKey) {
+          try {
+            const res2 = await fetch('https://api.openai.com/v1/models', {
+              headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            if (res2.ok) {
+              const data = await res2.json() as { data: Array<{ id: string }> };
+              const gptModels = data.data.filter(m => m.id.includes('gpt') || m.id.includes('o1') || m.id.includes('o3')).map(m => ({ id: m.id, name: m.id, provider: 'openai' }));
+              models.push(...gptModels);
+            }
+          } catch { /* ignore */ }
+        }
+        if (models.length === 0) {
+          models.push(
+            { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
+            { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
+            { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openai' },
+            { id: 'o1', name: 'o1', provider: 'openai' },
+            { id: 'o1-mini', name: 'o1 Mini', provider: 'openai' },
+          );
+        }
+      } else if (provider === 'anthropic') {
+        models.push(
+          { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'anthropic' },
+          { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic' },
+          { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
+          { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'anthropic' },
+        );
+      } else if (provider === 'minimax') {
+        models.push(
+          { id: 'MiniMax-Text-01', name: 'MiniMax Text 01', provider: 'minimax' },
+          { id: 'abab6.5s-chat', name: 'ABAB 6.5s Chat', provider: 'minimax' },
+        );
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ provider, models }));
+      return;
+    }
+
     // ── Notification Settings ──
     if (path === '/api/settings/notifications' && method === 'GET') {
       const { getNotificationSettings } = await import('./services/settings-cache.js');

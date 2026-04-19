@@ -409,7 +409,7 @@
         <h3 data-i18n="Provider & Mode">Provider & Mode</h3>
         <div class="settings-row">
           <label data-i18n="Provider">Provider</label>
-          <select id="llm-provider" style="padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+          <select id="llm-provider" onchange="onProviderChange()" style="padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
             <option value="minimax">MiniMax</option>
@@ -427,20 +427,35 @@
         <h3 data-i18n="API Keys">API Keys</h3>
         <div class="settings-row">
           <label data-i18n="OpenAI Key">OpenAI Key</label>
-          <input type="password" id="llm-openai-key" placeholder="sk-..." style="font-size:13px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="password" id="llm-openai-key" placeholder="sk-..." style="font-size:13px;flex:1">
+            <button class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="testLlmConnection('openai')">Test</button>
+          </div>
         </div>
         <div class="settings-row">
           <label data-i18n="Anthropic Key">Anthropic Key</label>
-          <input type="password" id="llm-anthropic-key" placeholder="sk-ant-..." style="font-size:13px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="password" id="llm-anthropic-key" placeholder="sk-ant-..." style="font-size:13px;flex:1">
+            <button class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="testLlmConnection('anthropic')">Test</button>
+          </div>
         </div>
         <div class="settings-row">
           <label data-i18n="MiniMax Key">MiniMax Key</label>
-          <input type="password" id="llm-minimax-key" placeholder="MX..." style="font-size:13px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="password" id="llm-minimax-key" placeholder="MX..." style="font-size:13px;flex:1">
+            <button class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="testLlmConnection('minimax')">Test</button>
+          </div>
         </div>
         <p style="font-size:13px;color:var(--text-dim);margin-top:12px">
           API keys are stored encrypted in the database and never exposed in logs.
           Only the key for the selected provider is used.
         </p>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Available Models">Available Models</h3>
+        <div id="llm-models-list" style="margin-top:8px">
+          <div class="loading">Loading...</div>
+        </div>
       </div>
     </div>
 
@@ -679,6 +694,14 @@ const I18N = {
     'Anthropic Key': 'Anthropic 密钥',
     'MiniMax Key': 'MiniMax 密钥',
     'API keys are stored encrypted': 'API 密钥加密存储',
+    'Available Models': '可用模型',
+    'No models available': '暂无可用模型',
+    'Please configure API key first': '请先配置 API 密钥',
+    'Click to copy model ID': '点击复制模型 ID',
+    'Copied': '已复制',
+    'Please enter API key first': '请先输入 API 密钥',
+    'Testing connection...': '测试连接中...',
+    'connection OK': '连接成功',
     // Notifications
     'Notification Settings': '通知设置',
     'Webhook': 'Webhook',
@@ -888,6 +911,14 @@ const I18N = {
     'Anthropic Key': 'Anthropic Key',
     'MiniMax Key': 'MiniMax Key',
     'API keys are stored encrypted': 'API keys are stored encrypted',
+    'Available Models': 'Available Models',
+    'No models available': 'No models available',
+    'Please configure API key first': 'Please configure API key first',
+    'Click to copy model ID': 'Click to copy model ID',
+    'Copied': 'Copied',
+    'Please enter API key first': 'Please enter API key first',
+    'Testing connection...': 'Testing connection...',
+    'connection OK': 'connection OK',
     // Notifications
     'Notification Settings': 'Notification Settings',
     'Webhook': 'Webhook',
@@ -1692,7 +1723,56 @@ function loadLlmSettings() {
     document.getElementById('llm-openai-key').value = settings.openai_api_key || '';
     document.getElementById('llm-anthropic-key').value = settings.anthropic_api_key || '';
     document.getElementById('llm-minimax-key').value = settings.minimax_api_key || '';
+    loadLlmModels();
   }).catch(() => {});
+}
+
+function onProviderChange() {
+  loadLlmModels();
+}
+
+function loadLlmModels() {
+  const el = document.getElementById('llm-models-list');
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  api('/api/llm/models').then(data => {
+    if (!data.models || data.models.length === 0) {
+      el.innerHTML = '<div class="empty"><p>No models available. Please configure API key first.</p></div>';
+      return;
+    }
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+      data.models.map(m => `<span style="background:var(--surface2);padding:6px 12px;border-radius:6px;font-size:13px;font-family:monospace;cursor:pointer" onclick="copyModelId('${esc(m.id)}')">${esc(m.name || m.id)}</span>`).join('') +
+      '</div><p style="font-size:12px;color:var(--text-dim);margin-top:8px">Click to copy model ID</p>';
+  }).catch(e => {
+    el.innerHTML = '<div class="empty"><p>Failed to load models: ' + esc(e.message) + '</p></div>';
+  });
+}
+
+function copyModelId(id) {
+  navigator.clipboard.writeText(id).then(() => toast('Copied: ' + id));
+}
+
+function testLlmConnection(provider) {
+  let apiKey = '';
+  if (provider === 'openai') apiKey = document.getElementById('llm-openai-key').value;
+  else if (provider === 'anthropic') apiKey = document.getElementById('llm-anthropic-key').value;
+  else if (provider === 'minimax') apiKey = document.getElementById('llm-minimax-key').value;
+
+  if (!apiKey) {
+    toast('Please enter API key first', 'error');
+    return;
+  }
+
+  toast('Testing connection...');
+  api('/api/llm/test', 'POST', { provider, api_key: apiKey })
+    .then(result => {
+      if (result.ok) {
+        toast(provider + ' connection OK');
+        loadLlmModels();
+      } else {
+        toast('Connection failed: ' + (result.error || 'unknown error'), 'error');
+      }
+    })
+    .catch(e => toast('Test failed: ' + e.message, 'error'));
 }
 
 function saveLlmSettings() {
@@ -1704,7 +1784,7 @@ function saveLlmSettings() {
     minimax_api_key: document.getElementById('llm-minimax-key').value,
   };
   api('/api/settings/llm', 'PUT', settings)
-    .then(() => toast('LLM settings saved'))
+    .then(() => { toast('LLM settings saved'); loadLlmModels(); })
     .catch(() => toast('Failed to save', 'error'));
 }
 

@@ -133,3 +133,56 @@ export async function saveSearXNGSettings(settings: Partial<SearXNGSettings>): P
     await setSetting(SETTINGS_KEYS.SEARXNG_URL, settings.searxng_url);
   }
 }
+
+// LLM 配置 key 常量
+export const LLM_SETTINGS_KEYS = {
+  LLM_PROVIDER: 'llm_provider',
+  MOCK_LLM: 'mock_llm',
+  OPENAI_API_KEY: 'openai_api_key',
+  ANTHROPIC_API_KEY: 'anthropic_api_key',
+  MINIMAX_API_KEY: 'minimax_api_key',
+} as const;
+
+export type LLMSettings = {
+  llm_provider: string;
+  mock_llm: boolean;
+  openai_api_key: string;
+  anthropic_api_key: string;
+  minimax_api_key: string;
+};
+
+/**
+ * 获取 LLM 配置
+ */
+export async function getLLMSettings(): Promise<LLMSettings> {
+  const keys = Object.values(LLM_SETTINGS_KEYS);
+  const settings = await getSettings(keys);
+  return {
+    llm_provider: settings[LLM_SETTINGS_KEYS.LLM_PROVIDER] || process.env.LLM_PROVIDER || 'openai',
+    mock_llm: settings[LLM_SETTINGS_KEYS.MOCK_LLM] === 'true' || process.env.MOCK_LLM === 'true',
+    openai_api_key: settings[LLM_SETTINGS_KEYS.OPENAI_API_KEY] || process.env.OPENAI_API_KEY || '',
+    anthropic_api_key: settings[LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY] || process.env.ANTHROPIC_API_KEY || '',
+    minimax_api_key: settings[LLM_SETTINGS_KEYS.MINIMAX_API_KEY] || process.env.MINIMAX_API_KEY || '',
+  };
+}
+
+/**
+ * 保存 LLM 配置
+ */
+export async function saveLLMSettings(settings: Partial<LLMSettings>): Promise<void> {
+  if (settings.llm_provider !== undefined) {
+    await setSetting(LLM_SETTINGS_KEYS.LLM_PROVIDER, settings.llm_provider);
+  }
+  if (settings.mock_llm !== undefined) {
+    await setSetting(LLM_SETTINGS_KEYS.MOCK_LLM, String(settings.mock_llm));
+  }
+  if (settings.openai_api_key !== undefined) {
+    await setSetting(LLM_SETTINGS_KEYS.OPENAI_API_KEY, settings.openai_api_key);
+  }
+  if (settings.anthropic_api_key !== undefined) {
+    await setSetting(LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY, settings.anthropic_api_key);
+  }
+  if (settings.minimax_api_key !== undefined) {
+    await setSetting(LLM_SETTINGS_KEYS.MINIMAX_API_KEY, settings.minimax_api_key);
+  }
+}
