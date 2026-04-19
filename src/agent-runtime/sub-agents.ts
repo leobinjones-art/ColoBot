@@ -14,6 +14,7 @@ export interface SubAgentConfig {
   allowedTools?: string[];
   fallbackModelId?: string;
   workspacePath?: string;
+  taskTimeoutMs?: number;
 }
 
 export interface SubAgent {
@@ -25,13 +26,44 @@ export interface SubAgent {
   workspacePath: string;
   createdAt: number;
   expiresAt: number;
-  status: 'idle' | 'busy' | 'done';
+  status: 'idle' | 'busy' | 'done' | 'timeout' | 'error';
   fallbackModelId?: string;
+  taskTimeoutMs?: number;
 }
 
 const subAgents = new Map<string, SubAgent>();
 const CLEANUP_INTERVAL = 30_000;
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+// ── 并发限制 ──────────────────────────────────────────────
+const MAX_CONCURRENT_TOTAL = 10;
+const MAX_CONCURRENT_PER_PARENT = 3;
+const DEFAULT_TASK_TIMEOUT_MS = 5 * 60 * 1000; // 默认任务超时 5 分钟
+
+function countBusyTotal(): number {
+  let count = 0;
+  for (const a of subAgents.values()) {
+    if (a.status === 'busy') count++;
+  }
+  return count;
+}
+
+function countBusyByParent(parentId: string): number {
+  let count = 0;
+  for (const a of subAgents.values()) {
+    if (a.parentId === parentId && a.status === 'busy') count++;
+  }
+  return count;
+}
+
+function checkConcurrency(parentId: string): void {
+  if (countBusyTotal() >= MAX_CONCURRENT_TOTAL) {
+    throw new Error(`子Agent并发已达上限(${MAX_CONCURRENT_TOTAL})，请稍后再试`);
+  }
+  if (countBusyByParent(parentId) >= MAX_CONCURRENT_PER_PARENT) {
+    throw new Error(`该父Agent并发已达上限(${MAX_CONCURRENT_PER_PARENT})，请减少同时创建的子Agent数量`);
+  }
+}
 
 function startCleanup(): void {
   if (cleanupTimer) return;
@@ -48,11 +80,12 @@ function startCleanup(): void {
 
 export function spawnSubAgent(config: SubAgentConfig): SubAgent {
   startCleanup();
+  checkConcurrency(config.parentId);
   const id = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const ttlMs = config.ttlMs ?? 5 * 60 * 1000;
   const now = Date.now();
 
-const workspacePath = config.workspacePath ?? `/workspace/${config.name}`;
+  const workspacePath = config.workspacePath ?? `/workspace/${config.name}`;
 
   const agent: SubAgent = {
     id,
@@ -65,6 +98,7 @@ const workspacePath = config.workspacePath ?? `/workspace/${config.name}`;
     expiresAt: now + ttlMs,
     status: 'idle',
     fallbackModelId: config.fallbackModelId,
+    taskTimeoutMs: config.taskTimeoutMs ?? DEFAULT_TASK_TIMEOUT_MS,
   };
 
   subAgents.set(id, agent);
@@ -144,6 +178,7 @@ export async function runSubAgentTask(
     const { agentChat } = await import('../llm/index.js');
     const soul = JSON.parse(subAgent.soul_content || '{}');
     const maxRounds = 5;
+    const timeoutMs = subAgent.taskTimeoutMs ?? DEFAULT_TASK_TIMEOUT_MS;
 
     const messages: LLMMessage[] = [
       { role: 'system', content: buildSubAgentSystemPrompt(soul) },
@@ -153,9 +188,15 @@ export async function runSubAgentTask(
     let finalContent = '';
 
     for (let round = 0; round < maxRounds; round++) {
-      const response = await agentChat(soul, messages as any, {
-        fallbackModelId: subAgent.fallbackModelId,
-      });
+      // 每轮 LLM 调用加超时
+      const response = await Promise.race([
+        agentChat(soul, messages as any, {
+          fallbackModelId: subAgent.fallbackModelId,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('LLM调用超时')), timeoutMs)
+        ),
+      ]);
       const rawContent = response.content;
 
       // 多模态 content 转为文本供工具解析
@@ -236,12 +277,13 @@ export async function runSubAgentTask(
 
     return finalContent || '(无回复)';
   } catch (e) {
-    setSubAgentStatus(subAgent.id, 'idle');
+    const isTimeout = String(e).includes('超时');
+    setSubAgentStatus(subAgent.id, isTimeout ? 'timeout' : 'error');
     await writeAudit({
       actorType: 'subagent',
       actorId: subAgent.id,
       actorName: subAgent.name,
-      action: 'subagent.task.error',
+      action: isTimeout ? 'subagent.task.timeout' : 'subagent.task.error',
       targetType: 'task',
       targetId: subAgent.id,
       detail: {},
