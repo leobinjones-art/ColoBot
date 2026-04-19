@@ -20,7 +20,7 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://gitcode.com/Condamnation/colobot.git
+git clone https://github.com/leobinjones-art/ColoBot.git
 cd colobot
 ```
 
@@ -169,7 +169,7 @@ EOF
 ### 4. 克隆和安装依赖
 
 ```bash
-git clone https://gitcode.com/Condamnation/colobot.git
+git clone https://github.com/leobinjones-art/ColoBot.git
 cd colobot
 npm install
 ```

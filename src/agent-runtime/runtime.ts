@@ -815,7 +815,7 @@ export async function runAgentStream(
  */
 export async function continueRun(
   approvalId: string
-): Promise<{ approval: ApprovalRequest; result?: RunResult; error?: string }> {
+): Promise<{ approval: ApprovalRequest | null; result?: RunResult; error?: string }> {
   // 从 DB 读取保存的状态
   const rows = await query<{
     id: string;
@@ -834,7 +834,7 @@ export async function continueRun(
   );
 
   if (!rows || rows.length === 0) {
-    return { approval: null as any, error: 'Pending conversation not found' };
+    return { approval: null, error: 'Pending conversation not found' };
   }
 
   const row = rows[0];
@@ -849,7 +849,7 @@ export async function continueRun(
 
   const agent = await agentRegistry.get(agentId);
   if (!agent) {
-    return { approval: null as any, error: `Agent not found: ${agentId}` };
+    return { approval: null, error: `Agent not found: ${agentId}` };
   }
   const soul = agentRegistry.parseSoul(agent.soul_content);
 
@@ -1012,7 +1012,7 @@ export async function continueRun(
       await sessionManager.appendMessage(agentId, sessionKey, 'assistant', safeResponse);
       pushWsResult(agentId, sessionKey, safeResponse);
       pushWsDone(agentId, sessionKey);
-      return { approval: null as any, error: 'output content blocked' };
+      return { approval: null, error: 'output content blocked' };
     }
   }
 

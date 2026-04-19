@@ -6,7 +6,7 @@
  * 压缩后保留：系统提示 + 压缩摘要 + 最近 N 条消息
  */
 
-import type { LLMMessage } from '../llm/index.js';
+import type { LLMMessage, ContentBlock, TextContent } from '../llm/index.js';
 import { agentChat } from '../llm/index.js';
 
 const CHARS_PER_TOKEN = 4;
@@ -89,7 +89,7 @@ ${oldContent}
 
     const summaryText = typeof summaryResponse.content === 'string'
       ? summaryResponse.content
-      : summaryResponse.content.map((b: any) => b.type === 'text' ? b.text : '').join('');
+      : summaryResponse.content.map((b: ContentBlock) => b.type === 'text' ? (b as TextContent).text : '').join('');
 
     const compressed: LLMMessage[] = [];
     if (systemPrompt || systemMsg) {

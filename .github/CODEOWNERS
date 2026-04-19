@@ -1,0 +1,53 @@
+# 代码所有者配置文件
+# 此文件定义GitHub仓库中不同路径的代码所有者
+# 当相关文件发生变更时，这些用户会自动被请求审查
+
+# 全局默认所有者（项目维护者）
+* @Condamnation
+
+# 核心运行时
+/src/agent-runtime/ @Condamnation
+/src/colobot-server.ts @Condamnation
+
+# LLM 抽象层
+/src/llm/ @Condamnation
+
+# 数据库和记忆
+/src/memory/ @Condamnation
+/sql/ @Condamnation
+
+# 认证和中间件
+/src/middleware/ @Condamnation
+
+# 内容策略和安全
+/src/content-policy/ @Condamnation
+
+# 服务和工具
+/src/services/ @Condamnation
+/src/utils/ @Condamnation
+
+# 搜索功能
+/src/search/ @Condamnation
+
+# 前端Dashboard
+/src/dashboard/ @Condamnation
+/dashboard/ @Condamnation
+
+# 测试文件
+/src/__tests__/ @Condamnation
+
+# 配置和文档
+package.json @Condamnation
+tsconfig.json @Condamnation
+eslint.config.js @Condamnation
+*.md @Condamnation
+
+# GitHub工作流
+/.github/ @Condamnation
+
+# Docker配置
+docker-compose.yml @Condamnation
+Dockerfile @Condamnation
+
+# 脚本文件
+/scripts/ @Condamnation

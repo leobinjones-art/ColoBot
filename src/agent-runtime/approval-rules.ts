@@ -13,6 +13,7 @@
  */
 
 import { query, queryOne } from '../memory/db.js';
+import type { ContentBlock, TextContent } from '../llm/index.js';
 import type { ToolCall } from './tools/executor.js';
 
 export type DecisionLevel = 'auto_reject' | 'auto_approve';
@@ -174,7 +175,7 @@ async function smartLLMEval(call: ToolCall): Promise<DecisionLevel> {
       { maxTokens: 256 }
     );
     const text = typeof response.content === 'string' ? response.content
-      : response.content.map((b: any) => b.type === 'text' ? b.text : '').join('');
+      : response.content.map((b: ContentBlock) => b.type === 'text' ? (b as TextContent).text : '').join('');
 
     const match = text.match(/\{[\s\S]*?\}/);
     if (match) {

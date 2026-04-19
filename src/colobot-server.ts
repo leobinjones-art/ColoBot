@@ -26,6 +26,10 @@ const PORT = parseInt(process.env.COLOBOT_PORT || '18792');
 
 // ─── 辅助函数 ───────────────────────────────────────────────
 
+function isValidKnowledgeCategory(category: unknown): category is KnowledgeCategory {
+  return typeof category === 'string' && ['concept', 'template', 'rule'].includes(category);
+}
+
 function getClientIp(req: http.IncomingMessage): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
@@ -328,7 +332,19 @@ const server = http.createServer(async (req, res) => {
       const { searchKnowledge } = await import('./services/knowledge.js');
       const q = String(body.query || '');
       const category = body.category || undefined;
-      const results = await searchKnowledge(q, category as any);
+
+      // 验证category类型
+      let knowledgeCategory: KnowledgeCategory | undefined;
+      if (category) {
+        if (!isValidKnowledgeCategory(category)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid category' }));
+          return;
+        }
+        knowledgeCategory = category;
+      }
+
+      const results = await searchKnowledge(q, knowledgeCategory);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(results));
       return;
@@ -337,9 +353,17 @@ const server = http.createServer(async (req, res) => {
       const match = path.match(/^\/api\/knowledge\/([^/]+)\/([^/]+)$/)!;
       const category = match[1];
       const name = decodeURIComponent(match[2]);
+
+      // 验证category类型
+      if (!isValidKnowledgeCategory(category)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid category' }));
+        return;
+      }
+
       if (method === 'GET') {
         const { getKnowledge } = await import('./services/knowledge.js');
-        const entry = await getKnowledge(category as any, name);
+        const entry = await getKnowledge(category, name);
         if (!entry) { res.writeHead(404); res.end('Not found'); return; }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(entry));
@@ -347,7 +371,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (method === 'DELETE') {
         const { deleteKnowledge } = await import('./services/knowledge.js');
-        await deleteKnowledge(category as any, name);
+        await deleteKnowledge(category, name);
         res.writeHead(204);
         res.end();
         return;

@@ -1,6 +1,28 @@
 # ColoBot
 
+![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg)
+![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL%2Bpgvector-blue.svg)
+![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)
+
 > 单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + 飞书审批通知
+
+**ColoBot** 是一个开源的 AI 智能体协作平台，支持多模态输入输出、Skill 编排、自动审批流程和飞书集成。它提供了完整的 AI 智能体管理和协作解决方案。
+
+---
+
+## ✨ 特性概览
+
+<div align="center">
+
+| 智能体管理 | Skill 编排 | 审批流程 | 集成支持 |
+|-----------|------------|----------|----------|
+| 🧠 父子智能体协作 | 📝 Markdown Skill 定义 | ⚖️ 四层审批漏斗 | 📱 飞书交互式卡片 |
+| 🔄 上下文压缩 | 🚀 Trigger 引擎 | 📊 规则自进化 | 🔍 SearXNG 搜索 |
+| 💾 向量记忆检索 | 🔧 工具白名单 | 📋 审计日志 | 🌐 WebSocket 实时通信 |
+
+</div>
 
 ---
 
@@ -26,7 +48,74 @@
 
 ---
 
-## 技术栈
+## 🎥 演示
+
+### 1. 智能体对话
+```bash
+# 创建智能体
+curl -X POST http://localhost:18792/api/agents \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "开发助手",
+    "soul_content": "你是一个专业的软件开发助手",
+    "primary_model_id": "openai:gpt-4o-mini"
+  }'
+
+# 发送消息
+curl -X POST http://localhost:18792/api/chat \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent_123",
+    "message": "帮我写一个TypeScript函数",
+    "stream": true
+  }'
+```
+
+### 2. Skill 执行
+```typescript
+// 定义 Skill (markdown格式)
+const skill = `
+# 代码审查
+触发词: review code, 代码审查
+
+## 功能
+自动审查代码质量
+
+## 实现
+\`\`\`javascript
+function codeReview(code) {
+  // 分析代码质量
+  return { score: 85, suggestions: [] };
+}
+\`\`\`
+`;
+
+// 通过 API 创建 Skill
+fetch('/api/skills', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer ' + API_KEY },
+  body: JSON.stringify({ content: skill })
+});
+```
+
+### 3. 审批流程
+```bash
+# 查看待审批请求
+curl http://localhost:18792/api/approvals \
+  -H "Authorization: Bearer $API_KEY"
+
+# 审批通过
+curl -X POST http://localhost:18792/api/approvals/123/approve \
+  -H "Authorization: Bearer $API_KEY"
+
+# 飞书卡片审批
+# 用户点击飞书卡片上的"批准"按钮
+# → 自动调用 /api/webhooks/feishu/approve
+```
+
+---
 
 | 层级 | 技术 |
 |------|------|
@@ -40,11 +129,48 @@
 
 ---
 
-## 快速开始
+## 🏗️ 系统架构
+
+```mermaid
+graph TB
+    subgraph "用户界面"
+        A[Web Dashboard] --> B[HTTP API]
+        C[飞书 Bot] --> B
+        D[WebSocket] --> B
+    end
+    
+    subgraph "核心引擎"
+        B --> E[Agent 运行时]
+        E --> F[LLM 抽象层]
+        F --> G[OpenAI]
+        F --> H[Anthropic]
+        F --> I[MiniMax]
+        E --> J[审批引擎]
+        E --> K[Skill 引擎]
+        E --> L[记忆系统]
+    end
+    
+    subgraph "数据存储"
+        L --> M[PostgreSQL]
+        L --> N[pgvector]
+        O[审计日志] --> M
+        P[知识库] --> M
+    end
+    
+    subgraph "外部服务"
+        Q[SearXNG] --> R[搜索]
+        S[飞书 API] --> T[通知]
+    end
+    
+    E --> Q
+    E --> S
+```
+
+## 🚀 快速开始
 
 ```bash
 # 克隆
-git clone https://gitcode.com/Condamnation/colobot.git
+git clone https://github.com/leobinjones-art/ColoBot.git
 cd colobot
 
 # 安装依赖
@@ -306,6 +432,29 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 
 ---
 
-## License
+## 👥 社区与贡献
+
+ColoBot 是一个开源项目，我们欢迎各种形式的贡献！
+
+### 贡献方式
+1. **报告问题** - 使用 [GitHub Issues](https://github.com/leobinjones-art/ColoBot/issues)
+2. **提交代码** - 阅读 [贡献指南](CONTRIBUTING.md)
+3. **改进文档** - 完善文档和示例
+4. **分享用例** - 分享你的使用案例
+
+### 行为准则
+请阅读我们的 [行为准则](CODE_OF_CONDUCT.md)，确保社区友好和包容。
+
+### 安全漏洞
+如发现安全漏洞，请查看 [安全策略](SECURITY.md) 并按照指南报告。
+
+### 获取帮助
+- 📖 [文档](docs/) - 详细技术文档
+- 💬 [讨论区](https://github.com/leobinjones-art/ColoBot/discussions) - 社区讨论
+- 🐛 [问题跟踪](https://github.com/leobinjones-art/ColoBot/issues) - 报告Bug和功能请求
+
+---
+
+## 📄 License
 
 Apache 2.0

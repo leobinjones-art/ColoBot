@@ -84,7 +84,7 @@ export async function executeSkill(
   const toolCtx: ToolContext = { agentId, sessionKey: context.sessionKey };
 
   for (let round = 0; round < 5; round++) {
-    const response = await agentChat({ personality: skill.markdown_content }, messages as any, {});
+    const response = await agentChat({ role: 'assistant', personality: skill.markdown_content }, messages, {});
     const rawContent = response.content;
 
     const rawText = typeof rawContent === 'string' ? rawContent

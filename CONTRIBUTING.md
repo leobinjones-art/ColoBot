@@ -14,7 +14,7 @@
 
 ```bash
 # 克隆
-git clone https://gitcode.com/Condamnation/colobot.git
+git clone https://github.com/leobinjones-art/ColoBot.git
 cd colobot
 
 # 安装依赖
