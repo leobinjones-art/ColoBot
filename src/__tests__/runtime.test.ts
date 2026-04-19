@@ -27,16 +27,17 @@ vi.mock('../llm/index.js', () => ({
   agentChatStream: vi.fn(),
 }));
 
-vi.mock('../agent-runtime/approval.js', () => ({
+vi.mock('../agent-runtime/approval', () => ({
   approvalFlow: {
     pending: vi.fn(),
     approve: vi.fn(),
     reject: vi.fn(),
     get: vi.fn(),
+    create: vi.fn(),
   },
 }));
 
-vi.mock('../agent-runtime/approval-rules.js', () => ({
+vi.mock('../agent-runtime/approval-rules', () => ({
   checkDangerousLevel: vi.fn(),
   recordToolHit: vi.fn(),
 }));
@@ -204,9 +205,34 @@ describe('runAgent', () => {
     expect(typeof result.response).toBe('string');
   });
 
-  it.skip('returns pending result when dangerous tool requires approval', async () => {
-    // Skipped: require_approval flow not implemented - savePendingConversation exists but is never called.
-    // The dangerous tool is silently skipped and the loop continues without returning pending.
+  it('returns pending result when dangerous tool requires approval', async () => {
+    const { agentChat } = await import('../llm/index.js');
+    const { checkDangerousLevel } = await import('../agent-runtime/approval-rules.js');
+    const { approvalFlow } = await import('../agent-runtime/approval.js');
+    await setupHappyPath();
+
+    // First LLM call returns tool call XML, second returns text
+    (agentChat as any)
+      .mockResolvedValueOnce({ content: '<tool_call>\ndelete_agent\n{"id": "target-1"}\n</tool_call>' })
+      .mockResolvedValueOnce({ content: 'Tool executed' });
+    // parseToolCalls should return tool on first call (from XML), empty on second
+    mockParseToolCalls
+      .mockReturnValueOnce([{ name: 'delete_agent', args: { id: 'target-1' } }])
+      .mockReturnValueOnce([]);
+    (checkDangerousLevel as any).mockReturnValueOnce({ level: 'require_approval', isCommercialDocument: false });
+    (approvalFlow.create as any).mockReset();
+    (approvalFlow.create as any).mockResolvedValueOnce({ id: 'approval-123' });
+    (approvalFlow.pending as any).mockReset();
+    (approvalFlow.pending as any).mockResolvedValueOnce([]);
+
+    const result = await runAgent({
+      agentId: 'agent-1',
+      sessionKey: 'session-1',
+      userMessage: '删除那个 Agent',
+    });
+
+    expect(result).toHaveProperty('pending', true);
+    expect((result as any).approvalId).toBe('approval-123');
   });
 
   it('blocks message and returns confirm prompt when threat detected', async () => {

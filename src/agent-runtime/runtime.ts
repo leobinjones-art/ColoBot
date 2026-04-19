@@ -326,6 +326,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     // 四层漏斗检查（危险工具）
     const autoApprovedCalls: ToolCall[] = [];
     const commercialDocCalls: ToolCall[] = [];
+    const requireApprovalCalls: ToolCall[] = [];
 
     for (const call of dangerousCandidates) {
       const { level, isCommercialDocument } = await checkDangerousLevel(call);
@@ -362,7 +363,52 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
           ipAddress,
           result: 'success',
         });
+      } else if (level === 'require_approval') {
+        requireApprovalCalls.push(call);
+        await writeAudit({
+          actorType: 'agent',
+          actorId: agentId,
+          actorName: agent.name,
+          action: 'tool.require_approval',
+          targetType: 'tool',
+          targetId: call.name,
+          detail: { args: call.args, decision: 'require_approval' },
+          ipAddress,
+          result: 'blocked',
+        });
       }
+    }
+
+    // 需要审批 → 创建审批请求并返回 pending
+    if (requireApprovalCalls.length > 0) {
+      const approvalAction = DANGEROUS_TOOLS[requireApprovalCalls[0].name];
+      const approval = await approvalFlow.create({
+        agentId,
+        requester: sessionKey,
+        channel: 'web',
+        actionType: approvalAction,
+        targetResource: requireApprovalCalls.map(c => c.name).join(','),
+        description: `危险工具审批请求: ${requireApprovalCalls.map(c => c.name).join(', ')}`,
+        payload: {
+          dangerousCalls: requireApprovalCalls,
+          sessionKey,
+        },
+        expiresInMinutes: 30,
+      });
+
+      await savePendingConversation(
+        approval.id,
+        agentId,
+        sessionKey,
+        messages,
+        requireApprovalCalls,
+        round,
+        allowedCalls,
+        blockedCalls,
+        ipAddress
+      );
+
+      return { pending: true, approvalId: approval.id };
     }
 
     // 执行普通自动批准的工具
