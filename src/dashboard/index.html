@@ -211,7 +211,7 @@
         </div>
       </div>
       <p style="font-size:13px;color:var(--text-dim);margin-top:12px">
-        Settings are stored in environment variables. Save and restart the server for changes to take effect.
+        Settings are stored in database and take effect immediately. Environment variables are used as fallbacks if database values are empty.
       </p>
     </div>
 
@@ -307,17 +307,12 @@
         <button class="btn" onclick="saveSubAgentSettings()">Save Settings</button>
       </div>
       <div class="settings-section">
-        <h3>Tool Whitelist / Blacklist</h3>
+        <h3>Tool Whitelist</h3>
         <div class="form-group">
-          <label>Allowed Tools (whitelist)</label>
+          <label>Allowed Tools</label>
           <div id="tool-list" style="margin-bottom:8px"></div>
           <input type="text" id="subagent-allowed-tools" placeholder='["spawn_subagent", "add_memory"]' style="margin-top:4px">
-          <small>JSON array of allowed tool names. Leave empty for no restrictions. Tools not listed here are blocked.</small>
-        </div>
-        <div class="form-group">
-          <label>Blocked Tools (blacklist)</label>
-          <input type="text" id="subagent-blocked-tools" placeholder='["delete_file", "execute_code"]'>
-          <small>JSON array of blocked tool names. These tools are always denied regardless of whitelist.</small>
+          <small>JSON array of allowed tool names. Leave empty to use default list. Tools not listed here are blocked.</small>
         </div>
       </div>
       <div class="settings-section">
@@ -535,16 +530,13 @@ function logout() {
 // ─── Init ────────────────────────────────────────────────────
 
 let ws = null;
-let approvalPollInterval = null;
 
 function startApprovalPolling() {
-  if (approvalPollInterval) return;
-  loadApprovals();
-  approvalPollInterval = setInterval(loadApprovals, 30000);
+  // WebSocket handles real-time updates, no polling needed
 }
 
 function stopApprovalPolling() {
-  if (approvalPollInterval) { clearInterval(approvalPollInterval); approvalPollInterval = null; }
+  // WebSocket handles real-time updates
 }
 
 function initDashboard() {
@@ -811,7 +803,7 @@ function showCreateKnowledgeModal() {
     <div class="form-group"><label>Variables (JSON array)</label><input type="text" id="kb-vars" placeholder='["var1", "var2"]'></div>
     <div class="form-group"><label>Related (JSON array)</label><input type="text" id="kb-related" placeholder='["other_entry"]'></div>
   `, [
-    { label: 'Cancel', onClick: 'closeModal()' },
+    { label: 'Cancel', onClick: closeModal },
     { label: 'Add', onClick: 'createKnowledge()' }
   ]);
 }
@@ -833,7 +825,7 @@ function viewKnowledge(id) {
   api('/api/knowledge').then(entries => {
     const e = entries.find(x => x.id === id);
     if (!e) return;
-    showModal(e.name, '<pre style="white-space:pre-wrap">' + esc(JSON.stringify(e, null, 2)) + '</pre>', [{ label: 'Close', onClick: 'closeModal()' }]);
+    showModal(e.name, '<pre style="white-space:pre-wrap">' + esc(JSON.stringify(e, null, 2)) + '</pre>', [{ label: 'Close', onClick: closeModal }]);
   });
 }
 
@@ -849,8 +841,8 @@ function importKnowledge() {
     <div class="form-group"><label>Paste JSON array</label><textarea id="import-json" rows="10" placeholder='[{ "category": "concept", "name": "...", "content": "..." }]' style="width:100%"></textarea></div>
     <div class="form-group"><small>JSON array of entries with category, name, content, optional variables and related fields.</small></div>
   `, [
-    { label: 'Cancel', onClick: 'closeModal()' },
-    { label: 'Import', onClick: 'doImportKnowledge()' }
+    { label: 'Cancel', onClick: closeModal },
+    { label: 'Import', onClick: doImportKnowledge }
   ]);
 }
 
@@ -1080,11 +1072,8 @@ function saveLlmSettings() {
 
 // ─── SOP Progress ─────────────────────────────────────────
 
-let sopLoadedAgents = [];
-
 function loadAgentsForSop() {
   api('/api/agents').then(agents => {
-    sopLoadedAgents = agents;
     const select = document.getElementById('sop-agent-select');
     select.innerHTML = '<option value="">选择 Agent</option>' +
       agents.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
@@ -1166,9 +1155,17 @@ function saveNotificationSettings() {
 function showModal(title, bodyHTML, buttons = []) {
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-body').innerHTML = bodyHTML;
-  document.getElementById('modal-footer').innerHTML = buttons.map(b =>
-    `<button class="btn ${b.class || ''}" onclick="${b.onClick}">${b.label}</button>`
-  ).join('');
+  const footer = document.getElementById('modal-footer');
+  footer.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + (b.class || '');
+    btn.textContent = b.label;
+    if (typeof b.onClick === 'function') {
+      btn.addEventListener('click', b.onClick);
+    }
+    footer.appendChild(btn);
+  });
   document.getElementById('modal-overlay').classList.add('show');
 }
 
