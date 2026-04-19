@@ -135,10 +135,10 @@
 <div id="login-screen">
   <div class="login-box">
     <h1>ColoBot</h1>
-    <p>Enter your API Key to access the dashboard</p>
+    <p data-i18n="Enter your API Key to access the dashboard">Enter your API Key to access the dashboard</p>
     <input type="password" id="api-key-input" placeholder="API Key" onkeydown="if(event.key==='Enter')login()">
-    <button onclick="login()">Login</button>
-    <div class="login-error" id="login-error">Invalid API Key</div>
+    <button onclick="login()" data-i18n="Login">Login</button>
+    <div class="login-error" id="login-error" data-i18n="Invalid API Key">Invalid API Key</div>
   </div>
 </div>
 
@@ -148,65 +148,69 @@
     <div class="logo">ColoBot</div>
     <div class="status">
       <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">Connected</span>
+      <span id="status-text" data-i18n="Connected">Connected</span>
     </div>
     <div class="header-right">
-      <button onclick="logout()">Logout</button>
+      <select id="lang-select" onchange="setLang(this.value)" style="padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+      <button onclick="logout()" data-i18n="Logout">Logout</button>
     </div>
   </div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="feishu">Feishu</div>
-    <div class="tab" data-tab="models">Models</div>
-    <div class="tab" data-tab="skills">Skills</div>
-    <div class="tab" data-tab="knowledge">Knowledge</div>
-    <div class="tab" data-tab="approvals">Approvals</div>
-    <div class="tab" data-tab="audit">Audit</div>
-    <div class="tab" data-tab="subagent">SubAgent</div>
-    <div class="tab" data-tab="sop">SOP</div>
-    <div class="tab" data-tab="search">Search</div>
-    <div class="tab" data-tab="llm">LLM</div>
-    <div class="tab" data-tab="notifications">Notifications</div>
+    <div class="tab active" data-tab="feishu" data-i18n="Feishu">Feishu</div>
+    <div class="tab" data-tab="models" data-i18n="Models">Models</div>
+    <div class="tab" data-tab="skills" data-i18n="Skills">Skills</div>
+    <div class="tab" data-tab="knowledge" data-i18n="Knowledge">Knowledge</div>
+    <div class="tab" data-tab="approvals" data-i18n="Approvals">Approvals</div>
+    <div class="tab" data-tab="audit" data-i18n="Audit">Audit</div>
+    <div class="tab" data-tab="subagent" data-i18n="SubAgent">SubAgent</div>
+    <div class="tab" data-tab="sop" data-i18n="SOP">SOP</div>
+    <div class="tab" data-tab="search" data-i18n="Search">Search</div>
+    <div class="tab" data-tab="llm" data-i18n="LLM">LLM</div>
+    <div class="tab" data-tab="notifications" data-i18n="Notifications">Notifications</div>
   </div>
 
   <div class="content">
     <!-- Feishu Settings -->
     <div class="section active" id="sec-feishu">
       <div class="page-header">
-        <h2>Feishu Settings</h2>
-        <button class="btn secondary" onclick="saveFeishuSettings()">Save Settings</button>
+        <h2 data-i18n="Feishu Settings">Feishu Settings</h2>
+        <button class="btn secondary" onclick="saveFeishuSettings()" data-i18n="Save Settings">Save Settings</button>
       </div>
       <div class="settings-section">
-        <h3>Application Bot (Method B)</h3>
+        <h3 data-i18n="Application Bot (Method B)">Application Bot (Method B)</h3>
         <div class="settings-row">
-          <label>App ID</label>
+          <label data-i18n="App ID">App ID</label>
           <input type="text" id="feishu-app-id" placeholder="cli_xxxxxxxxxxxxxx">
         </div>
         <div class="settings-row">
-          <label>App Secret</label>
+          <label data-i18n="App Secret">App Secret</label>
           <input type="password" id="feishu-app-secret" placeholder="xxxxxxxxxxxxxxxx">
         </div>
         <div class="settings-row">
-          <label>Approver Open ID</label>
+          <label data-i18n="Approver Open ID">Approver Open ID</label>
           <input type="text" id="feishu-approver-open-id" placeholder="ou_xxxxxxxx">
         </div>
         <div class="settings-row">
-          <label>Callback URL</label>
+          <label data-i18n="Callback URL">Callback URL</label>
           <input type="text" id="feishu-callback-url" placeholder="https://your-domain.com" readonly>
         </div>
         <div class="settings-row">
-          <label>Verification Token</label>
+          <label data-i18n="Verification Token">Verification Token</label>
           <input type="text" id="feishu-verify-token" placeholder="xxxxxxxx">
         </div>
         <div class="settings-status">
           <span class="status-dot" id="feishu-status-dot"></span>
-          <span id="feishu-status-text">Not configured</span>
+          <span id="feishu-status-text" data-i18n="Not configured">Not configured</span>
         </div>
       </div>
       <div class="settings-section">
-        <h3>Webhook (Method A - Legacy)</h3>
+        <h3 data-i18n="Webhook (Method A - Legacy)">Webhook (Method A - Legacy)</h3>
         <div class="settings-row">
-          <label>Webhook URL</label>
+          <label data-i18n="Webhook URL">Webhook URL</label>
           <input type="text" id="feishu-webhook-url" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx">
         </div>
       </div>
@@ -218,48 +222,48 @@
     <!-- Model Settings -->
     <div class="section" id="sec-models">
       <div class="page-header">
-        <h2>Model Settings</h2>
-        <button class="btn" onclick="showCreateAgentModal()">+ Create Agent</button>
+        <h2 data-i18n="Model Settings">Model Settings</h2>
+        <button class="btn" onclick="showCreateAgentModal()" data-i18n="Create Agent">+ Create Agent</button>
       </div>
       <div id="agents-list">
-        <div class="loading">Loading...</div>
+        <div class="loading" data-i18n="Loading...">Loading...</div>
       </div>
     </div>
 
     <!-- Skills -->
     <div class="section" id="sec-skills">
       <div class="page-header">
-        <h2>Skill Repository</h2>
-        <button class="btn" onclick="showCreateSkillModal()">+ Create Skill</button>
+        <h2 data-i18n="Skill Repository">Skill Repository</h2>
+        <button class="btn" onclick="showCreateSkillModal()" data-i18n="Create Skill">+ Create Skill</button>
       </div>
       <div id="skills-list">
-        <div class="loading">Loading...</div>
+        <div class="loading" data-i18n="Loading...">Loading...</div>
       </div>
     </div>
 
     <!-- Approvals -->
     <div class="section" id="sec-approvals">
       <div class="page-header">
-        <h2>Approval Management</h2>
+        <h2 data-i18n="Approval Management">Approval Management</h2>
       </div>
       <div class="filter-bar">
         <select id="approval-filter" onchange="loadApprovals()">
-          <option value="">All</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
+          <option value="" data-i18n="All">All</option>
+          <option value="pending" data-i18n="Pending">Pending</option>
+          <option value="approved" data-i18n="Approved">Approved</option>
+          <option value="rejected" data-i18n="Rejected">Rejected</option>
         </select>
-        <button class="btn secondary" onclick="loadApprovals()">Refresh</button>
+        <button class="btn secondary" onclick="loadApprovals()" data-i18n="Refresh">Refresh</button>
       </div>
       <div id="approvals-list">
-        <div class="loading">Loading...</div>
+        <div class="loading" data-i18n="Loading...">Loading...</div>
       </div>
     </div>
 
     <!-- Audit -->
     <div class="section" id="sec-audit">
       <div class="page-header">
-        <h2>Audit Logs</h2>
+        <h2 data-i18n="Audit Logs">Audit Logs</h2>
       </div>
       <div class="filter-bar">
         <select id="audit-action-filter" onchange="loadAuditLogs()">
@@ -270,55 +274,55 @@
           <option value="approval.rejected">approval.rejected</option>
           <option value="tool.execute">tool.execute</option>
         </select>
-        <button class="btn secondary" onclick="loadAuditLogs()">Refresh</button>
+        <button class="btn secondary" onclick="loadAuditLogs()" data-i18n="Refresh">Refresh</button>
       </div>
       <div id="audit-list">
-        <div class="loading">Loading...</div>
+        <div class="loading" data-i18n="Loading...">Loading...</div>
       </div>
 </div>
 
     <!-- Knowledge -->
     <div class="section" id="sec-knowledge">
       <div class="page-header">
-        <h2>Knowledge Base</h2>
+        <h2 data-i18n="Knowledge Base">Knowledge Base</h2>
         <div style="display:flex;gap:8px">
-          <button class="btn secondary" onclick="importKnowledge()">Import JSON</button>
-          <button class="btn" onclick="showCreateKnowledgeModal()">+ Add Entry</button>
+          <button class="btn secondary" onclick="importKnowledge()" data-i18n="Import JSON">Import JSON</button>
+          <button class="btn" onclick="showCreateKnowledgeModal()" data-i18n="Add Entry">+ Add Entry</button>
         </div>
       </div>
       <div class="form-group" style="margin-bottom:16px">
-        <label>Filter by category:</label>
+        <label data-i18n="Filter by category:">Filter by category:</label>
         <select id="kb-filter" onchange="loadKnowledge()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-          <option value="">All</option>
-          <option value="concept">Concept</option>
-          <option value="template">Template</option>
-          <option value="rule">Rule</option>
+          <option value="" data-i18n="All">All</option>
+          <option value="concept" data-i18n="Concept">Concept</option>
+          <option value="template" data-i18n="Template">Template</option>
+          <option value="rule" data-i18n="Rule">Rule</option>
         </select>
       </div>
       <div id="kb-list">
-        <div class="loading">Loading...</div>
+        <div class="loading" data-i18n="Loading...">Loading...</div>
       </div>
     </div>
 
     <!-- SubAgent Settings -->
     <div class="section" id="sec-subagent">
       <div class="page-header">
-        <h2>SubAgent Settings</h2>
-        <button class="btn" onclick="saveSubAgentSettings()">Save Settings</button>
+        <h2 data-i18n="SubAgent Settings">SubAgent Settings</h2>
+        <button class="btn" onclick="saveSubAgentSettings()" data-i18n="Save Settings">Save Settings</button>
       </div>
       <div class="settings-section">
-        <h3>Tool Whitelist</h3>
+        <h3 data-i18n="Tool Whitelist">Tool Whitelist</h3>
         <div class="form-group">
-          <label>Allowed Tools</label>
+          <label data-i18n="Allowed Tools">Allowed Tools</label>
           <div id="tool-list" style="margin-bottom:8px"></div>
           <input type="text" id="subagent-allowed-tools" placeholder='["spawn_subagent", "add_memory"]' style="margin-top:4px">
           <small>JSON array of allowed tool names. Leave empty to use default list. Tools not listed here are blocked.</small>
         </div>
       </div>
       <div class="settings-section">
-        <h3>Default TTL</h3>
+        <h3 data-i18n="Default TTL">Default TTL</h3>
         <div class="form-group">
-          <label>Default TTL (ms)</label>
+          <label data-i18n="Default TTL (ms)">Default TTL (ms)</label>
           <input type="number" id="subagent-default-ttl" value="300000" step="60000">
           <small>SubAgent 默认存活时间，单位毫秒。默认 5 分钟。</small>
         </div>
@@ -328,35 +332,35 @@
     <!-- SOP Progress -->
     <div class="section" id="sec-sop">
       <div class="page-header">
-        <h2>SOP 进度</h2>
+        <h2 data-i18n="SOP 进度">SOP 进度</h2>
         <div style="display:flex;gap:8px">
           <select id="sop-agent-select" onchange="loadSopProgress()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-            <option value="">选择 Agent</option>
+            <option value="" data-i18n="选择 Agent">选择 Agent</option>
           </select>
           <input type="text" id="sop-session-input" placeholder="session key" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px">
           <button class="btn secondary" onclick="loadSopProgress()">查看</button>
         </div>
       </div>
       <div id="sop-content">
-        <div class="empty"><p>选择 Agent 和 session 查看 SOP 进度</p></div>
+        <div class="empty"><p data-i18n="Choose Agent and session">选择 Agent 和 session 查看 SOP 进度</p></div>
       </div>
     </div>
 
     <!-- Search / SearXNG Settings -->
     <div class="section" id="sec-search">
       <div class="page-header">
-        <h2>SearXNG Search</h2>
-        <button class="btn" onclick="saveSearchSettings()">Save Settings</button>
+        <h2 data-i18n="SearXNG Search">SearXNG Search</h2>
+        <button class="btn" onclick="saveSearchSettings()" data-i18n="Save Settings">Save Settings</button>
       </div>
       <div class="settings-section">
-        <h3>Instance URL</h3>
+        <h3 data-i18n="Instance URL">Instance URL</h3>
         <div class="settings-row">
           <label>SEARXNG_URL</label>
           <input type="text" id="search-url" placeholder="http://127.0.0.1:8080">
         </div>
         <div class="form-group" style="margin-top:12px">
           <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn secondary" onclick="testSearch()">Test Connection</button>
+            <button class="btn secondary" onclick="testSearch()" data-i18n="Test Connection">Test Connection</button>
             <span id="search-test-result" style="font-size:13px;color:var(--text-dim)"></span>
           </div>
         </div>
@@ -371,13 +375,13 @@
     <!-- LLM Settings -->
     <div class="section" id="sec-llm">
       <div class="page-header">
-        <h2>LLM Settings</h2>
-        <button class="btn" onclick="saveLlmSettings()">Save Settings</button>
+        <h2 data-i18n="LLM Settings">LLM Settings</h2>
+        <button class="btn" onclick="saveLlmSettings()" data-i18n="Save Settings">Save Settings</button>
       </div>
       <div class="settings-section">
-        <h3>Provider & Mode</h3>
+        <h3 data-i18n="Provider & Mode">Provider & Mode</h3>
         <div class="settings-row">
-          <label>Provider</label>
+          <label data-i18n="Provider">Provider</label>
           <select id="llm-provider" style="padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
@@ -385,7 +389,7 @@
           </select>
         </div>
         <div class="settings-row">
-          <label>Mock Mode</label>
+          <label data-i18n="Mock Mode">Mock Mode</label>
           <div style="display:flex;align-items:center;gap:8px">
             <input type="checkbox" id="llm-mock" style="width:auto">
             <span style="font-size:13px;color:var(--text-dim)">Enable mock responses (no real API calls)</span>
@@ -393,17 +397,17 @@
         </div>
       </div>
       <div class="settings-section">
-        <h3>API Keys</h3>
+        <h3 data-i18n="API Keys">API Keys</h3>
         <div class="settings-row">
-          <label>OpenAI Key</label>
+          <label data-i18n="OpenAI Key">OpenAI Key</label>
           <input type="password" id="llm-openai-key" placeholder="sk-..." style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>Anthropic Key</label>
+          <label data-i18n="Anthropic Key">Anthropic Key</label>
           <input type="password" id="llm-anthropic-key" placeholder="sk-ant-..." style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>MiniMax Key</label>
+          <label data-i18n="MiniMax Key">MiniMax Key</label>
           <input type="password" id="llm-minimax-key" placeholder="MX..." style="font-size:13px">
         </div>
         <p style="font-size:13px;color:var(--text-dim);margin-top:12px">
@@ -416,55 +420,55 @@
     <!-- Notification Settings -->
     <div class="section" id="sec-notifications">
       <div class="page-header">
-        <h2>Notification Settings</h2>
-        <button class="btn" onclick="saveNotificationSettings()">Save Settings</button>
+        <h2 data-i18n="Notification Settings">Notification Settings</h2>
+        <button class="btn" onclick="saveNotificationSettings()" data-i18n="Save Settings">Save Settings</button>
       </div>
       <div class="settings-section">
-        <h3>Webhook</h3>
+        <h3 data-i18n="Webhook">Webhook</h3>
         <div class="settings-row">
-          <label>Message Webhook</label>
+          <label data-i18n="Message Webhook">Message Webhook</label>
           <input type="text" id="notif-webhook-url" placeholder="https://example.com/webhook" style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>Feishu Webhook</label>
+          <label data-i18n="Feishu Webhook">Feishu Webhook</label>
           <input type="text" id="notif-feishu-webhook" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." style="font-size:13px">
         </div>
       </div>
       <div class="settings-section">
-        <h3>Email (SMTP)</h3>
+        <h3 data-i18n="Email (SMTP)">Email (SMTP)</h3>
         <div class="settings-row">
-          <label>SMTP Host</label>
+          <label data-i18n="SMTP Host">SMTP Host</label>
           <input type="text" id="notif-smtp-host" placeholder="smtp.example.com" style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>SMTP Port</label>
+          <label data-i18n="SMTP Port">SMTP Port</label>
           <input type="number" id="notif-smtp-port" value="587" style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>SMTP User</label>
+          <label data-i18n="SMTP User">SMTP User</label>
           <input type="text" id="notif-smtp-user" placeholder="user@example.com" style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>SMTP Password</label>
+          <label data-i18n="SMTP Password">SMTP Password</label>
           <input type="password" id="notif-smtp-pass" placeholder="password" style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>From</label>
+          <label data-i18n="From">From</label>
           <input type="text" id="notif-smtp-from" placeholder="noreply@example.com" style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>To</label>
+          <label data-i18n="To">To</label>
           <input type="text" id="notif-smtp-to" placeholder="recipient@example.com" style="font-size:13px">
         </div>
       </div>
       <div class="settings-section">
-        <h3>Telegram</h3>
+        <h3 data-i18n="Telegram">Telegram</h3>
         <div class="settings-row">
-          <label>Bot Token</label>
+          <label data-i18n="Bot Token">Bot Token</label>
           <input type="text" id="notif-tg-token" placeholder="123456:ABC-DEF..." style="font-size:13px">
         </div>
         <div class="settings-row">
-          <label>Chat ID</label>
+          <label data-i18n="Chat ID">Chat ID</label>
           <input type="text" id="notif-tg-chat" placeholder="987654321" style="font-size:13px">
         </div>
       </div>
@@ -489,6 +493,442 @@
 
 <script>
 let apiKey = '';
+let currentLang = localStorage.getItem('colobot-lang') || 'zh';
+// Apply i18n on page load (login screen too)
+if (currentLang !== 'zh') applyI18n();
+
+// ─── i18n ───────────────────────────────────────────────────
+
+const I18N = {
+  zh: {
+    // Header
+    'Connected': '已连接',
+    'Disconnected': '已断开',
+    'Logout': '退出',
+    // Tabs
+    'Feishu': '飞书',
+    'Models': '模型',
+    'Skills': '技能',
+    'Knowledge': '知识库',
+    'Approvals': '审批',
+    'Audit': '审计',
+    'SubAgent': '子Agent',
+    'SOP': 'SOP',
+    'Search': '搜索',
+    'LLM': 'LLM',
+    'Notifications': '通知',
+    // Feishu
+    'Feishu Settings': '飞书设置',
+    'Save Settings': '保存设置',
+    'Application Bot (Method B)': '应用机器人 (方式 B)',
+    'App ID': 'App ID',
+    'App Secret': 'App Secret',
+    'Approver Open ID': '审批人 Open ID',
+    'Callback URL': '回调 URL',
+    'Verification Token': '验证 Token',
+    'Configured': '已配置',
+    'Not configured': '未配置',
+    'Webhook (Method A - Legacy)': 'Webhook (方式 A - 旧版)',
+    'Webhook URL': 'Webhook URL',
+    'Settings are stored in database': '设置存储在数据库中',
+    'take effect immediately': '立即生效',
+    'Environment variables are fallbacks': '环境变量作为备用值',
+    // Models
+    'Model Settings': '模型设置',
+    'Create Agent': '创建 Agent',
+    'No agents yet': '暂无 Agent',
+    'Name': '名称',
+    'Primary Model': '主模型',
+    'Fallback Model': '备用模型',
+    'Status': '状态',
+    'Actions': '操作',
+    'Delete': '删除',
+    'Failed to load agents': '加载 Agent 失败',
+    // Skills
+    'Skill Repository': '技能仓库',
+    'Create Skill': '创建技能',
+    'No skills yet': '暂无技能',
+    'Description': '描述',
+    'Trigger Words': '触发词',
+    'Enabled': '已启用',
+    'Disabled': '已禁用',
+    'View': '查看',
+    'Failed to load skills': '加载技能失败',
+    // Knowledge
+    'Knowledge Base': '知识库',
+    'Import JSON': '导入 JSON',
+    'Add Entry': '添加条目',
+    'Filter by category:': '按分类筛选：',
+    'All': '全部',
+    'Concept': '概念',
+    'Template': '模板',
+    'Rule': '规则',
+    'No knowledge entries yet': '暂无知识条目',
+    'Category': '分类',
+    'Content': '内容',
+    'Variables': '变量',
+    'Failed to load knowledge': '加载知识库失败',
+    'Name and content required': '名称和内容必填',
+    'Failed to add': '添加失败',
+    'Knowledge entry added': '知识条目已添加',
+    'Invalid JSON': '无效的 JSON',
+    'Must be an array': '必须是数组',
+    'Import failed': '导入失败',
+    'Imported': '已导入',
+    // Approvals
+    'Approval Management': '审批管理',
+    'All': '全部',
+    'Pending': '待审批',
+    'Approved': '已批准',
+    'Rejected': '已拒绝',
+    'Refresh': '刷新',
+    'No approvals found': '暂无审批记录',
+    'ID': 'ID',
+    'Type': '类型',
+    'Resource': '资源',
+    'Requester': '请求者',
+    'Created': '创建时间',
+    'Approve': '批准',
+    'Reject': '拒绝',
+    'Failed to load approvals': '加载审批失败',
+    'Approved.': '已批准。',
+    'Failed to approve': '批准失败',
+    'Rejected.': '已拒绝。',
+    'Failed to reject': '拒绝失败',
+    // Audit
+    'Audit Logs': '审计日志',
+    'All Actions': '全部操作',
+    'No audit logs found': '暂无审计日志',
+    'Time': '时间',
+    'Actor': '操作者',
+    'Action': '操作',
+    'Target': '目标',
+    'Result': '结果',
+    'Detail': '详情',
+    'Failed to load audit logs': '加载审计日志失败',
+    // SubAgent
+    'SubAgent Settings': '子Agent 设置',
+    'Tool Whitelist': '工具白名单',
+    'Allowed Tools': '允许的工具',
+    'No tools registered': '暂无已注册工具',
+    'Leave empty for default list': '留空使用默认列表',
+    'JSON array of allowed tool names': 'JSON 数组形式的工具名',
+    'Default TTL': '默认 TTL',
+    'Default TTL (ms)': '默认 TTL (毫秒)',
+    'SubAgent 默认存活时间': 'SubAgent 默认存活时间，单位毫秒',
+    'Saved': '已保存',
+    'Failed to save': '保存失败',
+    // SOP
+    'SOP 进度': 'SOP 进度',
+    '选择 Agent': '选择 Agent',
+    'session key': 'session key',
+    '查看': '查看',
+    'Choose Agent and session': '选择 Agent 和 session 查看 SOP 进度',
+    '请选择 Agent 并输入 session key': '请选择 Agent 并输入 session key',
+    '步骤': '步骤',
+    '已完成步骤': '已完成步骤',
+    '暂无已完成步骤': '暂无已完成步骤',
+    '开始时间:': '开始时间:',
+    '加载失败:': '加载失败:',
+    // Search
+    'SearXNG Search': 'SearXNG 搜索',
+    'Instance URL': '实例 URL',
+    'SEARXNG_URL': 'SEARXNG_URL',
+    'Test Connection': '测试连接',
+    'Please enter a URL first': '请先输入 URL',
+    'OK - Found': '成功 - 找到',
+    'results': '条结果',
+    'Unexpected response format': '意外的响应格式',
+    'Failed:': '失败：',
+    // LLM
+    'LLM Settings': 'LLM 设置',
+    'Provider & Mode': '提供商和模式',
+    'Provider': '提供商',
+    'Mock Mode': '模拟模式',
+    'Enable mock responses': '启用模拟响应（无真实 API 调用）',
+    'API Keys': 'API 密钥',
+    'OpenAI Key': 'OpenAI 密钥',
+    'Anthropic Key': 'Anthropic 密钥',
+    'MiniMax Key': 'MiniMax 密钥',
+    'API keys are stored encrypted': 'API 密钥加密存储',
+    // Notifications
+    'Notification Settings': '通知设置',
+    'Webhook': 'Webhook',
+    'Message Webhook': '消息 Webhook',
+    'Feishu Webhook': '飞书 Webhook',
+    'Email (SMTP)': '邮件 (SMTP)',
+    'SMTP Host': 'SMTP 服务器',
+    'SMTP Port': 'SMTP 端口',
+    'SMTP User': 'SMTP 用户',
+    'SMTP Password': 'SMTP 密码',
+    'From': '发件人',
+    'To': '收件人',
+    'Telegram': 'Telegram',
+    'Bot Token': 'Bot Token',
+    'Chat ID': 'Chat ID',
+    // Login
+    'Enter your API Key to access the dashboard': '输入 API Key 访问控制台',
+    'Login': '登录',
+    'Invalid API Key': 'API Key 无效',
+    // Modal
+    'Cancel': '取消',
+    'Close': '关闭',
+    'Create': '创建',
+    'Add': '添加',
+    'Import': '导入',
+    // Create Agent
+    'Primary Model ID': '主模型 ID',
+    'Fallback Model ID': '备用模型 ID',
+    'Comma-separated chain, prefix with provider:': '逗号分隔，跨提供商时加 provider: 前缀',
+    'Temperature': 'Temperature',
+    // Create Skill
+    'What this skill does': '技能描述',
+    'JSON array of trigger phrases': 'JSON 数组格式的触发短语',
+    'Markdown Content': 'Markdown 内容',
+    // Create Knowledge
+    'Add Knowledge Entry': '添加知识条目',
+    'Knowledge content...': '知识内容...',
+    'Variables (JSON array)': '变量 (JSON 数组)',
+    'Related (JSON array)': '相关条目 (JSON 数组)',
+    // Import Knowledge
+    'Import Knowledge': '导入知识',
+    'Paste JSON array': '粘贴 JSON 数组',
+    'JSON array of entries with category, name, content': '条目 JSON 数组，包含 category, name, content',
+    // Audit filter
+    'agent.create': 'agent.create',
+    'agent.delete': 'agent.delete',
+    'approval.approved': 'approval.approved',
+    'approval.rejected': 'approval.rejected',
+    'tool.execute': 'tool.execute',
+  },
+  en: {
+    // Header
+    'Connected': 'Connected',
+    'Disconnected': 'Disconnected',
+    'Logout': 'Logout',
+    // Tabs
+    'Feishu': 'Feishu',
+    'Models': 'Models',
+    'Skills': 'Skills',
+    'Knowledge': 'Knowledge',
+    'Approvals': 'Approvals',
+    'Audit': 'Audit',
+    'SubAgent': 'SubAgent',
+    'SOP': 'SOP',
+    'Search': 'Search',
+    'LLM': 'LLM',
+    'Notifications': 'Notifications',
+    // Feishu
+    'Feishu Settings': 'Feishu Settings',
+    'Save Settings': 'Save Settings',
+    'Application Bot (Method B)': 'Application Bot (Method B)',
+    'App ID': 'App ID',
+    'App Secret': 'App Secret',
+    'Approver Open ID': 'Approver Open ID',
+    'Callback URL': 'Callback URL',
+    'Verification Token': 'Verification Token',
+    'Configured': 'Configured',
+    'Not configured': 'Not configured',
+    'Webhook (Method A - Legacy)': 'Webhook (Method A - Legacy)',
+    'Webhook URL': 'Webhook URL',
+    'Settings are stored in database': 'Settings are stored in database',
+    'take effect immediately': 'take effect immediately',
+    'Environment variables are fallbacks': 'Environment variables are used as fallbacks if DB values are empty',
+    // Models
+    'Model Settings': 'Model Settings',
+    'Create Agent': 'Create Agent',
+    'No agents yet': 'No agents yet',
+    'Name': 'Name',
+    'Primary Model': 'Primary Model',
+    'Fallback Model': 'Fallback Model',
+    'Status': 'Status',
+    'Actions': 'Actions',
+    'Delete': 'Delete',
+    'Failed to load agents': 'Failed to load agents',
+    // Skills
+    'Skill Repository': 'Skill Repository',
+    'Create Skill': 'Create Skill',
+    'No skills yet': 'No skills yet',
+    'Description': 'Description',
+    'Trigger Words': 'Trigger Words',
+    'Enabled': 'Enabled',
+    'Disabled': 'Disabled',
+    'View': 'View',
+    'Failed to load skills': 'Failed to load skills',
+    // Knowledge
+    'Knowledge Base': 'Knowledge Base',
+    'Import JSON': 'Import JSON',
+    'Add Entry': 'Add Entry',
+    'Filter by category:': 'Filter by category:',
+    'All': 'All',
+    'Concept': 'Concept',
+    'Template': 'Template',
+    'Rule': 'Rule',
+    'No knowledge entries yet': 'No knowledge entries yet',
+    'Category': 'Category',
+    'Content': 'Content',
+    'Variables': 'Variables',
+    'Failed to load knowledge': 'Failed to load knowledge',
+    'Name and content required': 'Name and content are required',
+    'Failed to add': 'Failed to add',
+    'Knowledge entry added': 'Knowledge entry added',
+    'Invalid JSON': 'Invalid JSON',
+    'Must be an array': 'Must be an array',
+    'Import failed': 'Import failed',
+    'Imported': 'Imported',
+    // Approvals
+    'Approval Management': 'Approval Management',
+    'All': 'All',
+    'Pending': 'Pending',
+    'Approved': 'Approved',
+    'Rejected': 'Rejected',
+    'Refresh': 'Refresh',
+    'No approvals found': 'No approvals found',
+    'ID': 'ID',
+    'Type': 'Type',
+    'Resource': 'Resource',
+    'Requester': 'Requester',
+    'Created': 'Created',
+    'Approve': 'Approve',
+    'Reject': 'Reject',
+    'Failed to load approvals': 'Failed to load approvals',
+    'Approved.': 'Approved.',
+    'Failed to approve': 'Failed to approve',
+    'Rejected.': 'Rejected.',
+    'Failed to reject': 'Failed to reject',
+    // Audit
+    'Audit Logs': 'Audit Logs',
+    'All Actions': 'All Actions',
+    'No audit logs found': 'No audit logs found',
+    'Time': 'Time',
+    'Actor': 'Actor',
+    'Action': 'Action',
+    'Target': 'Target',
+    'Result': 'Result',
+    'Detail': 'Detail',
+    'Failed to load audit logs': 'Failed to load audit logs',
+    // SubAgent
+    'SubAgent Settings': 'SubAgent Settings',
+    'Tool Whitelist': 'Tool Whitelist',
+    'Allowed Tools': 'Allowed Tools',
+    'No tools registered': 'No tools registered',
+    'Leave empty for default list': 'Leave empty to use default list',
+    'JSON array of allowed tool names': 'JSON array of allowed tool names',
+    'Default TTL': 'Default TTL',
+    'Default TTL (ms)': 'Default TTL (ms)',
+    'Saved': 'Saved',
+    'Failed to save': 'Failed to save',
+    // SOP
+    'SOP 进度': 'SOP Progress',
+    '选择 Agent': 'Select Agent',
+    'session key': 'session key',
+    '查看': 'View',
+    'Choose Agent and session': 'Select Agent and session to view SOP progress',
+    '请选择 Agent 并输入 session key': 'Please select an Agent and enter session key',
+    '步骤': 'Step',
+    '已完成步骤': 'Completed Steps',
+    '暂无已完成步骤': 'No completed steps yet',
+    '开始时间:': 'Started:',
+    '加载失败:': 'Load failed:',
+    // Search
+    'SearXNG Search': 'SearXNG Search',
+    'Instance URL': 'Instance URL',
+    'SEARXNG_URL': 'SEARXNG_URL',
+    'Test Connection': 'Test Connection',
+    'Please enter a URL first': 'Please enter a URL first',
+    'OK - Found': 'OK - Found',
+    'results': 'results',
+    'Unexpected response format': 'Unexpected response format',
+    'Failed:': 'Failed:',
+    // LLM
+    'LLM Settings': 'LLM Settings',
+    'Provider & Mode': 'Provider & Mode',
+    'Provider': 'Provider',
+    'Mock Mode': 'Mock Mode',
+    'Enable mock responses': 'Enable mock responses (no real API calls)',
+    'API Keys': 'API Keys',
+    'OpenAI Key': 'OpenAI Key',
+    'Anthropic Key': 'Anthropic Key',
+    'MiniMax Key': 'MiniMax Key',
+    'API keys are stored encrypted': 'API keys are stored encrypted',
+    // Notifications
+    'Notification Settings': 'Notification Settings',
+    'Webhook': 'Webhook',
+    'Message Webhook': 'Message Webhook',
+    'Feishu Webhook': 'Feishu Webhook',
+    'Email (SMTP)': 'Email (SMTP)',
+    'SMTP Host': 'SMTP Host',
+    'SMTP Port': 'SMTP Port',
+    'SMTP User': 'SMTP User',
+    'SMTP Password': 'SMTP Password',
+    'From': 'From',
+    'To': 'To',
+    'Telegram': 'Telegram',
+    'Bot Token': 'Bot Token',
+    'Chat ID': 'Chat ID',
+    // Login
+    'Enter your API Key to access the dashboard': 'Enter your API Key to access the dashboard',
+    'Login': 'Login',
+    'Invalid API Key': 'Invalid API Key',
+    // Modal
+    'Cancel': 'Cancel',
+    'Close': 'Close',
+    'Create': 'Create',
+    'Add': 'Add',
+    'Import': 'Import',
+    // Create Agent
+    'Primary Model ID': 'Primary Model ID',
+    'Fallback Model ID': 'Fallback Model ID',
+    'Comma-separated chain, prefix with provider:': 'Comma-separated chain, prefix with provider:',
+    'Temperature': 'Temperature',
+    // Create Skill
+    'What this skill does': 'What this skill does',
+    'JSON array of trigger phrases': 'JSON array of trigger phrases',
+    'Markdown Content': 'Markdown Content',
+    // Create Knowledge
+    'Add Knowledge Entry': 'Add Knowledge Entry',
+    'Knowledge content...': 'Knowledge content...',
+    'Variables (JSON array)': 'Variables (JSON array)',
+    'Related (JSON array)': 'Related (JSON array)',
+    // Import Knowledge
+    'Import Knowledge': 'Import Knowledge',
+    'Paste JSON array': 'Paste JSON array',
+    'JSON array of entries with category, name, content': 'JSON array of entries with category, name, content',
+    // Audit filter
+    'agent.create': 'agent.create',
+    'agent.delete': 'agent.delete',
+    'approval.approved': 'approval.approved',
+    'approval.rejected': 'approval.rejected',
+    'tool.execute': 'tool.execute',
+  },
+};
+
+function t(key) {
+  return I18N[currentLang][key] || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('colobot-lang', lang);
+  applyI18n();
+  // Update lang select
+  document.getElementById('lang-select').value = lang;
+}
+
+function applyI18n() {
+  // Static text elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  // Static placeholder attributes
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
+  // Update document title
+  document.title = 'ColoBot' + (currentLang === 'zh' ? ' 控制台' : ' Dashboard');
+}
 
 // ─── API Helpers ──────────────────────────────────────────────
 
@@ -540,6 +980,13 @@ function stopApprovalPolling() {
 }
 
 function initDashboard() {
+  // Restore saved language
+  const savedLang = localStorage.getItem('colobot-lang');
+  if (savedLang) {
+    currentLang = savedLang;
+    document.getElementById('lang-select').value = savedLang;
+  }
+  applyI18n();
   checkFeishuStatus();
   loadAgents();
   loadSkills();
@@ -797,7 +1244,7 @@ function loadKnowledge() {
 
 function showCreateKnowledgeModal() {
   showModal('Add Knowledge Entry', `
-    <div class="form-group"><label>Category</label><select id="kb-category"><option value="concept">Concept</option><option value="template">Template</option><option value="rule">Rule</option></select></div>
+    <div class="form-group"><label>Category</label><select id="kb-category"><option value="concept" data-i18n="Concept">Concept</option><option value="template" data-i18n="Template">Template</option><option value="rule" data-i18n="Rule">Rule</option></select></div>
     <div class="form-group"><label>Name</label><input type="text" id="kb-name" placeholder="Entry name"></div>
     <div class="form-group"><label>Content</label><textarea id="kb-content" placeholder="Knowledge content..." rows="6"></textarea></div>
     <div class="form-group"><label>Variables (JSON array)</label><input type="text" id="kb-vars" placeholder='["var1", "var2"]'></div>
@@ -1075,7 +1522,7 @@ function saveLlmSettings() {
 function loadAgentsForSop() {
   api('/api/agents').then(agents => {
     const select = document.getElementById('sop-agent-select');
-    select.innerHTML = '<option value="">选择 Agent</option>' +
+    select.innerHTML = '<option value="" data-i18n="选择 Agent">选择 Agent</option>' +
       agents.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
   }).catch(() => {});
 }
