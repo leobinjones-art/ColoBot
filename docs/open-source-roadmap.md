@@ -23,7 +23,7 @@ jobs:
         env:
           POSTGRES_DB: colobot
           POSTGRES_USER: colobot
-          POSTGRES_PASSWORD: colobot123
+          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'colobot123' }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s

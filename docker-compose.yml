@@ -4,7 +4,7 @@ services:
     container_name: colobot-postgres
     environment:
       POSTGRES_USER: colobot
-      POSTGRES_PASSWORD: colobot123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-colobot_dev_password}
       POSTGRES_DB: colobot
     ports:
       - "5432:5432"
