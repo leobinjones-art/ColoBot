@@ -148,7 +148,7 @@ CI 已集成 `npm audit`，生产依赖无高危漏洞。
 - [x] README 的 License 字段与文件一致
 - [x] Staging 区干净
 - [x] 所有 commit 已 push
-- [ ] 单元测试覆盖率：核心模块 > 80%
+- [x] 单元测试覆盖率：核心模块 > 80%（content-policy 92%, safe-fetch 90%, rate-limit 90%）
 - [ ] Git tag 已打（v1.0.0）
 
 ---
