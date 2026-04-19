@@ -15,7 +15,7 @@ export interface AuditEntry {
   detail?: Record<string, unknown>;
   ipAddress?: string;
   channel?: string;
-  result?: 'success' | 'failure' | 'error';
+  result?: 'success' | 'failure' | 'error' | 'blocked';
   errorMessage?: string;
 }
 

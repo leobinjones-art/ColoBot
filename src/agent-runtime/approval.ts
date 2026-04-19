@@ -5,7 +5,7 @@
 
 import { query, queryOne } from '../memory/db.js';
 
-export type ApprovalActionType = 'update' | 'delete' | 'exec' | 'send';
+export type ApprovalActionType = 'update' | 'delete' | 'exec' | 'send' | 'uninstall';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 
 export interface ApprovalRequest {

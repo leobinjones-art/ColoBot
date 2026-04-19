@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "llm-guard": "^0.1.8",
     "pg": "^8.13.0",
     "pgvector": "^0.2.0",
     "ws": "^8.18.0"

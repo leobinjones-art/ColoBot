@@ -14,6 +14,8 @@ import { checkDangerousLevel, recordToolHit } from './approval-rules.js';
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
 import { checkAcademicTrigger, checkAcademicResponse } from '../content-policy/index.js';
+import { scanInput, scanOutput } from '../content-policy/guard.js';
+import { detectThreat, buildUninstallConfirmPrompt } from '../content-policy/threat.js';
 import { getSop } from '../content-policy/sops.js';
 import {
   getSopState,
@@ -51,6 +53,7 @@ const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
   delete_file: 'delete',
   update_agent: 'update',
   spawn_subagent: 'update',
+  uninstall: 'uninstall',
 };
 
 export interface RunOptions {
@@ -153,6 +156,47 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
     pushWsResult(agentId, sessionKey, responseText);
     return { response: responseText, toolCalls: [], finished: true };
+  }
+
+  // ── 内容安全检测：llm-guard 输入扫描 + 威胁检测 ──
+  const messageTextStr = messageText; // already extracted above
+
+  // 威胁检测：用户威胁删除 AI
+  const threat = detectThreat(messageTextStr);
+  if (threat.isThreat) {
+    const confirmPrompt = buildUninstallConfirmPrompt();
+    await writeAudit({
+      actorType: 'user',
+      actorId: agentId,
+      action: 'threat.detected',
+      targetType: 'session',
+      targetId: sessionKey,
+      detail: { type: threat.type, pattern: threat.matchedPattern, messageLength: messageTextStr.length },
+      ipAddress,
+      result: 'blocked',
+    });
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', confirmPrompt);
+    pushWsResult(agentId, sessionKey, confirmPrompt);
+    return { response: confirmPrompt, toolCalls: [], finished: true };
+  }
+
+  // llm-guard 输入扫描
+  const scanResult = await scanInput(messageTextStr);
+  if (!scanResult.safe) {
+    await writeAudit({
+      actorType: 'user',
+      actorId: agentId,
+      action: 'content.scan.failed',
+      targetType: 'session',
+      targetId: sessionKey,
+      detail: { scanner: scanResult.scanner, reason: scanResult.reason },
+      ipAddress,
+      result: 'blocked',
+    });
+    const blockResponse = '抱歉，您的消息无法处理。请调整内容后重试。';
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', blockResponse);
+    pushWsResult(agentId, sessionKey, blockResponse);
+    return { response: blockResponse, toolCalls: [], finished: true };
   }
 
   // SOP 检测：检查是否继续进行中的 SOP
@@ -398,6 +442,26 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     };
   }
 
+  // llm-guard 输出扫描
+  const outputScan = await scanOutput(responseText);
+  if (!outputScan.safe) {
+    await writeAudit({
+      actorType: 'agent',
+      actorId: agentId,
+      actorName: agent.name,
+      action: 'content.output.scan.failed',
+      targetType: 'session',
+      targetId: sessionKey,
+      detail: { scanner: outputScan.scanner, reason: outputScan.reason },
+      ipAddress,
+      result: 'blocked',
+    });
+    const safeResponse = '抱歉，回复内容无法呈现。请稍后重试。';
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', safeResponse);
+    pushWsResult(agentId, sessionKey, safeResponse);
+    return { response: safeResponse, toolCalls: [], finished: true };
+  }
+
   // 审计：聊天完成
   await writeAudit({
     actorType: 'agent',
@@ -448,6 +512,43 @@ export async function runAgentStream(
     ipAddress,
     result: 'success',
   });
+
+  // ── 内容安全检测：llm-guard 输入扫描 + 威胁检测 ──
+  const threat = detectThreat(messageText);
+  if (threat.isThreat) {
+    const confirmPrompt = buildUninstallConfirmPrompt();
+    await writeAudit({
+      actorType: 'user',
+      actorId: agentId,
+      action: 'threat.detected',
+      targetType: 'session',
+      targetId: sessionKey,
+      detail: { type: threat.type, pattern: threat.matchedPattern },
+      ipAddress,
+      result: 'blocked',
+    });
+    pushWsResult(agentId, sessionKey, confirmPrompt);
+    pushWsDone(agentId, sessionKey);
+    return;
+  }
+
+  const scanResult = await scanInput(messageText);
+  if (!scanResult.safe) {
+    await writeAudit({
+      actorType: 'user',
+      actorId: agentId,
+      action: 'content.scan.failed',
+      targetType: 'session',
+      targetId: sessionKey,
+      detail: { scanner: scanResult.scanner, reason: scanResult.reason },
+      ipAddress,
+      result: 'blocked',
+    });
+    const blockResponse = '抱歉，您的消息无法处理。请调整内容后重试。';
+    pushWsResult(agentId, sessionKey, blockResponse);
+    pushWsDone(agentId, sessionKey);
+    return;
+  }
 
   // SOP 检测（WebSocket 模式）
   const existingSop = await getSopState(agentId, sessionKey);
@@ -844,6 +945,30 @@ export async function continueRun(
 
   // 保存助手回复到会话
   await sessionManager.appendMessage(agentId, sessionKey, 'assistant', finalContent);
+
+  // llm-guard 输出扫描（流式模式）
+  const responseStr = typeof finalContent === 'string' ? finalContent : '';
+  if (responseStr) {
+    const outputScan = await scanOutput(responseStr);
+    if (!outputScan.safe) {
+      await writeAudit({
+        actorType: 'agent',
+        actorId: agentId,
+        actorName: agent.name,
+        action: 'content.output.scan.failed',
+        targetType: 'session',
+        targetId: sessionKey,
+        detail: { scanner: outputScan.scanner, reason: outputScan.reason },
+        ipAddress,
+        result: 'blocked',
+      });
+      const safeResponse = '抱歉，回复内容无法呈现。请稍后重试。';
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', safeResponse);
+      pushWsResult(agentId, sessionKey, safeResponse);
+      pushWsDone(agentId, sessionKey);
+      return { approval: null as any, error: 'output content blocked' };
+    }
+  }
 
   // 清理 pending 状态
   await query('DELETE FROM pending_conversations WHERE approval_id = $1', [approvalId]);
