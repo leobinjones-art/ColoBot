@@ -2,13 +2,7 @@
  * 向量嵌入 - 使用 OpenAI / MiniMax Embeddings
  */
 
-import { getMockLLM, getOpenAIApiKey, getMinimaxApiKey } from '../services/settings-cache.js';
-
-let embeddingProvider: 'openai' | 'minimax' = 'openai';
-
-export function setEmbedProvider(provider: 'openai' | 'minimax'): void {
-  embeddingProvider = provider;
-}
+import { getMockLLM, getOpenAIApiKey, getMinimaxApiKey, getLlmProvider } from '../services/settings-cache.js';
 
 export interface EmbedResult {
   embedding: number[] | null;
@@ -21,11 +15,15 @@ export async function embed(text: string): Promise<EmbedResult> {
     return mockEmbed(text);
   }
 
-  switch (embeddingProvider) {
-    case 'openai':
-      return embedOpenAI(text);
+  // 根据 LLM provider 选择 embedding provider
+  const llmProvider = getLlmProvider();
+  switch (llmProvider) {
     case 'minimax':
       return embedMinimax(text);
+    case 'openai':
+    case 'anthropic':
+    default:
+      return embedOpenAI(text);
   }
 }
 
@@ -40,7 +38,11 @@ function mockEmbed(_text: string): EmbedResult {
 
 async function embedOpenAI(text: string): Promise<EmbedResult> {
   const apiKey = getOpenAIApiKey();
-  if (!apiKey) return { embedding: null, model: '' };
+  if (!apiKey) {
+    // Fallback to mock embedding if no API key
+    console.log('No OpenAI API key, falling back to mock embedding');
+    return mockEmbed(text);
+  }
 
   const res = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
@@ -56,10 +58,13 @@ async function embedOpenAI(text: string): Promise<EmbedResult> {
 
   if (!res.ok) {
     console.error('OpenAI Embed error:', await res.text());
-    return { embedding: null, model: '' };
+    return mockEmbed(text);
   }
 
   const data = await res.json() as { data: Array<{ embedding: number[] }>; model: string };
+  if (!data.data || data.data.length === 0) {
+    return mockEmbed(text);
+  }
   return { embedding: data.data[0]?.embedding ?? null, model: data.model };
 }
 
@@ -75,15 +80,22 @@ async function embedMinimax(text: string): Promise<EmbedResult> {
     },
     body: JSON.stringify({
       model: 'embo-01',
-      input: text.slice(0, 8000),
+      texts: [text.slice(0, 8000)],
+      type: 'db',
     }),
   });
 
   if (!res.ok) {
     console.error('MiniMax Embed error:', await res.text());
-    return { embedding: null, model: '' };
+    // Fallback to mock embedding
+    console.log('Falling back to mock embedding');
+    return mockEmbed(text);
   }
 
-  const data = await res.json() as { data: Array<{ embedding: number[] }>; model: string };
-  return { embedding: data.data[0]?.embedding ?? null, model: data.model };
+  const data = await res.json() as { vectors: number[][]; base_resp?: { status_code: number } };
+  if (!data.vectors || data.vectors.length === 0) {
+    console.error('MiniMax Embed returned no vectors');
+    return mockEmbed(text);
+  }
+  return { embedding: data.vectors[0], model: 'embo-01' };
 }

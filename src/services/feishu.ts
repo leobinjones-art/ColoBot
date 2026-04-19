@@ -141,6 +141,8 @@ class FeishuClient {
   async sendTextMessage(receiveId: string, text: string): Promise<string> {
     const token = await this.getToken();
 
+    console.log(`[FeishuClient] Sending text to ${receiveId}: ${text.slice(0, 50)}...`);
+
     const res = await fetch(FEISHU_MESSAGE_URL, {
       method: 'POST',
       headers: {
@@ -154,11 +156,12 @@ class FeishuClient {
       }),
     });
 
+    const data = await res.json() as FeishuMessageResponse;
+    console.log(`[FeishuClient] API response: code=${data.code}, msg=${data.msg}, message_id=${data.data?.message_id}`);
+
     if (!res.ok) {
       throw new Error(`Feishu message API error: ${res.status}`);
     }
-
-    const data = await res.json() as FeishuMessageResponse;
 
     if (data.code !== 0) {
       throw new Error(`Feishu send error: ${data.code} - ${data.msg || 'unknown'}`);

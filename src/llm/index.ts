@@ -382,7 +382,7 @@ async function chatAnthropic(
   return { content: textBlocks[0]?.text ?? '', raw: data };
 }
 
-// ─── MiniMax ───────────────────────────────────────────────
+// ─── MiniMax (Anthropic 兼容 API) ─────────────────────────────
 
 async function chatMinimax(
   messages: LLMMessage[],
@@ -391,20 +391,22 @@ async function chatMinimax(
   const apiKey = getMinimaxApiKey();
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
-  const model = options.model || 'MiniMax-Text-01';
+  const model = options.model || 'MiniMax-M2.7-highspeed';
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  const res = await fetch('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
+  // MiniMax Anthropic 兼容端点
+  const res = await fetch('https://api.minimaxi.com/anthropic/v1/messages', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
       model,
       messages: nonSystem,
-      system_instruction: systemMsg?.content,
+      system: systemMsg?.content,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 4096,
     }),
@@ -415,8 +417,10 @@ async function chatMinimax(
     throw new Error(`MiniMax API error: ${res.status} ${err}`);
   }
 
-  const data = await res.json() as { choices: Array<{ messages: Array<{ text: string }> }> };
-  return { content: data.choices[0]?.messages[0]?.text ?? '', raw: data };
+  // Anthropic 格式响应: { content: [{ type: "text", text: "..." }, ...] }
+  const data = await res.json() as { content: Array<{ type: string; text?: string }> };
+  const textBlock = data.content.find(b => b.type === 'text');
+  return { content: textBlock?.text ?? '', raw: data };
 }
 
 // ─── OpenAI 流式 ───────────────────────────────────────────

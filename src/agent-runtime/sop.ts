@@ -49,10 +49,16 @@ export async function initSop(
     startedAt: new Date().toISOString(),
   };
   const key = sopStateKey(sessionKey);
-  await addMemory(agentId, key, JSON.stringify(state), {
-    type: 'sop_state',
-    category,
-  });
+  console.log(`[SOP] initSop: agentId=${agentId}, key=${key}, category=${category}`);
+  try {
+    await addMemory(agentId, key, JSON.stringify(state), {
+      type: 'sop_state',
+      category,
+    });
+    console.log(`[SOP] initSop: addMemory completed`);
+  } catch (e) {
+    console.error(`[SOP] initSop: addMemory failed:`, e);
+  }
 
   return state;
 }

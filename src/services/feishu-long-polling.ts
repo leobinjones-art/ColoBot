@@ -37,6 +37,7 @@ export async function startLongPolling(): Promise<void> {
   }
 
   try {
+    console.log(`[FeishuLongPolling] Config: appId=${config.appId}, appSecret=${config.appSecret.slice(0, 8)}...`);
     // 创建 WSClient，启用长连接
     wsClient = new lark.WSClient({
       appId: config.appId,
@@ -110,7 +111,7 @@ async function handleMessageEvent(event: {
 
   if (!text.trim()) return;
 
-  console.log(`[FeishuLongPolling] Message from ${senderId}: ${text.slice(0, 50)}...`);
+  console.log(`[FeishuLongPolling] 📩 收到消息 from ${senderId}: ${text.slice(0, 50)}...`);
 
   // 获取绑定的 Agent
   const { getSetting, SETTINGS_KEYS } = await import('./settings.js');
@@ -132,6 +133,8 @@ async function handleMessageEvent(event: {
     return;
   }
 
+  console.log(`[FeishuLongPolling] 🔄 分发到 Agent: ${agent.name} (session=feishu-${senderId})`);
+
   try {
     // 调用 Agent 运行时
     const { runAgent } = await import('../agent-runtime/runtime.js');
@@ -145,12 +148,16 @@ async function handleMessageEvent(event: {
     const { feishuClient } = await import('./feishu.js');
 
     if ('pending' in result && result.pending) {
+      console.log(`[FeishuLongPolling] ⏳ 需要审批，等待处理...`);
       await feishuClient.sendTextMessage(senderId, '您的请求需要审批，请等待审批人处理。');
     } else if ('response' in result) {
       const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result.response);
+      console.log(`[FeishuLongPolling] 📤 发送回复: ${responseText.slice(0, 100)}...`);
       await feishuClient.sendTextMessage(senderId, responseText);
+    } else {
+      console.log(`[FeishuLongPolling] ⚠️ 无响应内容:`, JSON.stringify(result).slice(0, 200));
     }
-    console.log(`[FeishuLongPolling] Replied to ${senderId}`);
+    console.log(`[FeishuLongPolling] ✅ 处理完成 (session=feishu-${senderId})`);
   } catch (e) {
     console.error('[FeishuLongPolling] Failed to process message:', e);
   }

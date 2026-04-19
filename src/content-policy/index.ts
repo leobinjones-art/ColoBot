@@ -2,7 +2,7 @@
  * 内容策略 - 学术内容检测入口
  */
 
-import { matchAcademicCategory, type AcademicCategory } from './rules.js';
+import { matchAcademicCategory, aiDetectAcademic, type AcademicCategory } from './rules.js';
 import { getSop, type SopDefinition } from './sops.js';
 
 export interface CheckResult {
@@ -18,13 +18,38 @@ export interface CheckResponseResult {
 }
 
 /**
- * 检查用户消息是否触发学术 SOP
+ * 检查用户消息是否触发学术 SOP（关键词匹配）
  */
 export function checkAcademicTrigger(text: string): CheckResult {
   const category = matchAcademicCategory(text);
   if (!category) {
     return { triggered: false, category: null, sop: null };
   }
+  const sop = getSop(category);
+  return { triggered: true, category, sop };
+}
+
+/**
+ * AI 智能检测：判断消息是否为学术任务
+ */
+export async function checkAcademicTriggerAI(text: string): Promise<CheckResult> {
+  // 先尝试关键词匹配
+  const keywordResult = checkAcademicTrigger(text);
+  if (keywordResult.triggered) {
+    return keywordResult;
+  }
+
+  // 消息长度 >= 50 才进行 AI 检测
+  if (text.length < 50) {
+    return { triggered: false, category: null, sop: null };
+  }
+
+  // AI 智能检测
+  const category = await aiDetectAcademic(text);
+  if (!category) {
+    return { triggered: false, category: null, sop: null };
+  }
+
   const sop = getSop(category);
   return { triggered: true, category, sop };
 }

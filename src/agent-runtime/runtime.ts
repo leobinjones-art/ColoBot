@@ -13,7 +13,7 @@ import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approv
 import { checkDangerousLevel, recordToolHit } from './approval-rules.js';
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
-import { checkAcademicTrigger, checkAcademicResponse } from '../content-policy/index.js';
+import { checkAcademicTriggerAI, checkAcademicResponse } from '../content-policy/index.js';
 import { scanInput, scanOutput } from '../content-policy/guard.js';
 import { detectThreat, buildUninstallConfirmPrompt } from '../content-policy/threat.js';
 import { getSop } from '../content-policy/sops.js';
@@ -204,6 +204,8 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
 
   // 检查是否有进行中的 SOP
   const existingSop = await getSopState(agentId, sessionKey);
+  console.log(`[SOP Debug] agentId=${agentId}, sessionKey=${sessionKey}, existingSop=${existingSop ? JSON.stringify({ category: existingSop.category, step: existingSop.currentStep }) : 'null'}`);
+
   if (existingSop) {
     // 特殊命令处理
     const cancelMatch = messageText.match(/^(取消|退出|end)\s*sop/i);
@@ -261,10 +263,41 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   }
 
   // 内容策略检测：触发学术 SOP（仅在无进行中 SOP 时检测）
-  const triggerCheck = checkAcademicTrigger(messageText);
+  const triggerCheck = await checkAcademicTriggerAI(messageText);
   if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
-    await initSop(agentId, sessionKey, triggerCheck.category!);
     const welcome = triggerCheck.sop.welcome;
+
+    // 如果用户消息较长（>100字符），说明已提供详细内容，直接处理第一步
+    if (messageText.length > 100) {
+      // 初始化并直接完成第一步
+      const state = await initSop(agentId, sessionKey, triggerCheck.category!);
+      const sop = triggerCheck.sop;
+      const step1 = sop.steps[0];
+
+      // 手动更新状态（避免重新查询）
+      state.steps.push({
+        step: 1,
+        name: step1.name,
+        content: messageText,
+        completed_at: new Date().toISOString(),
+      });
+      state.currentStep = 2;
+
+      // 保存更新后的状态
+      const { addMemory } = await import('../memory/vector.js');
+      await addMemory(agentId, `sop_state:${sessionKey}`, JSON.stringify(state), {
+        type: 'sop_state',
+        category: triggerCheck.category!,
+      });
+
+      const step2Prompt = sop.steps[1]?.prompt ?? '请继续。';
+      const fullResponse = `${welcome}\n\n---\n\n已收到你的研究内容，正在处理...\n\n**${step1.name}** 已完成。\n\n${step2Prompt}`;
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', fullResponse);
+      pushWsResult(agentId, sessionKey, fullResponse);
+      return { response: fullResponse, toolCalls: [], finished: true };
+    }
+
+    await initSop(agentId, sessionKey, triggerCheck.category!);
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', welcome);
     pushWsResult(agentId, sessionKey, welcome);
     return { response: welcome, toolCalls: [], finished: true };
@@ -474,18 +507,21 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   // 保存助手回复
   await sessionManager.appendMessage(agentId, sessionKey, 'assistant', finalContent);
 
-  // 内容策略检测（LLM 响应后拦截）
+  // 内容策略检测（LLM 响应后拦截）- 仅在无进行中 SOP 时检测
   const responseText = typeof finalContent === 'string' ? finalContent : '';
-  const responseCheck = checkAcademicResponse(responseText);
-  if (responseCheck.shouldIntercept && responseCheck.interceptResponse) {
-    // 覆盖之前的响应，重定向到 SOP
-    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseCheck.interceptResponse);
-    pushWsResult(agentId, sessionKey, responseCheck.interceptResponse);
-    return {
-      response: responseCheck.interceptResponse,
-      toolCalls: [],
-      finished: true,
-    };
+  const currentSopState = await getSopState(agentId, sessionKey);
+  if (!currentSopState) {
+    const responseCheck = checkAcademicResponse(responseText);
+    if (responseCheck.shouldIntercept && responseCheck.interceptResponse) {
+      // 覆盖之前的响应，重定向到 SOP
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseCheck.interceptResponse);
+      pushWsResult(agentId, sessionKey, responseCheck.interceptResponse);
+      return {
+        response: responseCheck.interceptResponse,
+        toolCalls: [],
+        finished: true,
+      };
+    }
   }
 
   // llm-guard 输出扫描
@@ -651,7 +687,7 @@ export async function runAgentStream(
   }
 
   // 内容策略检测：触发学术 SOP（仅在无进行中 SOP 时检测）
-  const triggerCheck = checkAcademicTrigger(messageText);
+  const triggerCheck = await checkAcademicTriggerAI(messageText);
   if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
     await initSop(agentId, sessionKey, triggerCheck.category!);
     const welcome = triggerCheck.sop.welcome;
