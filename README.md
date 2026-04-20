@@ -451,6 +451,45 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 
 ## 未来规划
 
+### 模块化拆包（P0）
+
+将 ColoBot 拆分为独立 npm 包，支持按需安装：
+
+```
+@colobot/core          # 核心：Agent、记忆、工具
+@colobot/tui           # 终端界面（TUI）
+@colobot/sop           # SOP流程（可选）
+@colobot/feishu        # 飞书集成（可选）
+@colobot/dashboard     # Web管理界面（可选）
+```
+
+**安装场景：**
+
+```bash
+# 最小安装：仅核心 + 终端
+npm install @colobot/core @colobot/tui
+
+# 完整安装：包含所有组件
+npm install @colobot/core @colobot/tui @colobot/sop @colobot/feishu @colobot/dashboard
+```
+
+**包依赖关系：**
+
+```
+@colobot/tui        → @colobot/core
+@colobot/sop        → @colobot/core
+@colobot/feishu     → @colobot/core
+@colobot/dashboard  → @colobot/core
+```
+
+**TUI 包功能：**
+- 终端聊天交互
+- 命令行参数解析
+- 进度条/状态显示
+- 交互式问答
+
+### 功能规划
+
 | 优先级 | 方向 | 说明 |
 |--------|------|------|
 | P1 | **钉钉接入** | 对称飞书方案 B，实现钉钉 Bot 交互式卡片 + 审批回调 |
