@@ -13,21 +13,11 @@ import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approv
 import { checkDangerousLevel, recordToolHit } from './approval-rules.js';
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
-import { checkAcademicTriggerAI, checkAcademicResponse } from '../content-policy/index.js';
+import { checkAcademicResponse } from '../content-policy/index.js';
 import { scanInput, scanOutput } from '../content-policy/guard.js';
 import { detectThreat, buildUninstallConfirmPrompt } from '../content-policy/threat.js';
-import { getSop } from '../content-policy/sops.js';
-import {
-  getSopState,
-  initSop,
-  getCurrentStepPrompt,
-  completeStep,
-  getSopProgress,
-  getSopCompletion,
-  checkContinueSop,
-  cancelSop,
-  generateDraft,
-} from './sop.js';
+import { handleSopFlow, shouldTriggerSop } from './sop-handler.js';
+import { getSopState as getSopStateV2 } from './sop-v2.js';
 
 /**
  * 检测用户消息是否为聊天内审批指令
@@ -199,189 +189,13 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     return { response: blockResponse, toolCalls: [], finished: true };
   }
 
-  // SOP 检测：检查是否继续进行中的 SOP
-  const shouldContinueSop = await checkContinueSop(agentId, sessionKey, messageText);
+  // ── AI 驱动的 SOP 流程 ──
+  const sopResult = await handleSopFlow(messageTextStr, agentId, sessionKey);
 
-  // 检查是否有进行中的 SOP
-  const existingSop = await getSopState(agentId, sessionKey);
-  console.log(`[SOP Debug] agentId=${agentId}, sessionKey=${sessionKey}, existingSop=${existingSop ? JSON.stringify({ category: existingSop.category, step: existingSop.currentStep }) : 'null'}`);
-
-  if (existingSop) {
-    // 特殊命令处理
-    const cancelMatch = messageText.match(/^(取消|退出|end)\s*sop/i);
-    if (cancelMatch) {
-      await cancelSop(agentId, sessionKey);
-      const responseText = 'SOP 已取消，已切换回普通对话模式。';
-      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
-      pushWsResult(agentId, sessionKey, responseText);
-      return { response: responseText, toolCalls: [], finished: true };
-    }
-
-    if (shouldContinueSop) {
-      const sopPrompt = await getCurrentStepPrompt(agentId, sessionKey);
-      const responseText = `[继续 SOP]\n\n${sopPrompt ?? '请继续当前步骤。'}`;
-      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
-      pushWsResult(agentId, sessionKey, responseText);
-      return { response: responseText, toolCalls: [], finished: true };
-    }
-
-    // 处理 SOP 步骤：保存用户回答，推进到下一步
-    const { state, isComplete } = await completeStep(agentId, sessionKey, messageText);
-
-    if (isComplete) {
-      // 生成草稿
-      let draftContent = '';
-      try {
-        draftContent = await generateDraft(agentId, sessionKey, async (prompt) => {
-          const resp = await agentChat(soul, [{ role: 'user', content: prompt }], {
-            temperature: 0.7,
-            maxTokens: 8192,
-            model: agent.primary_model_id ?? undefined,
-            fallbackModelId: agent.fallback_model_id ?? undefined,
-          });
-          const text = typeof resp.content === 'string' ? resp.content
-            : (resp.content as ContentBlock[]).map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
-          return text;
-        });
-      } catch (e) {
-        draftContent = '(草稿生成失败，请稍后重试)';
-      }
-      const sop = getSop(state.category);
-      const completionText = await getSopCompletion(agentId, sessionKey) ?? '流程已完成。';
-      const fullResponse = `${completionText}\n\n=== ${sop.name}草稿 ===\n\n${draftContent}`;
-      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', fullResponse);
-      return { response: fullResponse, toolCalls: [], finished: true };
-    }
-
-    // 返回下一步引导
-    const nextPrompt = await getCurrentStepPrompt(agentId, sessionKey);
-    const totalSteps = getSop(state.category).steps.length;
-    const responseText = `【步骤 ${state.currentStep}/${totalSteps}】\n\n${nextPrompt ?? '请继续。'}`;
-    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
-    pushWsResult(agentId, sessionKey, responseText);
-    return { response: responseText, toolCalls: [], finished: true };
-  }
-
-  // 内容策略检测：触发学术 SOP（仅在无进行中 SOP 时检测）
-  const triggerCheck = await checkAcademicTriggerAI(messageText);
-  if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
-    const welcome = triggerCheck.sop.welcome;
-
-    // 如果用户消息较长（>200字符），说明已提供详细研究内容
-    // 直接完成前两步，进入任务分解
-    if (messageText.length > 200) {
-      console.log(`[SOP] 长消息检测，直接进入任务分解`);
-      const state = await initSop(agentId, sessionKey, triggerCheck.category!);
-      const sop = triggerCheck.sop;
-
-      // 完成步骤1：收集主题
-      state.steps.push({
-        step: 1,
-        name: sop.steps[0].name,
-        content: messageText,
-        completed_at: new Date().toISOString(),
-      });
-
-      // 完成步骤2：补充资料（标记为"用户已提供研究内容"）
-      state.steps.push({
-        step: 2,
-        name: sop.steps[1].name,
-        content: '用户已在研究任务中提供详细内容',
-        completed_at: new Date().toISOString(),
-      });
-
-      state.currentStep = 3;
-
-      // 保存状态
-      const { addMemory } = await import('../memory/vector.js');
-      await addMemory(agentId, `sop_state:${sessionKey}`, JSON.stringify(state), {
-        type: 'sop_state',
-        category: triggerCheck.category!,
-      });
-
-      // AI 生成任务拆解
-      const taskBreakdownPrompt = `基于以下研究任务，生成详细的学术研究任务拆解。
-
-研究任务：
-"""
-${messageText}
-"""
-
-请将研究工作拆分为 4-6 个阶段，每个阶段列出具体工作内容。
-
-格式要求：
-**阶段1：XXX**
-- 任务1
-- 任务2
-
-**阶段2：XXX**
-- 任务1
-- 任务2
-
-...`;
-
-      const taskBreakdownResult = await agentChat(soul, [{ role: 'user', content: taskBreakdownPrompt }], {
-        temperature: 0.7,
-        maxTokens: 2000,
-        model: agent.primary_model_id ?? undefined,
-        fallbackModelId: agent.fallback_model_id ?? undefined,
-      });
-      const taskBreakdown = typeof taskBreakdownResult.content === 'string' ? taskBreakdownResult.content : '任务拆解生成中...';
-
-      // AI 生成操作手册
-      const operationManualPrompt = `基于以下研究任务，生成研究操作手册。
-
-研究任务：
-"""
-${messageText}
-"""
-
-请提供：
-1. 关键研究方法/工具
-2. 具体操作步骤
-3. 关键参数设置建议
-4. 注意事项
-
-格式清晰，便于执行。`;
-
-      const operationManualResult = await agentChat(soul, [{ role: 'user', content: operationManualPrompt }], {
-        temperature: 0.7,
-        maxTokens: 2000,
-        model: agent.primary_model_id ?? undefined,
-        fallbackModelId: agent.fallback_model_id ?? undefined,
-      });
-      const operationManual = typeof operationManualResult.content === 'string' ? operationManualResult.content : '操作手册生成中...';
-
-      const fullResponse = `✅ **已收到你的研究任务**
-
----
-
-**已完成的步骤：**
-- ✅ 步骤1：收集主题
-- ✅ 步骤2：补充资料
-
----
-
-**【步骤 3/7】任务拆解**
-
-${taskBreakdown}
-
----
-
-**【步骤 4/7】操作手册**
-
-${operationManual}`;
-
-      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', fullResponse);
-      pushWsResult(agentId, sessionKey, fullResponse);
-      return { response: fullResponse, toolCalls: [], finished: true };
-    }
-
-    // 短消息：正常进入 SOP 流程
-    await initSop(agentId, sessionKey, triggerCheck.category!);
-    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', welcome);
-    pushWsResult(agentId, sessionKey, welcome);
-    return { response: welcome, toolCalls: [], finished: true };
+  if (sopResult.action !== 'none' && sopResult.response) {
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', sopResult.response);
+    pushWsResult(agentId, sessionKey, sopResult.response);
+    return { response: sopResult.response, toolCalls: [], finished: true };
   }
 
   // 获取历史消息
@@ -590,7 +404,7 @@ ${operationManual}`;
 
   // 内容策略检测（LLM 响应后拦截）- 仅在无进行中 SOP 时检测
   const responseText = typeof finalContent === 'string' ? finalContent : '';
-  const currentSopState = await getSopState(agentId, sessionKey);
+  const currentSopState = await getSopStateV2(agentId, sessionKey);
   if (!currentSopState) {
     const responseCheck = checkAcademicResponse(responseText);
     if (responseCheck.shouldIntercept && responseCheck.interceptResponse) {
@@ -713,66 +527,11 @@ export async function runAgentStream(
     return;
   }
 
-  // SOP 检测（WebSocket 模式）
-  const existingSop = await getSopState(agentId, sessionKey);
-  if (existingSop) {
-    const shouldContinue = await checkContinueSop(agentId, sessionKey, messageText);
-    const cancelMatch = messageText.match(/^(取消|退出|end)\s*sop/i);
-    if (cancelMatch) {
-      await cancelSop(agentId, sessionKey);
-      const responseText = 'SOP 已取消，已切换回普通对话模式。';
-      pushWsResult(agentId, sessionKey, responseText);
-      pushWsDone(agentId, sessionKey);
-      return;
-    }
-    if (shouldContinue) {
-      const sopPrompt = await getCurrentStepPrompt(agentId, sessionKey);
-      const responseText = `[继续 SOP]\n\n${sopPrompt ?? '请继续当前步骤。'}`;
-      pushWsResult(agentId, sessionKey, responseText);
-      pushWsDone(agentId, sessionKey);
-      return;
-    }
-    // 处理 SOP 步骤推进
-    const { state, isComplete } = await completeStep(agentId, sessionKey, messageText);
-    if (isComplete) {
-      // 生成草稿
-      let draftContent = '';
-      try {
-        draftContent = await generateDraft(agentId, sessionKey, async (prompt) => {
-          const resp = await agentChat(soul, [{ role: 'user', content: prompt }], {
-            temperature: 0.7,
-            maxTokens: 8192,
-            model: agent.primary_model_id ?? undefined,
-            fallbackModelId: agent.fallback_model_id ?? undefined,
-          });
-          const text = typeof resp.content === 'string' ? resp.content
-            : (resp.content as ContentBlock[]).map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
-          return text;
-        });
-      } catch (e) {
-        draftContent = '(草稿生成失败，请稍后重试)';
-      }
-      const sop = getSop(state.category);
-      const completionText = await getSopCompletion(agentId, sessionKey) ?? '流程已完成。';
-      const fullResponse = `${completionText}\n\n=== ${sop.name}草稿 ===\n\n${draftContent}`;
-      pushWsResult(agentId, sessionKey, fullResponse);
-      pushWsDone(agentId, sessionKey);
-      return;
-    }
-    const nextPrompt = await getCurrentStepPrompt(agentId, sessionKey);
-    const totalSteps = getSop(state.category).steps.length;
-    const responseText = `【步骤 ${state.currentStep}/${totalSteps}】\n\n${nextPrompt ?? '请继续。'}`;
-    pushWsResult(agentId, sessionKey, responseText);
-    pushWsDone(agentId, sessionKey);
-    return;
-  }
+  // ── AI 驱动的 SOP 流程（WebSocket 模式）─
+  const sopResult = await handleSopFlow(messageText, agentId, sessionKey);
 
-  // 内容策略检测：触发学术 SOP（仅在无进行中 SOP 时检测）
-  const triggerCheck = await checkAcademicTriggerAI(messageText);
-  if (triggerCheck.triggered && triggerCheck.sop && !existingSop) {
-    await initSop(agentId, sessionKey, triggerCheck.category!);
-    const welcome = triggerCheck.sop.welcome;
-    pushWsResult(agentId, sessionKey, welcome);
+  if (sopResult.action !== 'none' && sopResult.response) {
+    pushWsResult(agentId, sessionKey, sopResult.response);
     pushWsDone(agentId, sessionKey);
     return;
   }
