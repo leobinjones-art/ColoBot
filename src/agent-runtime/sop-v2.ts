@@ -63,6 +63,8 @@ function sopTaskKey(taskId: string): string {
  * AI 分析用户消息，判断是否为学术任务并拆解步骤
  */
 export async function aiAnalyzeTask(userMessage: string): Promise<TaskAnalysis> {
+  console.log('[SOP] Analyzing task, message length:', userMessage.length);
+
   const prompt = `分析以下用户消息，判断是否为学术研究任务。
 
 用户消息：
@@ -97,12 +99,16 @@ ${userMessage.slice(0, 4000)}
     });
 
     const text = typeof response.content === 'string' ? response.content : '';
+    console.log('[SOP] AI response:', text.slice(0, 200));
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.log('[SOP] No JSON found in response');
       return { isAcademicTask: false, taskType: 'none', taskName: '', suggestedSteps: [], informationComplete: false, missingInfo: [] };
     }
 
-    return JSON.parse(jsonMatch[0]) as TaskAnalysis;
+    const result = JSON.parse(jsonMatch[0]) as TaskAnalysis;
+    console.log('[SOP] Analysis result:', result.isAcademicTask, result.taskType, result.taskName);
+    return result;
   } catch (e) {
     console.error('[SOP] AI analyze task failed:', e);
     return { isAcademicTask: false, taskType: 'none', taskName: '', suggestedSteps: [], informationComplete: false, missingInfo: [] };
@@ -115,19 +121,30 @@ ${userMessage.slice(0, 4000)}
  * 获取用户当前活跃的 SOP 任务
  */
 export async function getActiveSopTask(agentId: string, sessionKey: string): Promise<SopState | null> {
-  const rows = await queryOne<{ memory_value: string }>(
-    `SELECT memory_value FROM agent_memory
-     WHERE agent_id = $1 AND memory_key = $2
-     ORDER BY created_at DESC LIMIT 1`,
-    [agentId, `${SOP_ACTIVE_KEY}:${sessionKey}`]
-  );
-
-  if (!rows) return null;
-
+  console.log('[SOP] getActiveSopTask called:', agentId, sessionKey);
   try {
-    const taskId = JSON.parse(rows.memory_value).taskId;
-    return await getSopState(agentId, taskId);
-  } catch {
+    const rows = await queryOne<{ memory_value: string }>(
+      `SELECT memory_value FROM agent_memory
+       WHERE agent_id = $1 AND memory_key = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [agentId, `${SOP_ACTIVE_KEY}:${sessionKey}`]
+    );
+
+    if (!rows) {
+      console.log('[SOP] No active task found');
+      return null;
+    }
+
+    try {
+      const taskId = JSON.parse(rows.memory_value).taskId;
+      console.log('[SOP] Found taskId:', taskId);
+      return await getSopState(agentId, taskId);
+    } catch (e) {
+      console.error('[SOP] Failed to parse active task:', e);
+      return null;
+    }
+  } catch (e) {
+    console.error('[SOP] getActiveSopTask failed:', e);
     return null;
   }
 }
@@ -178,17 +195,23 @@ export async function getSopState(agentId: string, taskId: string): Promise<SopS
  * 保存 SOP 状态
  */
 export async function saveSopState(state: SopState): Promise<void> {
-  const key = sopTaskKey(state.taskId);
-  await addMemory(state.agentId, key, JSON.stringify(state), {
-    type: 'sop_state',
-    taskId: state.taskId,
-    status: state.status,
-  });
+  try {
+    const key = sopTaskKey(state.taskId);
+    await addMemory(state.agentId, key, JSON.stringify(state), {
+      type: 'sop_state',
+      taskId: state.taskId,
+      status: state.status,
+    });
 
-  // 同时更新活跃任务指针
-  await addMemory(state.agentId, `${SOP_ACTIVE_KEY}:${state.sessionKey}`, JSON.stringify({ taskId: state.taskId }), {
-    type: 'sop_active',
-  });
+    // 同时更新活跃任务指针
+    await addMemory(state.agentId, `${SOP_ACTIVE_KEY}:${state.sessionKey}`, JSON.stringify({ taskId: state.taskId }), {
+      type: 'sop_active',
+    });
+    console.log('[SOP] State saved:', state.taskId);
+  } catch (e) {
+    console.error('[SOP] Failed to save state:', e);
+    throw e;
+  }
 }
 
 /**

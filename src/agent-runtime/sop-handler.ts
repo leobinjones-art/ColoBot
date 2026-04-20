@@ -41,8 +41,11 @@ export async function handleSopFlow(
   agentId: string,
   sessionKey: string
 ): Promise<SopFlowResult> {
+  console.log('[SOP Handler] Called with message:', userMessage.slice(0, 100));
+
   // 1. 检测退出意图
   if (detectExitIntent(userMessage)) {
+    console.log('[SOP Handler] Exit intent detected');
     const state = await getActiveSopTask(agentId, sessionKey);
     if (state) {
       await cancelSop(state);
@@ -61,6 +64,7 @@ export async function handleSopFlow(
 
   // 2. 获取当前活跃任务
   let state = await getActiveSopTask(agentId, sessionKey);
+  console.log('[SOP Handler] Active task:', state ? state.taskName : 'none');
 
   // 3. 检测重启意图
   const restartStepNum = detectRestartIntent(userMessage);
@@ -76,9 +80,12 @@ export async function handleSopFlow(
 
   // 4. 无活跃任务，分析是否为新任务
   if (!state) {
+    console.log('[SOP Handler] No active task, analyzing...');
     const analysis = await aiAnalyzeTask(userMessage);
+    console.log('[SOP Handler] Analysis result:', analysis.isAcademicTask, analysis.taskType);
 
     if (!analysis.isAcademicTask) {
+      console.log('[SOP Handler] Not an academic task, skipping SOP');
       return {
         response: '',
         state: null,
@@ -86,22 +93,18 @@ export async function handleSopFlow(
       };
     }
 
-    // 检查是否有多个进行中的任务
-    const allTasks = await listActiveSopTasks(agentId);
-    if (allTasks.length > 0) {
-      const taskList = allTasks.map((t, i) =>
-        `${i + 1}. ${t.taskName}（步骤 ${t.currentStep}/${t.steps.length}）`
-      ).join('\n');
-
+    // 创建新任务
+    try {
+      state = await createSop(agentId, sessionKey, analysis, userMessage);
+      console.log('[SOP Handler] Created task:', state.taskId);
+    } catch (e) {
+      console.error('[SOP Handler] Failed to create task:', e);
       return {
-        response: `你有以下进行中的任务：\n${taskList}\n\n请回复序号选择要继续的任务，或回复"新建"开始新任务。`,
+        response: '',
         state: null,
         action: 'none',
       };
     }
-
-    // 创建新任务
-    state = await createSop(agentId, sessionKey, analysis, userMessage);
 
     // 展示任务拆解结果
     const breakdown = formatTaskBreakdown(state);
