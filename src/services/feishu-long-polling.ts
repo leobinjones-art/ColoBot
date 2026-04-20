@@ -13,6 +13,26 @@ import * as lark from '@larksuiteoapi/node-sdk';
 
 let wsClient: lark.WSClient | null = null;
 
+// 消息去重缓存（5分钟内不重复处理同一消息）
+const processedMessages = new Map<string, number>();
+const DEDUP_TTL = 5 * 60 * 1000; // 5分钟
+
+function isDuplicate(messageId: string): boolean {
+  const now = Date.now();
+  const lastProcessed = processedMessages.get(messageId);
+  if (lastProcessed && now - lastProcessed < DEDUP_TTL) {
+    return true;
+  }
+  // 清理过期记录
+  for (const [id, time] of processedMessages) {
+    if (now - time > DEDUP_TTL) {
+      processedMessages.delete(id);
+    }
+  }
+  processedMessages.set(messageId, now);
+  return false;
+}
+
 /**
  * 获取飞书配置
  */
@@ -88,6 +108,7 @@ async function handleMessageEvent(event: {
     };
   };
   message: {
+    message_id?: string;
     content: string;
     chat_type: string;
   };
@@ -96,6 +117,13 @@ async function handleMessageEvent(event: {
   const content = message.content || '';
   const senderId = event.sender?.sender_id?.open_id || 'unknown';
   const chatType = message.chat_type;
+  const messageId = message.message_id || `${senderId}-${Date.now()}`;
+
+  // 消息去重
+  if (isDuplicate(messageId)) {
+    console.log(`[FeishuLongPolling] ⏭️ 跳过重复消息: ${messageId}`);
+    return;
+  }
 
   // 只处理私聊和群聊文本消息
   if (chatType !== 'p2p' && chatType !== 'group') return;

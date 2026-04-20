@@ -38,4 +38,10 @@ export function registerTools(): void {
     const { videoSearch } = await import('../../search/searxng.js');
     return videoSearch(query, { safe_search: safe_search as 0 | 1 | 2 | undefined, time_range });
   });
+
+  registerTool('academic_search', async (args) => {
+    const { query, time_range } = args as { query: string; time_range?: string };
+    const { academicSearch } = await import('../../search/searxng.js');
+    return academicSearch(query, { time_range });
+  });
 }

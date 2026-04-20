@@ -17,6 +17,7 @@ import { scanInput, scanOutput } from '../content-policy/guard.js';
 import { detectThreat, buildUninstallConfirmPrompt } from '../content-policy/threat.js';
 import { handleSopFlow, shouldTriggerSop } from './sop-handler.js';
 import { getSopState as getSopStateV2 } from './sop-v2.js';
+import { parseCommand, executeCommand } from './chat-commands.js';
 
 /**
  * 检测用户消息是否为聊天内审批指令
@@ -145,6 +146,20 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
     pushWsResult(agentId, sessionKey, responseText);
     return { response: responseText, toolCalls: [], finished: true };
+  }
+
+  // ── 对话指令检测 (/new, /reset, /compact 等) ──
+  const cmd = parseCommand(messageText);
+  if (cmd) {
+    const cmdResult = await executeCommand(cmd.command, cmd.args, {
+      agentId,
+      sessionKey,
+      currentModel: agent.primary_model_id ?? undefined,
+    });
+
+    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', cmdResult.message);
+    pushWsResult(agentId, sessionKey, cmdResult.message);
+    return { response: cmdResult.message, toolCalls: [], finished: true };
   }
 
   // ── 内容安全检测：llm-guard 输入扫描 + 威胁检测 ──
@@ -488,6 +503,19 @@ export async function runAgentStream(
       result: 'blocked',
     });
     pushWsResult(agentId, sessionKey, confirmPrompt);
+    pushWsDone(agentId, sessionKey);
+    return;
+  }
+
+  // ── 对话指令检测 (/new, /reset, /compact 等) ──
+  const cmd = parseCommand(messageText);
+  if (cmd) {
+    const cmdResult = await executeCommand(cmd.command, cmd.args, {
+      agentId,
+      sessionKey,
+      currentModel: agent.primary_model_id ?? undefined,
+    });
+    pushWsResult(agentId, sessionKey, cmdResult.message);
     pushWsDone(agentId, sessionKey);
     return;
   }

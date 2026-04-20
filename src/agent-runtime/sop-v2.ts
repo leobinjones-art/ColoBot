@@ -34,7 +34,7 @@ export interface SopState {
   taskSummary: string;               // 任务摘要
   steps: SopStep[];
   currentStep: number;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +46,7 @@ export interface TaskAnalysis {
   suggestedSteps: SopStep[];
   informationComplete: boolean;
   missingInfo: string[];
+  researchPurpose?: 'paper' | 'research' | 'learning';  // 写论文、做研究、学习
 }
 
 // ─── 记忆键 ─────────────────────────────────────────────────────
@@ -75,8 +76,9 @@ ${userMessage.slice(0, 4000)}
 请以 JSON 格式回复：
 {
   "isAcademicTask": true/false,
-  "taskType": "thesis" | "literature_review" | "experiment_report" | "research_project" | "none",
+  "taskType": "thesis" | "literature_review" | "experiment_report" | "research_project" | "learning" | "none",
   "taskName": "任务名称（简短概括）",
+  "researchPurpose": "paper" | "research" | "learning" | null,
   "suggestedSteps": [
     { "step": 1, "name": "步骤名称", "description": "步骤描述" },
     ...
@@ -86,11 +88,19 @@ ${userMessage.slice(0, 4000)}
 }
 
 注意：
-1. 步骤1 固定为"任务拆解与确认"
-2. 步骤数量根据任务复杂度动态决定（通常 4-10 步）
-3. 最后一步通常是"生成最终输出"（论文/报告等）
-4. 如果用户已提供完整信息，informationComplete = true
-5. 只回复 JSON，不要其他内容`;
+1. researchPurpose 判断规则：
+   - "paper"：用户明确要写论文、发表期刊、毕业论文
+   - "research"：用户要做科学研究、实验、分析，不是写论文
+   - "learning"：用户要学习某个领域的知识
+   - null：无法判断，需要询问用户
+2. 如果用户说"学术研究"、"做研究"、"科研"等，researchPurpose = "research"
+3. 如果用户只是说"开始学术"、"开始研究"等意图表达，但没有提供具体课题/主题，则 informationComplete = false，missingInfo 应包含"课题主题"、"研究目的"等
+4. 步骤数量和内容完全根据任务需求和研究目的动态决定：
+   - paper：文献调研→分析→撰写→投稿
+   - research：问题定义→方法设计→实验/计算→结果分析
+   - learning：基础概念→深入学习→实践应用
+5. 如果用户已提供完整信息（包括具体课题和研究目的），informationComplete = true
+6. 只回复 JSON，不要其他内容`;
 
   try {
     const response = await chat([{ role: 'user', content: prompt }], {
@@ -120,7 +130,7 @@ ${userMessage.slice(0, 4000)}
 /**
  * 获取用户当前活跃的 SOP 任务
  */
-export async function getActiveSopTask(agentId: string, sessionKey: string): Promise<SopState | null> {
+export async function getActiveSopTask(agentId: string, sessionKey: string, includePaused = false): Promise<SopState | null> {
   console.log('[SOP] getActiveSopTask called:', agentId, sessionKey);
   try {
     const rows = await queryOne<{ memory_value: string }>(
@@ -138,7 +148,13 @@ export async function getActiveSopTask(agentId: string, sessionKey: string): Pro
     try {
       const taskId = JSON.parse(rows.memory_value).taskId;
       console.log('[SOP] Found taskId:', taskId);
-      return await getSopState(agentId, taskId);
+      const state = await getSopState(agentId, taskId);
+      // 只返回活跃状态的任务（或包含暂停状态）
+      if (state && (state.status === 'active' || (includePaused && state.status === 'paused'))) {
+        return state;
+      }
+      console.log('[SOP] Task not active:', state?.status);
+      return null;
     } catch (e) {
       console.error('[SOP] Failed to parse active task:', e);
       return null;
@@ -164,12 +180,30 @@ export async function listActiveSopTasks(agentId: string): Promise<SopState[]> {
   for (const row of rows) {
     try {
       const state = JSON.parse(row.memory_value) as SopState;
-      if (state.status === 'active') {
+      if (state.status === 'active' || state.status === 'paused') {
         tasks.push(state);
       }
     } catch { /* skip */ }
   }
   return tasks;
+}
+
+/**
+ * 格式化 SOP 任务列表
+ */
+export function formatSopList(tasks: SopState[]): string {
+  if (tasks.length === 0) {
+    return '暂无进行中的 SOP 任务。\n\n发送新任务开始新流程。';
+  }
+
+  const lines: string[] = ['📋 **SOP 任务列表**\n'];
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    const statusIcon = task.status === 'paused' ? '⏸️' : '🔄';
+    lines.push(`${i + 1}. ${statusIcon} **${task.taskName}**`);
+    lines.push(`   进度：${task.currentStep}/${task.steps.length} | 状态：${task.status === 'paused' ? '已暂停' : '进行中'}`);
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -215,6 +249,36 @@ export async function saveSopState(state: SopState): Promise<void> {
 }
 
 /**
+ * 保存步骤进度摘要到记忆（便于后续检索）
+ */
+export async function saveStepProgress(state: SopState): Promise<void> {
+  const currentStep = state.steps[state.currentStep - 1];
+  if (!currentStep || !currentStep.subAgentResult) return;
+
+  try {
+    // 写入进度摘要
+    const progressKey = `sop_progress:${state.taskId}:step${currentStep.step}`;
+    const progressContent = `【${state.taskName}】步骤${currentStep.step}/${state.steps.length}：${currentStep.name}
+
+用户输入：${currentStep.userData || '无'}
+
+处理结果：
+${currentStep.subAgentResult.slice(0, 1000)}`;
+
+    await addMemory(state.agentId, progressKey, progressContent, {
+      type: 'sop_progress',
+      taskId: state.taskId,
+      step: currentStep.step,
+      stepName: currentStep.name,
+    });
+
+    console.log('[SOP] Progress saved for step', currentStep.step);
+  } catch (e) {
+    console.error('[SOP] Failed to save progress:', e);
+  }
+}
+
+/**
  * 创建新的 SOP 流程
  */
 export async function createSop(
@@ -255,6 +319,45 @@ export async function createSop(
 // ─── AI 引导生成 ────────────────────────────────────────────────
 
 /**
+ * 父Agent整理汇总子Agent结果
+ */
+export async function summarizeSubAgentResult(state: SopState, subAgentResult: string): Promise<string> {
+  const currentStep = state.steps[state.currentStep - 1];
+  if (!currentStep) return subAgentResult;
+
+  const prompt = `你是学术研究SOP流程的父Agent，负责整理汇总子Agent的工作成果。
+
+任务信息：
+- 任务名称：${state.taskName}
+- 当前步骤：${currentStep.step}/${state.steps.length} - ${currentStep.name}
+
+子Agent原始输出：
+"""
+${subAgentResult.slice(0, 4000)}
+"""
+
+请整理汇总以上内容，要求：
+1. 提取核心信息，去除冗余和格式噪音
+2. 以专业、简洁的方式呈现给用户
+3. 如果是文献列表，整理成规范格式
+4. 如果是分析结果，提炼关键结论
+5. 控制在300-500字以内
+
+直接输出整理后的内容，不要添加"以下是整理结果"等前缀。`;
+
+  try {
+    const response = await chat([{ role: 'user', content: prompt }], {
+      maxTokens: 800,
+      temperature: 0.3,
+    });
+    return typeof response.content === 'string' ? response.content : subAgentResult;
+  } catch (e) {
+    console.error('[SOP] Summarize failed:', e);
+    return subAgentResult;
+  }
+}
+
+/**
  * AI 生成当前步骤的引导文本
  */
 export async function generateStepGuidance(state: SopState): Promise<string> {
@@ -287,6 +390,92 @@ ${state.steps.filter(s => s.status === 'done').map(s => `- ${s.name}: ${s.userDa
   }
 }
 
+// ─── 子 Agent 类型定义 ────────────────────────────────────────────
+
+export type SubAgentType = 'search' | 'analysis' | 'writing' | 'review' | 'general';
+
+export const SUB_AGENT_CONFIGS: Record<SubAgentType, {
+  personality: string;
+  rules: string[];
+  skills: string[];
+  tools: string[];
+}> = {
+  search: {
+    personality: '严谨、全面、注重来源',
+    rules: [
+      '使用 academic_search 或 web_search 工具搜索',
+      '优先使用学术搜索引擎',
+      '标注文献来源和年份',
+      '如果搜索不可用，基于专业知识推荐经典文献',
+    ],
+    skills: ['文献检索', '信息筛选', '来源验证'],
+    tools: ['web_search', 'academic_search', 'search_memory'],
+  },
+  analysis: {
+    personality: '逻辑严密、数据驱动、客观',
+    rules: [
+      '基于真实数据进行分析',
+      '不编造数据或结论',
+      '提供推理过程',
+      '指出局限性',
+    ],
+    skills: ['数据分析', '逻辑推理', '批判性思维'],
+    tools: ['search_memory', 'read_file', 'web_search'],
+  },
+  writing: {
+    personality: '专业、规范、注重结构',
+    rules: [
+      '遵循学术写作规范',
+      '结构清晰、逻辑连贯',
+      '引用来源标注',
+      '避免抄袭，原创表达',
+    ],
+    skills: ['学术写作', '论文结构', '文献引用'],
+    tools: ['search_memory', 'read_file', 'write_file'],
+  },
+  review: {
+    personality: '严格、公正、细致',
+    rules: [
+      '检测幻觉和编造内容',
+      '验证逻辑一致性',
+      '检查引用来源',
+      '提出具体改进建议',
+    ],
+    skills: ['内容审核', '质量评估', '问题诊断'],
+    tools: ['search_memory', 'web_search'],
+  },
+  general: {
+    personality: '专业、严谨、注重细节',
+    rules: [
+      '基于用户提供的真实数据进行分析',
+      '不编造数据或结论',
+      '输出结构清晰、逻辑连贯',
+    ],
+    skills: ['问题处理', '信息整理'],
+    tools: ['search_memory', 'web_search', 'read_file', 'write_file'],
+  },
+};
+
+/**
+ * 根据步骤名称判断子Agent类型
+ */
+export function detectSubAgentType(stepName: string): SubAgentType {
+  const name = stepName.toLowerCase();
+  if (name.includes('文献') || name.includes('调研') || name.includes('搜索') || name.includes('检索')) {
+    return 'search';
+  }
+  if (name.includes('分析') || name.includes('研究') || name.includes('计算') || name.includes('实验')) {
+    return 'analysis';
+  }
+  if (name.includes('撰写') || name.includes('写作') || name.includes('论文') || name.includes('报告')) {
+    return 'writing';
+  }
+  if (name.includes('审核') || name.includes('检查') || name.includes('评审')) {
+    return 'review';
+  }
+  return 'general';
+}
+
 // ─── 子 Agent 管理 ───────────────────────────────────────────────
 
 /**
@@ -296,15 +485,15 @@ export async function createStepSubAgent(state: SopState): Promise<string | null
   const currentStep = state.steps[state.currentStep - 1];
   if (!currentStep) return null;
 
+  // 根据步骤类型选择子Agent配置
+  const agentType = detectSubAgentType(currentStep.name);
+  const config = SUB_AGENT_CONFIGS[agentType];
+
   const soulContent = JSON.stringify({
     role: `${currentStep.name}助手`,
-    personality: '专业、严谨、注重细节',
-    rules: [
-      '基于用户提供的真实数据进行分析',
-      '不要编造数据或结论',
-      '输出结构清晰、逻辑连贯',
-    ],
-    skills: [currentStep.name, '数据分析', '学术写作'],
+    personality: config.personality,
+    rules: config.rules,
+    skills: [...config.skills, currentStep.name],
   });
 
   const agent = spawnSubAgent({
@@ -312,14 +501,14 @@ export async function createStepSubAgent(state: SopState): Promise<string | null
     soul_content: soulContent,
     parentId: state.agentId,
     ttlMs: 10 * 60 * 1000, // 10 分钟
-    allowedTools: ['search_memory', 'web_search', 'read_file', 'write_file'],
+    allowedTools: config.tools,
   });
 
   // 更新状态
   currentStep.subAgentId = agent.id;
   await saveSopState(state);
 
-  console.log(`[SOP] SubAgent created: ${agent.id} for step ${currentStep.step}`);
+  console.log(`[SOP] SubAgent created: ${agent.id} for step ${currentStep.step} (type: ${agentType})`);
   return agent.id;
 }
 
@@ -337,34 +526,74 @@ export async function executeSubAgent(
 
   const agent = getSubAgent(currentStep.subAgentId);
   if (!agent) {
+    console.error('[SOP] Sub agent not found:', currentStep.subAgentId);
     throw new Error('Sub agent not found');
   }
 
-  // 构建任务
-  const task = `用户提交数据：
-"""
-${userInput}
-"""
+  console.log('[SOP] Executing sub agent:', agent.id, agent.name);
+
+  // 根据步骤类型构建不同的任务描述
+  const isSearchStep = currentStep.name.includes('文献') || currentStep.name.includes('调研') || currentStep.name.includes('搜索');
+  const isAnalysisStep = currentStep.name.includes('分析') || currentStep.name.includes('研究');
+
+  let task: string;
+  if (isSearchStep) {
+    // 文献检索步骤：用户输入是搜索指令
+    task = `用户请求：${userInput}
 
 任务上下文：
 - 任务名称：${state.taskName}
 - 当前步骤：${currentStep.name}
 - 步骤描述：${currentStep.description || '无'}
 
-请基于用户提交的数据，完成以下工作：
-1. 分析数据内容
-2. 提供专业建议或处理结果
-3. 如果发现问题，指出并提供修改建议
+请执行以下操作：
+1. 使用 academic_search 工具搜索相关学术文献
+2. 如果搜索工具不可用，基于专业知识推荐经典文献
+3. 整理文献列表，包含标题、作者、年份、来源
+4. 提供每篇文献的简要说明和研究价值
 
-注意：必须基于用户提供的真实数据，不要编造。`;
+注意：优先使用搜索工具获取真实文献，工具不可用时才使用专业知识推荐。`;
+  } else if (isAnalysisStep) {
+    // 分析步骤：用户输入可能是数据或指令
+    task = `用户输入：${userInput}
 
-  const result = await runSubAgentTask(agent, task, state.agentId);
+任务上下文：
+- 任务名称：${state.taskName}
+- 当前步骤：${currentStep.name}
+- 步骤描述：${currentStep.description || '无'}
 
-  // 保存结果
-  currentStep.subAgentResult = result;
-  await saveSopState(state);
+请根据用户输入内容判断：
+- 如果是执行指令（如"搜索"、"分析"），直接执行相应操作
+- 如果是数据（如文献列表、实验数据），进行分析处理
 
-  return result;
+提供专业、结构化的处理结果。`;
+  } else {
+    // 其他步骤：通用处理
+    task = `用户输入：${userInput}
+
+任务上下文：
+- 任务名称：${state.taskName}
+- 当前步骤：${currentStep.name}
+- 步骤描述：${currentStep.description || '无'}
+
+请根据当前步骤要求，处理用户输入并提供专业结果。`;
+  }
+
+  console.log('[SOP] Task for sub agent:', task.slice(0, 200));
+
+  try {
+    const result = await runSubAgentTask(agent, task, state.agentId);
+    console.log('[SOP] Sub agent result length:', result.length);
+
+    // 保存结果
+    currentStep.subAgentResult = result;
+    await saveSopState(state);
+
+    return result;
+  } catch (e) {
+    console.error('[SOP] runSubAgentTask failed:', e);
+    throw e;
+  }
 }
 
 // ─── AI 审核 ─────────────────────────────────────────────────────
@@ -384,11 +613,22 @@ export async function aiReviewSubAgentOutput(state: SopState): Promise<ReviewRes
     return { approved: false, reason: '无当前步骤', suggestions: [] };
   }
 
+  // 根据步骤类型调整审核重点
+  const agentType = detectSubAgentType(currentStep.name);
+  const reviewFocus = agentType === 'search'
+    ? '文献来源是否标注？年份和作者信息是否完整？是否使用了搜索工具？'
+    : agentType === 'analysis'
+    ? '分析是否基于真实数据？推理过程是否清晰？是否指出局限性？'
+    : agentType === 'writing'
+    ? '结构是否清晰？引用是否标注？是否符合学术规范？'
+    : '内容是否完整？逻辑是否连贯？';
+
   const prompt = `你是 SOP 流程审核员，负责审核子 Agent 的输出质量。
 
 任务信息：
 - 任务名称：${state.taskName}
 - 当前步骤：${currentStep.step}/${state.steps.length} - ${currentStep.name}
+- 步骤类型：${agentType}
 
 用户提交数据：
 """
@@ -404,6 +644,7 @@ ${currentStep.subAgentResult?.slice(0, 2000) || '无'}
 1. **幻觉检测**：子 Agent 是否基于用户数据进行分析？有没有编造数据或结论？
 2. **环境一致性**：输出是否符合当前任务上下文？是否与前面步骤逻辑连贯？
 3. **完整性**：是否完整回答了当前步骤的问题？
+4. **类型专项审核**：${reviewFocus}
 
 以 JSON 格式回复：
 {
@@ -472,6 +713,9 @@ export async function approveAndAdvance(state: SopState): Promise<SopState> {
   currentStep.status = 'done';
   currentStep.approved = true;
 
+  // 保存步骤进度到记忆
+  await saveStepProgress(state);
+
   // 销毁子 Agent
   if (currentStep.subAgentId) {
     destroySubAgent(currentStep.subAgentId, state.agentId);
@@ -481,7 +725,14 @@ export async function approveAndAdvance(state: SopState): Promise<SopState> {
   // 推进到下一步
   if (state.currentStep < state.steps.length) {
     state.currentStep += 1;
-    state.steps[state.currentStep - 1].status = 'in_progress';
+    const nextStep = state.steps[state.currentStep - 1];
+    nextStep.status = 'in_progress';
+
+    // 自动执行子Agent生成引导
+    await createStepSubAgent(state);
+    const result = await executeSubAgent(state, `请为步骤"${nextStep.name}"生成引导内容，帮助用户理解需要做什么。步骤描述：${nextStep.description || '无'}`);
+    nextStep.subAgentResult = result;
+    nextStep.userData = '自动生成引导';
   } else {
     state.status = 'completed';
   }
@@ -547,6 +798,35 @@ export async function confirmTaskBreakdown(state: SopState, confirmed: boolean):
 // ─── 取消/重启 ────────────────────────────────────────────────────
 
 /**
+ * 暂停 SOP 流程
+ */
+export async function pauseSop(state: SopState): Promise<void> {
+  state.status = 'paused';
+  state.updatedAt = new Date().toISOString();
+
+  // 销毁当前步骤的子 Agent（保留进度）
+  const currentStep = state.steps[state.currentStep - 1];
+  if (currentStep?.subAgentId) {
+    destroySubAgent(currentStep.subAgentId, state.agentId);
+    currentStep.subAgentId = null;
+  }
+
+  await saveSopState(state);
+}
+
+/**
+ * 恢复 SOP 流程
+ */
+export async function resumeSop(state: SopState): Promise<SopState> {
+  if (state.status !== 'paused') return state;
+
+  state.status = 'active';
+  state.updatedAt = new Date().toISOString();
+  await saveSopState(state);
+  return state;
+}
+
+/**
  * 取消 SOP 流程
  */
 export async function cancelSop(state: SopState): Promise<void> {
@@ -597,14 +877,76 @@ export async function restartStep(state: SopState, stepNumber: number): Promise<
 // ─── 边界控制 ─────────────────────────────────────────────────────
 
 /**
- * 检测用户是否要求退出 SOP
+ * 检测用户是否要求退出 SOP（取消）
  */
 export function detectExitIntent(userMessage: string): boolean {
   const exitPatterns = [
     /退出sop/i, /结束流程/i, /取消任务/i, /退出流程/i,
-    /不要继续/i, /停止/i, /cancel sop/i, /exit sop/i,
+    /不要继续/i, /cancel sop/i, /exit sop/i,
   ];
   return exitPatterns.some(p => p.test(userMessage));
+}
+
+/**
+ * 检测用户是否要求暂停 SOP
+ */
+export function detectPauseIntent(userMessage: string): boolean {
+  const pausePatterns = [
+    /暂停sop/i, /暂停$/i, /stop$/i,
+  ];
+  return pausePatterns.some(p => p.test(userMessage.trim()));
+}
+
+/**
+ * 检测用户是否要求恢复 SOP
+ */
+export function detectResumeIntent(userMessage: string): boolean {
+  const resumePatterns = [
+    /继续sop/i, /恢复sop/i, /继续$/i, /恢复$/i, /resume/i,
+  ];
+  return resumePatterns.some(p => p.test(userMessage.trim()));
+}
+
+/**
+ * 检测用户是否要求查看 SOP 列表
+ */
+export function detectListIntent(userMessage: string): boolean {
+  const listPatterns = [
+    /sop列表/i, /查看sop/i, /我的sop/i, /任务列表/i,
+  ];
+  return listPatterns.some(p => p.test(userMessage.trim()));
+}
+
+/**
+ * 检测用户是否要求新建 SOP
+ */
+export function detectNewSopIntent(userMessage: string): boolean {
+  const newPatterns = [
+    /新建sop/i, /新sop/i, /开始学术/i, /开始研究/i,
+  ];
+  return newPatterns.some(p => p.test(userMessage.trim()));
+}
+
+/**
+ * 检测用户是否选择任务编号
+ */
+export function detectTaskSelection(userMessage: string): number | null {
+  const match = userMessage.trim().match(/^(\d+)$/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+/**
+ * 检测用户选择的研究目的
+ */
+export function detectResearchPurpose(userMessage: string): 'paper' | 'research' | 'learning' | null {
+  const msg = userMessage.trim().toLowerCase();
+  if (msg === '1' || msg.includes('论文') || msg.includes('paper')) return 'paper';
+  if (msg === '2' || msg.includes('研究') || msg.includes('research') || msg.includes('不是写论文') || msg.includes('科研')) return 'research';
+  if (msg === '3' || msg.includes('学习') || msg.includes('learning')) return 'learning';
+  return null;
 }
 
 /**

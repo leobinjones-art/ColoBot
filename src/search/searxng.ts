@@ -121,3 +121,51 @@ export async function multimodalSearch(
   ]);
   return { text, images };
 }
+
+/**
+ * 学术文献搜索
+ * 使用学术搜索引擎（Google Scholar, arXiv, PubMed等）
+ */
+export async function academicSearch(
+  query: string,
+  options: SearchOptions = {}
+): Promise<SearchResult & { papers: AcademicPaper[] }> {
+  try {
+    // 使用学术引擎搜索
+    const result = await searxngSearch(query, {
+      ...options,
+      engines: ['google scholar', 'arxiv', 'pubmed', 'semantic scholar'],
+    });
+
+    // 解析学术文献格式
+    const papers: AcademicPaper[] = result.results.map(r => ({
+      title: r.title,
+      url: r.url,
+      abstract: r.content,
+      source: r.engine,
+      publishedDate: r.publishedDate,
+    }));
+
+    return { ...result, papers };
+  } catch (e) {
+    // 网络不可用时，返回空结果并提示用户
+    console.error('[AcademicSearch] Network error:', e);
+    return {
+      query,
+      results: [],
+      answers: [],
+      suggestions: [],
+      numberOfResults: 0,
+      papers: [],
+    };
+  }
+}
+
+export interface AcademicPaper {
+  title: string;
+  url: string;
+  abstract: string;
+  source: string;
+  publishedDate?: string | null;
+}
+

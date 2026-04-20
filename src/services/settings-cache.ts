@@ -132,11 +132,17 @@ export async function saveLlmSettings(settings: {
   const pairs: [string, string][] = [];
   if (settings.mock_llm !== undefined) pairs.push([C.MOCK_LLM, String(settings.mock_llm)]);
   if (settings.llm_provider !== undefined) pairs.push([C.LLM_PROVIDER, settings.llm_provider]);
-  if (settings.openai_api_key !== undefined) pairs.push([C.OPENAI_API_KEY, settings.openai_api_key]);
-  if (settings.anthropic_api_key !== undefined) pairs.push([C.ANTHROPIC_API_KEY, settings.anthropic_api_key]);
-  if (settings.minimax_api_key !== undefined) pairs.push([C.MINIMAX_API_KEY, settings.minimax_api_key]);
+  // API keys: 只有当值不为空时才保存（避免覆盖已有值）
+  if (settings.openai_api_key) pairs.push([C.OPENAI_API_KEY, settings.openai_api_key]);
+  if (settings.anthropic_api_key) pairs.push([C.ANTHROPIC_API_KEY, settings.anthropic_api_key]);
+  if (settings.minimax_api_key) pairs.push([C.MINIMAX_API_KEY, settings.minimax_api_key]);
 
-  if (!pairs.length) return;
+  console.log('[saveLlmSettings] Saving:', pairs.map(([k, v]) => `${k}=${v?.slice(0, 8)}...`).join(', '));
+
+  if (!pairs.length) {
+    console.log('[saveLlmSettings] No settings to save');
+    return;
+  }
   await ensureCache();
   for (const [key, value] of pairs) {
     await query(

@@ -63,7 +63,7 @@ const ALL_TOOLS = [
   // 记忆
   'search_memory', 'add_memory', 'list_memory',
   // 搜索
-  'web_search', 'image_search', 'video_search', 'minimax_search',
+  'web_search', 'image_search', 'video_search', 'minimax_search', 'academic_search',
   // 工作区文件
   'read_file', 'write_file', 'list_dir', 'delete_file',
   // 知识库
@@ -81,6 +81,50 @@ const ALL_TOOLS = [
   // MiniMax 语音
   'list_voices', 'voice_clone', 'voice_design', 'delete_voice',
 ];
+
+/**
+ * 父Agent整理汇总子Agent结果
+ * 全局约束：所有子Agent结果必须经过父Agent整理后才能返回
+ */
+async function summarizeSubAgentResult(
+  subAgentName: string,
+  task: string,
+  rawResult: string
+): Promise<string> {
+  const { chat } = await import('../../llm/index.js');
+
+  const prompt = `你是父Agent，负责整理汇总子Agent"${subAgentName}"的工作成果。
+
+子Agent执行的任务：
+"""
+${task.slice(0, 1000)}
+"""
+
+子Agent原始输出：
+"""
+${rawResult.slice(0, 4000)}
+"""
+
+请整理汇总以上内容，要求：
+1. 提取核心信息，去除冗余和格式噪音
+2. 以专业、简洁的方式呈现
+3. 如果是文献列表，整理成规范格式
+4. 如果是分析结果，提炼关键结论
+5. 控制在300-500字以内
+
+直接输出整理后的内容，不要添加"以下是整理结果"等前缀。`;
+
+  try {
+    const response = await chat([{ role: 'user', content: prompt }], {
+      maxTokens: 800,
+      temperature: 0.3,
+    });
+    return typeof response.content === 'string' ? response.content : rawResult;
+  } catch (e) {
+    console.error('[SubAgent] Summarize failed:', e);
+    return rawResult;
+  }
+}
 
 export function registerTools(): void {
   /**
@@ -134,7 +178,13 @@ export function registerTools(): void {
     const { runSubAgentTask, getSubAgent } = await import('../sub-agents.js');
     const agent = getSubAgent(sub_agent_id);
     if (!agent) throw new Error(`SubAgent not found: ${sub_agent_id}`);
-    return runSubAgentTask(agent, task, agent.parentId);
+
+    // 执行子Agent任务
+    const rawResult = await runSubAgentTask(agent, task, agent.parentId);
+
+    // 全局约束：父Agent整理汇总后再返回
+    const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult);
+    return summarizedResult;
   });
 
   registerTool('spawn_subagent', async (args) => {

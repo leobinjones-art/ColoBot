@@ -6,6 +6,26 @@
 import { queryOne, query } from '../memory/db.js';
 import { createHmac } from 'crypto';
 
+// 消息去重缓存
+const processedMessages = new Map<string, number>();
+const DEDUP_TTL = 5 * 60 * 1000; // 5分钟
+
+function isDuplicate(messageId: string): boolean {
+  const now = Date.now();
+  const lastProcessed = processedMessages.get(messageId);
+  if (lastProcessed && now - lastProcessed < DEDUP_TTL) {
+    return true;
+  }
+  // 清理过期记录
+  for (const [id, time] of processedMessages) {
+    if (now - time > DEDUP_TTL) {
+      processedMessages.delete(id);
+    }
+  }
+  processedMessages.set(messageId, now);
+  return false;
+}
+
 function parseBody(req: import('http').IncomingMessage): Promise<{ raw: string; json: Record<string, unknown> }> {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -96,9 +116,16 @@ async function handleFeishuMessage(event: Record<string, unknown>): Promise<void
   if (!message) return;
 
   const content = message.content as string;
+  const messageId = (message.message_id as string) || `unknown-${Date.now()}`;
   const sender = message.sender as Record<string, unknown> | undefined;
   const senderId = sender?.id as string || 'unknown';
   const chatType = message.chat_type as string;
+
+  // 消息去重
+  if (isDuplicate(messageId)) {
+    console.log(`[FeishuWebhook] ⏭️ 跳过重复消息: ${messageId}`);
+    return;
+  }
 
   // 只处理私聊和群聊文本消息
   if (chatType !== 'p2p' && chatType !== 'group') return;

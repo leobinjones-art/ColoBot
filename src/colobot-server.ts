@@ -17,7 +17,6 @@ import { query } from './memory/db.js';
 import { writeAudit } from './services/audit.js';
 import type { KnowledgeCategory } from './services/knowledge.js';
 import { requireAuth, initAuth, hasKeys, isAuthConfigured, validateKey } from './middleware/auth.js';
-import { getSopState } from './agent-runtime/sop-v2.js';
 import { safeFetch } from './utils/safe-fetch.js';
 import { checkRateLimit, getClientIP, rateLimitResponse, DEFAULTS } from './utils/rate-limit.js';
 import { startLongPolling } from './services/feishu-long-polling.js';
@@ -869,14 +868,11 @@ const server = http.createServer(async (req, res) => {
       // ["", "api", "debug", "sop", "{agentId}", "{sessionKey}"]
       const agentId = parts[4] || '';
       const sessionKey = parts[5] ? decodeURIComponent(parts[5]) : '';
-      const rows = await query<{ memory_key: string; memory_value: string; created_at: string }>(
-        `SELECT id, memory_key, memory_value, created_at FROM agent_memory
-         WHERE agent_id = $1 AND memory_key = $2
-         ORDER BY created_at DESC LIMIT 1`,
-        [agentId, 'sop_state:' + sessionKey]
-      );
+      // 使用新版格式查询
+      const { getActiveSopTask } = await import('./agent-runtime/sop-v2.js');
+      const state = await getActiveSopTask(agentId, sessionKey);
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ count: rows.length, rows: rows.map(r => ({ key: r.memory_key, value: r.memory_value.slice(0, 80), created: r.created_at })) }));
+      res.end(JSON.stringify({ found: !!state, state: state ? { taskId: state.taskId, taskName: state.taskName, currentStep: state.currentStep, status: state.status } : null }));
       return;
     }
 
@@ -890,7 +886,9 @@ const server = http.createServer(async (req, res) => {
         const sessionKey = parts[4] ? decodeURIComponent(parts[4]) : '';
         const action = parts[5];
         if (action === 'progress' && agentId && sessionKey) {
-          const state = await getSopState(agentId, sessionKey);
+          // 使用 getActiveSopTask 而不是 getSopState（后者需要 taskId）
+          const { getActiveSopTask } = await import('./agent-runtime/sop-v2.js');
+          const state = await getActiveSopTask(agentId, sessionKey);
           if (!state) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'No active SOP' }));
@@ -1065,8 +1063,14 @@ async function main() {
   // 初始化 Trigger 引擎
   await initTriggerEngine();
 
-  // 启动飞书长连接（无需公网 IP）
-  startLongPolling().catch(e => console.error('[FeishuLongPolling] Start error:', e));
+  // 启动飞书长连接（无需公网 IP）- 仅在未配置webhook时启用
+  const { getSetting, SETTINGS_KEYS } = await import('./services/settings.js');
+  const feishuWebhookUrl = await getSetting(SETTINGS_KEYS.FEISHU_WEBHOOK_URL);
+  if (!feishuWebhookUrl) {
+    startLongPolling().catch(e => console.error('[FeishuLongPolling] Start error:', e));
+  } else {
+    console.log('[Feishu] Webhook mode enabled, skipping long polling');
+  }
 
   server.listen(PORT, () => {
     console.log(`[ColoBot] Server running at http://localhost:${PORT}`);
