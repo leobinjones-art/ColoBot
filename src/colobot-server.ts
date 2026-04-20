@@ -17,8 +17,7 @@ import { query } from './memory/db.js';
 import { writeAudit } from './services/audit.js';
 import type { KnowledgeCategory } from './services/knowledge.js';
 import { requireAuth, initAuth, hasKeys, isAuthConfigured, validateKey } from './middleware/auth.js';
-import { getSopState } from './agent-runtime/sop.js';
-import { getSop } from './content-policy/sops.js';
+import { getSopState } from './agent-runtime/sop-v2.js';
 import { safeFetch } from './utils/safe-fetch.js';
 import { checkRateLimit, getClientIP, rateLimitResponse, DEFAULTS } from './utils/rate-limit.js';
 import { startLongPolling } from './services/feishu-long-polling.js';
@@ -897,15 +896,14 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify({ error: 'No active SOP' }));
             return;
           }
-          const sop = getSop(state.category);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
-            category: state.category,
-            sopName: sop.name,
+            taskId: state.taskId,
+            taskName: state.taskName,
             currentStep: state.currentStep,
-            totalSteps: sop.steps.length,
+            totalSteps: state.steps.length,
             steps: state.steps,
-            startedAt: state.startedAt,
+            createdAt: state.createdAt,
           }));
           return;
         }

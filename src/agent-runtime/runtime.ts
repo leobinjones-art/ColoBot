@@ -13,7 +13,6 @@ import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approv
 import { checkDangerousLevel, recordToolHit } from './approval-rules.js';
 import { query } from '../memory/db.js';
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js';
-import { checkAcademicResponse } from '../content-policy/index.js';
 import { scanInput, scanOutput } from '../content-policy/guard.js';
 import { detectThreat, buildUninstallConfirmPrompt } from '../content-policy/threat.js';
 import { handleSopFlow, shouldTriggerSop } from './sop-handler.js';
@@ -402,24 +401,8 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   // 保存助手回复
   await sessionManager.appendMessage(agentId, sessionKey, 'assistant', finalContent);
 
-  // 内容策略检测（LLM 响应后拦截）- 仅在无进行中 SOP 时检测
-  const responseText = typeof finalContent === 'string' ? finalContent : '';
-  const currentSopState = await getSopStateV2(agentId, sessionKey);
-  if (!currentSopState) {
-    const responseCheck = checkAcademicResponse(responseText);
-    if (responseCheck.shouldIntercept && responseCheck.interceptResponse) {
-      // 覆盖之前的响应，重定向到 SOP
-      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseCheck.interceptResponse);
-      pushWsResult(agentId, sessionKey, responseCheck.interceptResponse);
-      return {
-        response: responseCheck.interceptResponse,
-        toolCalls: [],
-        finished: true,
-      };
-    }
-  }
-
   // llm-guard 输出扫描
+  const responseText = typeof finalContent === 'string' ? finalContent : '';
   const outputScan = await scanOutput(responseText);
   if (!outputScan.safe) {
     await writeAudit({
