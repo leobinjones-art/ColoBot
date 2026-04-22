@@ -450,6 +450,21 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     result: 'success',
   });
 
+  // Skill 自进化：从对话中检测可复用模式
+  if (toolCallNames.length >= 2) {
+    try {
+      const { evolveSkillFromConversation } = await import('./skill-evolution.js');
+      const history = await sessionManager.getHistory(agentId, sessionKey);
+      const convHistory = history.map(h => ({
+        role: h.role,
+        content: typeof h.content === 'string' ? h.content : JSON.stringify(h.content)
+      }));
+      await evolveSkillFromConversation(agentId, agent.name, convHistory, toolCallNames);
+    } catch (e) {
+      console.error('[Runtime] Skill evolution error:', e);
+    }
+  }
+
   return {
     response: finalContent || '(无回复)',
     toolCalls: toolCallNames,
