@@ -120,7 +120,7 @@ export async function validateContent(
 /**
  * AI 投毒检测
  */
-async function detectPoisoning(content: string): Promise<{ isPoison: boolean; reason?: string }> {
+export async function detectPoisoning(content: string): Promise<{ isPoison: boolean; reason?: string }> {
   // 快速规则检测
   const suspiciousPatterns = [
     /ignore\s+(all\s+)?(previous|above)\s+(instructions?|rules?|prompts?)/i,
@@ -135,6 +135,12 @@ async function detectPoisoning(content: string): Promise<{ isPoison: boolean; re
     /\[SYSTEM\]/i,
     /\<\|im_start\|\>/i,
     /\<\|im_end\|\>/i,
+    // 中文模式
+    /忽略\s*(所有|全部)?\s*(之前的|以前的)\s*(指令|规则|提示)/,
+    /忘记\s*(所有|全部)?\s*(之前的|以前的)\s*(指令|规则)/,
+    /覆盖\s*(安全|规则)/,
+    /绕过\s*(安全|检测|过滤)/,
+    /越狱/,
   ];
 
   for (const pattern of suspiciousPatterns) {

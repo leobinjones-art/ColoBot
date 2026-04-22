@@ -4,6 +4,7 @@
  */
 
 import { WebSocket } from 'ws';
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
 const API_KEY = process.env.TEST_API_KEY || 'test-key-123';
 const BASE_URL = 'http://localhost:18792';
@@ -180,6 +181,169 @@ get_time
 
   it('11 - cleanup agent', async () => {
     const { status } = await api(`/api/agents/${agent.id}`, 'DELETE');
+    expect(status).toBe(204);
+  });
+});
+
+describe('ColoBot E2E - Approval Commands', () => {
+  let agent: TestAgent;
+
+  beforeAll(async () => {
+    const { data } = await api('/api/agents', 'POST', {
+      name: 'ApprovalTestAgent',
+      soul_content: JSON.stringify({ role: '审批测试助手' }),
+      primary_model_id: 'gpt-4o',
+    });
+    agent = data as TestAgent;
+  });
+
+  afterAll(async () => {
+    if (agent?.id) {
+      await api(`/api/agents/${agent.id}`, 'DELETE');
+    }
+  });
+
+  it('lists pending approvals via chat command', async () => {
+    const { status, data } = await api('/api/chat', 'POST', {
+      agent_id: agent.id,
+      session_key: 'approval-test-session',
+      message: '/approvals',
+    });
+    expect(status).toBe(200);
+    expect(data.response).toBeDefined();
+  });
+
+  it('shows help for approval command', async () => {
+    const { status, data } = await api('/api/chat', 'POST', {
+      agent_id: agent.id,
+      session_key: 'approval-test-session',
+      message: '/help',
+    });
+    expect(status).toBe(200);
+    expect(data.response).toContain('审批');
+  });
+});
+
+describe('ColoBot E2E - User Profile', () => {
+  let agent: TestAgent;
+
+  beforeAll(async () => {
+    const { data } = await api('/api/agents', 'POST', {
+      name: 'ProfileTestAgent',
+      soul_content: JSON.stringify({ role: '画像测试助手' }),
+      primary_model_id: 'gpt-4o',
+    });
+    agent = data as TestAgent;
+  });
+
+  afterAll(async () => {
+    if (agent?.id) {
+      await api(`/api/agents/${agent.id}`, 'DELETE');
+    }
+  });
+
+  it('gets empty profile initially', async () => {
+    const { status, data } = await api(`/api/profile/${agent.id}`);
+    expect(status).toBe(200);
+    expect(data).toBeNull();
+  });
+
+  it('creates user profile', async () => {
+    const { status, data } = await api(`/api/profile/${agent.id}`, 'POST', {
+      name: '测试用户',
+      role: 'developer',
+      expertise_level: 'intermediate',
+      skills: ['TypeScript', 'Python'],
+    });
+    expect(status).toBe(200);
+    expect(data.name).toBe('测试用户');
+    expect(data.role).toBe('developer');
+  });
+
+  it('gets user profile after creation', async () => {
+    const { status, data } = await api(`/api/profile/${agent.id}`);
+    expect(status).toBe(200);
+    expect(data.name).toBe('测试用户');
+  });
+
+  it('updates user profile', async () => {
+    const { status, data } = await api(`/api/profile/${agent.id}`, 'POST', {
+      goals: ['学习AI', '完成项目'],
+    });
+    expect(status).toBe(200);
+    expect(data.goals).toContain('学习AI');
+  });
+
+  it('deletes user profile', async () => {
+    const { status } = await api(`/api/profile/${agent.id}`, 'DELETE');
+    expect(status).toBe(204);
+  });
+});
+
+describe('ColoBot E2E - Security', () => {
+  let agent: TestAgent;
+
+  beforeAll(async () => {
+    const { data } = await api('/api/agents', 'POST', {
+      name: 'SecurityTestAgent',
+      soul_content: JSON.stringify({ role: '安全测试助手' }),
+      primary_model_id: 'gpt-4o',
+    });
+    agent = data as TestAgent;
+  });
+
+  afterAll(async () => {
+    if (agent?.id) {
+      await api(`/api/agents/${agent.id}`, 'DELETE');
+    }
+  });
+
+  it('gets trust status', async () => {
+    const { status, data } = await api('/api/security/trust-status');
+    expect(status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it('gets poisoning attempts', async () => {
+    const { status, data } = await api('/api/security/poisoning-attempts');
+    expect(status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it('gets write audit log', async () => {
+    const { status, data } = await api('/api/security/write-audit');
+    expect(status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
+  });
+});
+
+describe('ColoBot E2E - Knowledge', () => {
+  it('lists knowledge base', async () => {
+    const { status, data } = await api('/api/knowledge');
+    expect(status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it('adds knowledge entry', async () => {
+    const { status, data } = await api('/api/knowledge', 'POST', {
+      category: 'concept',
+      name: 'TestConcept',
+      content: '这是一个测试概念',
+    });
+    expect(status).toBe(201);
+    expect(data.name).toBe('TestConcept');
+  });
+
+  it('searches knowledge', async () => {
+    const { status, data } = await api('/api/knowledge/search', 'POST', {
+      query: '测试',
+    });
+    expect(status).toBe(200);
+    expect(data.results).toBeDefined();
+  });
+
+  it('deletes knowledge entry', async () => {
+    const { status } = await api('/api/knowledge/concept/TestConcept', 'DELETE');
     expect(status).toBe(204);
   });
 });
