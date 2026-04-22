@@ -259,6 +259,11 @@
         <h2 data-i18n="Skill Repository">Skill Repository</h2>
         <button class="btn" onclick="showCreateSkillModal()" data-i18n="Create Skill">+ Create Skill</button>
       </div>
+      <h3 data-i18n="Pending Approval">Pending Approval</h3>
+      <div id="pending-skills-list">
+        <div class="loading" data-i18n="Loading...">Loading...</div>
+      </div>
+      <h3 data-i18n="Active Skills">Active Skills</h3>
       <div id="skills-list">
         <div class="loading" data-i18n="Loading...">Loading...</div>
       </div>
@@ -1088,6 +1093,7 @@ function initDashboard() {
   checkFeishuStatus();
   loadAgents();
   loadSkills();
+  loadPendingSkills();
   loadApprovals();
   loadAuditLogs();
 
@@ -1337,12 +1343,138 @@ function loadSkills() {
           <td><span class="badge ${s.enabled ? 'active' : 'inactive'}">${s.enabled ? 'Enabled' : 'Disabled'}</span></td>
           <td class="actions">
             <button class="btn secondary" onclick="viewSkill('${s.id}')">View</button>
+            <button class="btn secondary" onclick="editSkill('${s.id}')">Edit</button>
+            <button class="btn ${s.enabled ? 'warning' : 'success'}" onclick="toggleSkill('${s.id}', ${!s.enabled})">${s.enabled ? 'Disable' : 'Enable'}</button>
+            <button class="btn danger" onclick="deleteSkill('${s.id}')">Del</button>
           </td>
         </tr>`).join('')}</tbody>
     </table>`;
   }).catch(() => {
     document.getElementById('skills-list').innerHTML = '<div class="empty"><p>Failed to load skills</p></div>';
   });
+}
+
+function viewSkill(id) {
+  api(`/api/skills/${id}`).then(skill => {
+    showModal('Skill: ' + skill.name, `
+      <div class="detail-section">
+        <p><strong>Description:</strong> ${esc(skill.description || '-')}</p>
+        <p><strong>Trigger Words:</strong> <code>${JSON.stringify(skill.trigger_words || [])}</code></p>
+        <p><strong>Enabled:</strong> ${skill.enabled ? 'Yes' : 'No'}</p>
+        <hr>
+        <h4>Markdown Content</h4>
+        <pre style="white-space:pre-wrap;background:#1a1a2e;padding:12px;border-radius:6px;max-height:400px;overflow:auto">${esc(skill.markdown_content || '')}</pre>
+      </div>
+    `, [{ label: 'Close', class: 'secondary', onClick: closeModal }]);
+  }).catch(() => toast('Failed to load skill', 'error'));
+}
+
+function editSkill(id) {
+  api(`/api/skills/${id}`).then(skill => {
+    showModal('Edit Skill: ' + skill.name, `
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="edit-skill-name" value="${esc(skill.name)}">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="edit-skill-desc" value="${esc(skill.description || '')}">
+      </div>
+      <div class="form-group">
+        <label>Trigger Words</label>
+        <input type="text" id="edit-skill-triggers" value='${JSON.stringify(skill.trigger_words || [])}'>
+        <small>JSON array of trigger phrases</small>
+      </div>
+      <div class="form-group">
+        <label>Markdown Content</label>
+        <textarea id="edit-skill-markdown" style="min-height:200px">${esc(skill.markdown_content || '')}</textarea>
+      </div>
+    `, [
+      { label: 'Cancel', class: 'secondary', onClick: closeModal },
+      { label: 'Save', onClick: () => saveSkill(id) }
+    ]);
+  }).catch(() => toast('Failed to load skill', 'error'));
+}
+
+function saveSkill(id) {
+  const name = document.getElementById('edit-skill-name').value;
+  const desc = document.getElementById('edit-skill-desc').value;
+  let triggers = document.getElementById('edit-skill-triggers').value;
+  const markdown = document.getElementById('edit-skill-markdown').value;
+  try { triggers = JSON.parse(triggers); } catch { triggers = []; }
+  api(`/api/skills/${id}`, 'PUT', { name, description: desc, trigger_words: triggers, markdown_content: markdown })
+    .then(() => { closeModal(); loadSkills(); toast('Skill updated'); })
+    .catch(() => toast('Failed to update skill', 'error'));
+}
+
+function toggleSkill(id, enabled) {
+  api(`/api/skills/${id}`, 'PUT', { enabled })
+    .then(() => { loadSkills(); toast(enabled ? 'Skill enabled' : 'Skill disabled'); })
+    .catch(() => toast('Failed to toggle skill', 'error'));
+}
+
+function deleteSkill(id) {
+  if (!confirm('Delete this skill?')) return;
+  api(`/api/skills/${id}`, 'DELETE')
+    .then(() => { loadSkills(); toast('Skill deleted'); })
+    .catch(() => toast('Failed to delete skill', 'error'));
+}
+
+function loadPendingSkills() {
+  api('/api/skills/pending').then(skills => {
+    const el = document.getElementById('pending-skills-list');
+    if (!el) return;
+    if (!skills.length) {
+      el.innerHTML = '<div class="empty"><p>No pending skills</p></div>';
+      return;
+    }
+    el.innerHTML = `<table>
+      <thead><tr><th>Name</th><th>Trigger Words</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>${skills.map(s => `
+        <tr>
+          <td><strong>${esc(s.skill_name)}</strong></td>
+          <td><code>${JSON.stringify(s.trigger_words || [])}</code></td>
+          <td>${new Date(s.created_at).toLocaleString()}</td>
+          <td class="actions">
+            <button class="btn secondary" onclick="viewPendingSkill('${esc(s.skill_name)}')">View</button>
+            <button class="btn success" onclick="approvePendingSkill('${esc(s.skill_name)}')">Approve</button>
+            <button class="btn danger" onclick="rejectPendingSkill('${esc(s.skill_name)}')">Reject</button>
+          </td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+  }).catch(() => {
+    const el = document.getElementById('pending-skills-list');
+    if (el) el.innerHTML = '<div class="empty"><p>Failed to load pending skills</p></div>';
+  });
+}
+
+function viewPendingSkill(name) {
+  api('/api/skills/pending').then(skills => {
+    const skill = skills.find(s => s.skill_name === name);
+    if (!skill) return toast('Skill not found', 'error');
+    showModal('Pending Skill: ' + name, `
+      <div class="detail-section">
+        <p><strong>Trigger Words:</strong> <code>${JSON.stringify(skill.trigger_words || [])}</code></p>
+        <hr>
+        <h4>Markdown Content</h4>
+        <pre style="white-space:pre-wrap;background:#1a1a2e;padding:12px;border-radius:6px;max-height:400px;overflow:auto">${esc(skill.markdown_content || '')}</pre>
+      </div>
+    `, [{ label: 'Close', class: 'secondary', onClick: closeModal }]);
+  });
+}
+
+function approvePendingSkill(name) {
+  if (!confirm('Approve this skill?')) return;
+  api(`/api/skills/pending/${encodeURIComponent(name)}/approve`, 'POST')
+    .then(() => { loadPendingSkills(); loadSkills(); toast('Skill approved'); })
+    .catch(() => toast('Failed to approve skill', 'error'));
+}
+
+function rejectPendingSkill(name) {
+  if (!confirm('Reject this skill?')) return;
+  api(`/api/skills/pending/${encodeURIComponent(name)}/reject`, 'POST', { reason: 'Rejected by admin' })
+    .then(() => { loadPendingSkills(); toast('Skill rejected'); })
+    .catch(() => toast('Failed to reject skill', 'error'));
 }
 
 function showCreateSkillModal() {
@@ -1381,7 +1513,6 @@ function createSkill() {
     .then(() => { closeModal(); loadSkills(); toast('Skill created'); })
     .catch(() => toast('Failed to create skill', 'error'));
 }
-
 
 
 // ─── Knowledge ──────────────────────────────────────────────

@@ -13,7 +13,7 @@ import type { ContentBlock } from './llm/index.js';
 import { listSkills, matchesTrigger, executeSkill } from './agent-runtime/skill-runtime.js';
 import { initTriggerEngine, fireWebhook } from './agent-runtime/trigger-runtime.js';
 import { agentRegistry } from './agents/registry.js';
-import { query } from './memory/db.js';
+import { query, queryOne } from './memory/db.js';
 import { writeAudit } from './services/audit.js';
 import type { KnowledgeCategory } from './services/knowledge.js';
 import { requireAuth, initAuth, hasKeys, isAuthConfigured, validateKey } from './middleware/auth.js';
@@ -300,6 +300,83 @@ const server = http.createServer(async (req, res) => {
       );
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ id, name, ok: true }));
+      return;
+    }
+
+    // GET /api/skills/:id - 获取单个 skill
+    const skillDetailMatch = path.match(/^\/api\/skills\/([a-f0-9-]+)$/);
+    if (skillDetailMatch && method === 'GET') {
+      const skillId = skillDetailMatch[1];
+      const skill = await queryOne('SELECT * FROM skills WHERE id = $1', [skillId]);
+      if (!skill) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Skill not found' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(skill));
+      return;
+    }
+
+    // PUT /api/skills/:id - 更新 skill
+    if (skillDetailMatch && method === 'PUT') {
+      const skillId = skillDetailMatch[1];
+      const body = await parseBody(req);
+      const { name, description, markdown_content, trigger_words, enabled } = body;
+      await query(
+        `UPDATE skills SET
+          name = COALESCE($1, name),
+          description = COALESCE($2, description),
+          markdown_content = COALESCE($3, markdown_content),
+          trigger_words = COALESCE($4, trigger_words),
+          enabled = COALESCE($5, enabled),
+          updated_at = NOW()
+         WHERE id = $6`,
+        [name, description, markdown_content, trigger_words ? JSON.stringify(trigger_words) : null, enabled, skillId]
+      );
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // DELETE /api/skills/:id - 删除 skill
+    if (skillDetailMatch && method === 'DELETE') {
+      const skillId = skillDetailMatch[1];
+      await query('DELETE FROM skills WHERE id = $1', [skillId]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // GET /api/skills/pending - 获取待审批 skills
+    if (path === '/api/skills/pending' && method === 'GET') {
+      const { listPendingSkills } = await import('./agent-runtime/skill-evolution.js');
+      const pending = await listPendingSkills();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(pending));
+      return;
+    }
+
+    // POST /api/skills/pending/:name/approve - 审批通过
+    const pendingApproveMatch = path.match(/^\/api\/skills\/pending\/([^/]+)\/approve$/);
+    if (pendingApproveMatch && method === 'POST') {
+      const skillName = decodeURIComponent(pendingApproveMatch[1]);
+      const { approveSkill } = await import('./agent-runtime/skill-evolution.js');
+      await approveSkill(skillName, 'admin');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // POST /api/skills/pending/:name/reject - 审批拒绝
+    const pendingRejectMatch = path.match(/^\/api\/skills\/pending\/([^/]+)\/reject$/);
+    if (pendingRejectMatch && method === 'POST') {
+      const skillName = decodeURIComponent(pendingRejectMatch[1]);
+      const body = await parseBody(req);
+      const { rejectSkill } = await import('./agent-runtime/skill-evolution.js');
+      await rejectSkill(skillName, 'admin', body.reason as string | undefined);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
       return;
     }
 
