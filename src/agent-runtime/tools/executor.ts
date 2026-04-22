@@ -193,6 +193,7 @@ import { registerTools as registerExecCodeTools } from './exec-code.js';
 import { registerTools as registerAgentTools } from './agent-tools.js';
 import { registerTools as registerImportSoulTools } from './import-soul.js';
 import { registerTools as registerUninstallTools } from './uninstall.js';
+import { registerTools as registerInstallSkillTools } from './install-skill.js';
 
 registerMemoryTools();
 registerSubagentTools();
@@ -211,3 +212,4 @@ registerExecCodeTools();
 registerAgentTools();
 registerImportSoulTools();
 registerUninstallTools();
+registerInstallSkillTools();
