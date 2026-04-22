@@ -18,8 +18,13 @@ export async function query<T = unknown>(
   sql: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const result = await pool.query(sql, params);
-  return result.rows as T[];
+  try {
+    const result = await pool.query(sql, params);
+    return result.rows as T[];
+  } catch (e) {
+    console.error('[DB] Query error:', e);
+    throw e;
+  }
 }
 
 export async function queryOne<T = unknown>(

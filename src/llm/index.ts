@@ -489,7 +489,9 @@ async function* chatStreamOpenAI(
     }
     yield { content: '', done: true };
   } finally {
-    reader.releaseLock();
+    try {
+      reader?.releaseLock();
+    } catch { /* reader already released */ }
   }
 }
 
@@ -562,7 +564,9 @@ async function* chatStreamAnthropic(
     }
     yield { content: '', done: true };
   } finally {
-    reader.releaseLock();
+    try {
+      reader?.releaseLock();
+    } catch { /* reader already released */ }
   }
 }
 
@@ -630,6 +634,8 @@ async function* chatStreamMinimax(
     }
     yield { content: '', done: true };
   } finally {
-    reader.releaseLock();
+    try {
+      reader?.releaseLock();
+    } catch { /* reader already released */ }
   }
 }

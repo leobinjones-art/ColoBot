@@ -172,7 +172,7 @@ export async function runSubAgentTask(
     targetId: subAgent.id,
     detail: { taskLength: task.length, parentId },
     result: 'success',
-  }).catch(() => {}); // fire-and-forget
+  }).catch(e => console.error('[SubAgent] writeAudit error:', e)); // non-blocking
 
   try {
     const { agentChat } = await import('../llm/index.js');

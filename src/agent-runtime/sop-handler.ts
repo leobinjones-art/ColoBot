@@ -273,8 +273,8 @@ export async function handleSopFlow(
   if (state.currentStep === 1 && state.steps[0]?.status === 'in_progress') {
     // 检测修改意图
     if (detectModification(userMessage)) {
-      // 重新分析并拆解
-      const analysis = await aiAnalyzeTask(userMessage + '\n\n用户修改意见：' + userMessage);
+      // 重新分析并拆解，使用原始任务摘要 + 用户修改意见
+      const analysis = await aiAnalyzeTask(state.taskSummary + '\n\n用户修改意见：' + userMessage);
       if (analysis.isAcademicTask) {
         state.steps = analysis.suggestedSteps.map((s, i) => ({
           ...s,

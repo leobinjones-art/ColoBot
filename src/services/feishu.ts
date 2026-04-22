@@ -49,11 +49,16 @@ class FeishuClient {
       throw new Error('LARK_APP_ID and LARK_APP_SECRET are required');
     }
 
-    const res = await fetch(FEISHU_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(FEISHU_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
+      });
+    } catch (e) {
+      throw new Error(`Feishu token API network error: ${e}`);
+    }
 
     if (!res.ok) {
       throw new Error(`Feishu token API error: ${res.status}`);

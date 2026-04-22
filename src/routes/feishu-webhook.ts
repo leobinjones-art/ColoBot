@@ -6,9 +6,10 @@
 import { queryOne, query } from '../memory/db.js';
 import { createHmac } from 'crypto';
 
-// 消息去重缓存
+// 消息去重缓存（LRU 风格，最多保留 1000 条）
 const processedMessages = new Map<string, number>();
 const DEDUP_TTL = 5 * 60 * 1000; // 5分钟
+const DEDUP_MAX_SIZE = 1000;
 
 function isDuplicate(messageId: string): boolean {
   const now = Date.now();
@@ -16,12 +17,16 @@ function isDuplicate(messageId: string): boolean {
   if (lastProcessed && now - lastProcessed < DEDUP_TTL) {
     return true;
   }
-  // 清理过期记录
-  for (const [id, time] of processedMessages) {
-    if (now - time > DEDUP_TTL) {
+
+  // 超过最大容量时清理一半最旧的记录
+  if (processedMessages.size >= DEDUP_MAX_SIZE) {
+    const entries = [...processedMessages.entries()].sort((a, b) => a[1] - b[1]);
+    const toDelete = entries.slice(0, Math.floor(entries.length / 2));
+    for (const [id] of toDelete) {
       processedMessages.delete(id);
     }
   }
+
   processedMessages.set(messageId, now);
   return false;
 }
