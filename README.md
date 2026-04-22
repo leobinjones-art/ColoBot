@@ -530,6 +530,16 @@ npm install @colobot/core @colobot/tui @colobot/sop @colobot/feishu @colobot/das
 
 **部署注意事项：**
 
+- **数据持久化**：PostgreSQL 数据必须挂载到宿主机目录，否则容器删除后数据会丢失。推荐配置：
+  ```bash
+  docker run -d --name colobot-pg \
+    -v /path/to/pg-data:/var/lib/postgresql \
+    -e POSTGRES_PASSWORD=your_password \
+    -e POSTGRES_USER=colobot \
+    -e POSTGRES_DB=colobot \
+    -p 5432:5432 pgvector/pgvector:pg18
+  ```
+  数据目录 `/path/to/pg-data` 包含所有数据库文件（agents、skills、triggers、knowledge_base、agent_memory 等）。
 - **父 Agent 文件访问**：父 Agent 具有完整文件系统访问权限（子 Agent 有沙箱隔离）。建议通过工具注册时的 `requireAuth` 或 `toolRegistry.checkFn` 限制可执行文件操作的 Agent 范围，避免将完整文件工具暴露给不可信的 Agent。
 - **API Key**：生产环境务必通过 `--api-keys` 或 `COLOBOT_API_KEY` 配置密钥，切勿将含真实密钥的 `.env` 提交到代码仓库。
 - **飞书回调**：生产环境务必配置 `LARK_VERIFICATION_TOKEN` 并启用飞书事件验签，防止伪造回调。
