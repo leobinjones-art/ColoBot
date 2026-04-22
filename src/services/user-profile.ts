@@ -276,6 +276,136 @@ export async function getProfileSummary(agentId: string): Promise<string> {
   return buildProfileSummary(profile);
 }
 
+// ─── 画像自进化 ─────────────────────────────────────────────────
+
+interface ProfileUpdateHint {
+  field: string;
+  value: string | string[];
+  confidence: number;
+  source: string;
+}
+
+/**
+ * 从对话中分析用户信息，提取画像更新建议
+ */
+export async function analyzeConversationForProfile(
+  agentId: string,
+  conversation: Array<{ role: string; content: string }>
+): Promise<ProfileUpdateHint[]> {
+  const { chat } = await import('../llm/index.js');
+
+  // 获取现有画像作为上下文
+  const existingProfile = await getUserProfile(agentId);
+  const existingSummary = existingProfile ? buildProfileSummary(existingProfile) : '无';
+
+  const prompt = `分析以下对话，提取用户画像信息。
+
+现有画像：
+${existingSummary}
+
+对话内容：
+"""
+${conversation.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n')}
+"""
+
+请以 JSON 数组格式回复，提取对话中透露的用户信息：
+[
+  {
+    "field": "name|role|organization|bio|expertise_level|research_fields|skills|languages|goals|current_projects",
+    "value": "提取的值（字符串或数组）",
+    "confidence": 0.0-1.0,
+    "source": "对话中的原文引用"
+  }
+]
+
+注意：
+1. 只提取明确透露的信息，不要猜测
+2. confidence 表示信息的确信程度
+3. 数组类型字段（research_fields, skills, languages, goals, current_projects）用 JSON 数组
+4. role 只能是: student, researcher, developer, writer, other
+5. expertise_level 只能是: beginner, intermediate, expert
+6. 如果没有新信息，返回空数组 []
+7. 只回复 JSON，不要其他内容`;
+
+  try {
+    const response = await chat([{ role: 'user', content: prompt }], {
+      maxTokens: 500,
+      temperature: 0.3,
+    });
+
+    const text = typeof response.content === 'string' ? response.content : '';
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+
+    const hints = JSON.parse(jsonMatch[0]) as ProfileUpdateHint[];
+    return hints.filter(h => h.confidence >= 0.7); // 只采纳高置信度的信息
+  } catch (e) {
+    console.error('[Profile] Analysis failed:', e);
+    return [];
+  }
+}
+
+/**
+ * 应用画像更新建议
+ */
+export async function applyProfileHints(
+  agentId: string,
+  hints: ProfileUpdateHint[]
+): Promise<void> {
+  if (hints.length === 0) return;
+
+  const update: ProfileUpdate = {};
+  const profile = await getUserProfile(agentId);
+
+  for (const hint of hints) {
+    // 检查是否已有该信息（避免覆盖）
+    if (profile && profile[hint.field as keyof UserProfile]) {
+      // 合并数组类型
+      if (Array.isArray(hint.value) && Array.isArray(profile[hint.field as keyof UserProfile])) {
+        const existing = profile[hint.field as keyof UserProfile] as string[];
+        const newItems = (hint.value as string[]).filter(item => !existing.includes(item));
+        if (newItems.length > 0) {
+          (update as Record<string, unknown>)[hint.field] = [...existing, ...newItems];
+        }
+      }
+      // 跳过已有非数组字段
+      continue;
+    }
+
+    (update as Record<string, unknown>)[hint.field] = hint.value;
+  }
+
+  if (Object.keys(update).length > 0) {
+    await upsertUserProfile(agentId, update);
+    console.log('[Profile] Auto-updated:', Object.keys(update).join(', '));
+  }
+}
+
+/**
+ * 从对话中自动进化画像（主入口）
+ */
+export async function evolveProfileFromConversation(
+  agentId: string,
+  conversation: Array<{ role: string; content: string }>
+): Promise<void> {
+  // 每隔一定对话轮次才分析（避免频繁调用）
+  const profile = await getUserProfile(agentId);
+  const lastAnalyzedAt = profile?.updated_at || profile?.created_at;
+
+  if (lastAnalyzedAt) {
+    const hoursSinceLastUpdate = (Date.now() - new Date(lastAnalyzedAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceLastUpdate < 1) {
+      // 1小时内不重复分析
+      return;
+    }
+  }
+
+  const hints = await analyzeConversationForProfile(agentId, conversation);
+  if (hints.length > 0) {
+    await applyProfileHints(agentId, hints);
+  }
+}
+
 // 辅助函数
 
 function parseArray(value: string | string[] | null): string[] | undefined {

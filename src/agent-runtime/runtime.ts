@@ -465,6 +465,19 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     }
   }
 
+  // 用户画像自进化：从对话中学习用户信息
+  try {
+    const { evolveProfileFromConversation } = await import('../services/user-profile.js');
+    const history = await sessionManager.getHistory(agentId, sessionKey);
+    const convHistory = history.map(h => ({
+      role: h.role,
+      content: typeof h.content === 'string' ? h.content : JSON.stringify(h.content)
+    }));
+    await evolveProfileFromConversation(agentId, convHistory);
+  } catch (e) {
+    console.error('[Runtime] Profile evolution error:', e);
+  }
+
   return {
     response: finalContent || '(无回复)',
     toolCalls: toolCallNames,
