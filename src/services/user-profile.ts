@@ -194,7 +194,9 @@ export async function deleteUserProfile(agentId: string): Promise<void> {
  */
 async function syncProfileToMemory(agentId: string, profile: UserProfile): Promise<void> {
   const content = buildProfileSummary(profile);
-  await addMemory(agentId, 'user_profile', content, {
+  // 使用安全写入
+  const { safeAddMemory } = await import('./safe-write.js');
+  await safeAddMemory(agentId, 'user_profile', content, {
     type: 'user_profile',
     role: profile.role,
     expertise_level: profile.expertise_level,

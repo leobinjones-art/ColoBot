@@ -1,7 +1,7 @@
 /**
  * 记忆工具
  */
-import { searchMemory, addMemory, hybridSearch } from '../../memory/vector.js';
+import { searchMemory, hybridSearch } from '../../memory/vector.js';
 import { registerTool } from './executor.js';
 
 export function registerTools(): void {
@@ -17,7 +17,15 @@ export function registerTools(): void {
       value: string;
       metadata?: Record<string, unknown>;
     };
-    await addMemory(agent_id, key, value, metadata ?? {});
+    // 使用安全写入（AI 生成内容 = 中信任度）
+    const { safeAddMemory } = await import('../../services/safe-write.js');
+    const result = await safeAddMemory(agent_id, key, value, metadata ?? {}, {
+      type: 'ai_generated',
+      timestamp: new Date().toISOString(),
+    });
+    if (!result.success) {
+      return { ok: false, error: result.reason };
+    }
     return { ok: true };
   });
 

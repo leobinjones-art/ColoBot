@@ -1053,8 +1053,13 @@ export async function saveUserPreference(
     const existing = await getUserPreference(agentId);
     const merged = { ...existing, ...preference };
 
-    await addMemory(agentId, SOP_PREFERENCE_KEY, JSON.stringify(merged), {
+    // 使用安全写入
+    const { safeAddMemory } = await import('../services/safe-write.js');
+    await safeAddMemory(agentId, SOP_PREFERENCE_KEY, JSON.stringify(merged), {
       type: 'sop_preference',
+    }, {
+      type: 'user_input',  // 用户偏好来自用户交互
+      timestamp: new Date().toISOString(),
     });
     console.log('[SOP] User preference saved:', preference);
   } catch (e) {

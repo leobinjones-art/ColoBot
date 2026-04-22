@@ -171,15 +171,20 @@ export async function approveSkill(name: string, approver: string): Promise<void
 
   if (!pending) throw new Error(`Pending skill not found: ${name}`);
 
-  // 写入 skills 表
-  const skillId = crypto.randomUUID();
-  await query(
-    `INSERT INTO skills (id, name, description, markdown_content, trigger_words, enabled)
-     VALUES ($1, $2, $3, $4, $5, true)
-     ON CONFLICT (name) DO UPDATE SET
-       markdown_content = $4, trigger_words = $5, updated_at = NOW()`,
-    [skillId, name, '', pending.markdown_content, JSON.stringify(pending.trigger_words || [name.toLowerCase()])]
+  // 使用安全写入（审批通过后为高信任度）
+  const { safeUpsertSkill } = await import('../services/safe-write.js');
+  const result = await safeUpsertSkill(
+    name,
+    pending.markdown_content,
+    pending.trigger_words || [name.toLowerCase()],
+    {},
+    pending.agent_id || 'system',
+    { type: 'user_input', timestamp: new Date().toISOString() }  // 审批通过 = 高信任
   );
+
+  if (!result.success) {
+    throw new Error(`Failed to write skill: ${result.reason}`);
+  }
 
   // 更新 pending 状态
   await query(
