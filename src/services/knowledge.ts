@@ -39,20 +39,20 @@ export async function addKnowledge(data: {
 export async function getKnowledge(category: KnowledgeCategory, name: string): Promise<KnowledgeEntry | null> {
   const row = await queryOne<{
     id: string; category: string; name: string; content: string;
-    variables: string; related: string; metadata: string; created_at: Date; updated_at: Date;
+    variables: string | string[]; related: string | string[]; metadata: string | Record<string, unknown>; created_at: Date; updated_at: Date;
   }>('SELECT * FROM knowledge_base WHERE category = $1 AND name = $2', [category, name]);
   if (!row) return null;
   return {
     ...row,
     category: row.category as KnowledgeCategory,
-    variables: JSON.parse(row.variables),
-    related: JSON.parse(row.related),
-    metadata: JSON.parse(row.metadata),
+    variables: typeof row.variables === 'string' ? JSON.parse(row.variables) : row.variables,
+    related: typeof row.related === 'string' ? JSON.parse(row.related) : row.related,
+    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
   };
 }
 
 export async function listKnowledge(category?: KnowledgeCategory): Promise<KnowledgeEntry[]> {
-  type Row = { id: string; category: string; name: string; content: string; variables: string; related: string; metadata: string; created_at: Date; updated_at: Date };
+  type Row = { id: string; category: string; name: string; content: string; variables: string | string[]; related: string | string[]; metadata: string | Record<string, unknown>; created_at: Date; updated_at: Date };
   const rows: Row[] = category
     ? await query('SELECT * FROM knowledge_base WHERE category = $1 ORDER BY name', [category])
     : await query('SELECT * FROM knowledge_base ORDER BY category, name');
@@ -61,16 +61,16 @@ export async function listKnowledge(category?: KnowledgeCategory): Promise<Knowl
     category: row.category as KnowledgeCategory,
     name: row.name,
     content: row.content,
-    variables: JSON.parse(row.variables),
-    related: JSON.parse(row.related),
-    metadata: JSON.parse(row.metadata),
+    variables: typeof row.variables === 'string' ? JSON.parse(row.variables) : row.variables,
+    related: typeof row.related === 'string' ? JSON.parse(row.related) : row.related,
+    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
     created_at: row.created_at,
     updated_at: row.updated_at,
   }));
 }
 
 export async function searchKnowledge(queryText: string, category?: KnowledgeCategory): Promise<KnowledgeEntry[]> {
-  type Row = { id: string; category: string; name: string; content: string; variables: string; related: string; metadata: string; created_at: Date; updated_at: Date };
+  type Row = { id: string; category: string; name: string; content: string; variables: string | string[]; related: string | string[]; metadata: string | Record<string, unknown>; created_at: Date; updated_at: Date };
   const escaped = queryText.replace(/[%_]/g, '\\$&');
   const pattern = `%${escaped}%`;
   const rows: Row[] = category
@@ -81,9 +81,9 @@ export async function searchKnowledge(queryText: string, category?: KnowledgeCat
     category: row.category as KnowledgeCategory,
     name: row.name,
     content: row.content,
-    variables: JSON.parse(row.variables),
-    related: JSON.parse(row.related),
-    metadata: JSON.parse(row.metadata),
+    variables: typeof row.variables === 'string' ? JSON.parse(row.variables) : row.variables,
+    related: typeof row.related === 'string' ? JSON.parse(row.related) : row.related,
+    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
     created_at: row.created_at,
     updated_at: row.updated_at,
   }));
