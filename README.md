@@ -333,19 +333,24 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 
 ## 致谢 / 灵感来源
 
-本项目设计参考了以下开源项目和文档：
+本项目部分设计参考了以下公开资料：
 
 | 来源 | 参考内容 |
 |------|----------|
-| [hermes-agent](https://github.com/org/hermes-agent) | Skill 自进化（提案→审批→上线）、多层审批流设计（规划中） |
 | [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook) | LLM 调用模式、流式处理、多模态 Content Block |
-| [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) | Tool/Skill 抽象、工具注册机制 |
-| [CrewAI](https://github.com/mistralai/crewai) | 多智能体协作、子 Agent 任务分解 |
-| [AutoGen](https://microsoft.github.io/autogen/) | Agent 对话协作模式 |
-| [Dify](https://github.com/langgenius/dify) | Trigger / Skill 编排、Markdown Skill 定义 |
-| [飞书开放平台文档](https://open.feishu.cn/document/server-docs/bots/bots/bots-overview) | 飞书 Bot 交互式卡片、事件订阅、tenant_access_token 管理 |
-| pgvector + PostgreSQL | 向量存储和混合检索方案 |
-| [SearXNG](https://docs.searxng.org/) | 私有元搜索引擎集成 |
+| [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) | Tool/Skill 抽象概念 |
+| [飞书开放平台文档](https://open.feishu.cn/document/server-docs/bots/bots/bots-overview) | 飞书 Bot API、交互式卡片 |
+| pgvector + PostgreSQL | 向量存储方案 |
+| [SearXNG](https://docs.searxng.org/) | 元搜索引擎 |
+
+**原创设计声明**：以下特性为 ColoBot 团队独立设计，未参考其他项目：
+- 父子 Agent 协作机制（TTL 过期、工具白名单）
+- 四层审批漏斗 + 规则自进化
+- 投毒防御系统（信任等级 + 自动降级）
+- SOP 学术研究流程（AI 动态拆解 + 用户偏好记忆）
+- Trigger next_fire_at 持久化 + 补偿触发
+- 审批状态飞书卡片更新（无需重发消息）
+- 跨 Provider Fallback 链
 
 ---
 
