@@ -17,7 +17,10 @@ export type ChatCommand =
   | 'reasoning'
   | 'thinking'
   | 'stop'
-  | 'help';
+  | 'help'
+  | 'approval'
+  | 'approvals'
+  | 'pending';
 
 export interface CommandResult {
   success: boolean;
@@ -41,7 +44,8 @@ export function parseCommand(message: string): { command: ChatCommand; args?: st
 
   const validCommands: ChatCommand[] = [
     'new', 'reset', 'compact', 'model', 'models',
-    'reasoning', 'thinking', 'stop', 'help'
+    'reasoning', 'thinking', 'stop', 'help',
+    'approval', 'approvals', 'pending'
   ];
 
   if (!validCommands.includes(cmd)) return null;
@@ -89,6 +93,13 @@ export async function executeCommand(
 
     case 'help':
       return handleHelp();
+
+    case 'approval':
+      return await handleApproval(args, context);
+
+    case 'approvals':
+    case 'pending':
+      return await handlePendingApprovals(context);
 
     default:
       return { success: false, message: `未知指令: /${command}` };
@@ -339,6 +350,10 @@ function handleHelp(): CommandResult {
 • /reasoning on|off - 开启/关闭推理展示
 • /thinking low|medium|high - 调整思考强度
 
+**审批管理**
+• /approval <id> [approve|reject] - 审批操作
+• /approvals 或 /pending - 查看待审批列表
+
 **其他**
 • /stop - 停止当前输出
 • /help - 显示此帮助`;
@@ -348,4 +363,146 @@ function handleHelp(): CommandResult {
     message: helpText,
     action: 'help',
   };
+}
+
+/**
+ * /approval - 执行审批操作
+ * 用法: /approval <id> approve|reject [reason]
+ */
+async function handleApproval(
+  args: string | undefined,
+  context: { agentId: string; sessionKey: string }
+): Promise<CommandResult> {
+  if (!args) {
+    return {
+      success: false,
+      message: '用法: /approval <审批ID> approve|reject [原因]\n\n示例:\n• /approval abc123 approve\n• /approval abc123 reject 理由不充分',
+      action: 'approval',
+    };
+  }
+
+  const parts = args.split(/\s+/);
+  const approvalId = parts[0];
+  const action = parts[1]?.toLowerCase();
+  const reason = parts.slice(2).join(' ') || undefined;
+
+  if (!action || !['approve', 'reject'].includes(action)) {
+    return {
+      success: false,
+      message: `无效操作: ${action}\n有效操作: approve, reject`,
+      action: 'approval',
+    };
+  }
+
+  try {
+    const { approvalFlow } = await import('./approval.js');
+
+    if (action === 'approve') {
+      const result = await approvalFlow.approve(approvalId, 'user', {});
+      if (result) {
+        return {
+          success: true,
+          message: `✅ 审批已通过\n\n审批ID: ${approvalId}\n操作类型: ${result.action_type}\n目标资源: ${result.target_resource}`,
+          action: 'approval',
+          data: { approvalId, action: 'approved' },
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ 未找到待审批请求: ${approvalId}\n可能已被处理或已过期`,
+          action: 'approval',
+        };
+      }
+    } else {
+      const result = await approvalFlow.reject(approvalId, 'user', reason || '用户拒绝');
+      if (result) {
+        return {
+          success: true,
+          message: `❌ 审批已拒绝\n\n审批ID: ${approvalId}\n原因: ${reason || '用户拒绝'}`,
+          action: 'approval',
+          data: { approvalId, action: 'rejected' },
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ 未找到待审批请求: ${approvalId}\n可能已被处理或已过期`,
+          action: 'approval',
+        };
+      }
+    }
+  } catch (e) {
+    return {
+      success: false,
+      message: `审批操作失败: ${(e as Error).message}`,
+      action: 'approval',
+    };
+  }
+}
+
+/**
+ * /approvals 或 /pending - 查看待审批列表
+ */
+async function handlePendingApprovals(
+  context: { agentId: string }
+): Promise<CommandResult> {
+  try {
+    const { approvalFlow } = await import('./approval.js');
+    const pending = await approvalFlow.pending(context.agentId);
+
+    if (pending.length === 0) {
+      return {
+        success: true,
+        message: '📭 当前没有待审批的请求',
+        action: 'pending',
+      };
+    }
+
+    const lines = [`📋 **待审批列表** (${pending.length} 条)\n`];
+
+    for (const req of pending) {
+      const timeAgo = formatTimeAgo(new Date(req.created_at));
+      const expires = req.expires_at ? formatTimeAgo(new Date(req.expires_at)) : '无限制';
+      lines.push(`**${req.action_type}** - ${req.target_resource}`);
+      lines.push(`  ID: \`${req.id}\``);
+      if (req.description) {
+        lines.push(`  描述: ${req.description}`);
+      }
+      lines.push(`  创建: ${timeAgo} | 过期: ${expires}`);
+      lines.push('');
+    }
+
+    lines.push('---');
+    lines.push('使用以下命令进行审批:');
+    lines.push('• /approval <ID> approve');
+    lines.push('• /approval <ID> reject [原因]');
+
+    return {
+      success: true,
+      message: lines.join('\n'),
+      action: 'pending',
+      data: { count: pending.length, approvals: pending },
+    };
+  } catch (e) {
+    return {
+      success: false,
+      message: `获取审批列表失败: ${(e as Error).message}`,
+      action: 'pending',
+    };
+  }
+}
+
+/**
+ * 格式化时间差
+ */
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return '刚刚';
+  if (diffMins < 60) return `${diffMins} 分钟前`;
+  if (diffHours < 24) return `${diffHours} 小时前`;
+  return `${diffDays} 天前`;
 }

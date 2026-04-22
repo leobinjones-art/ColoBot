@@ -21,9 +21,18 @@ import { parseCommand, executeCommand } from './chat-commands.js';
 
 /**
  * 检测用户消息是否为聊天内审批指令
- * 匹配格式：批准 #approvalId, approve #approvalId, 拒绝 #approvalId, reject #approvalId
+ * 匹配格式：
+ * - 批准 #approvalId, approve #approvalId
+ * - 拒绝 #approvalId, reject #approvalId
+ * - 审批/待审批 - 列出待审批列表
  */
-function detectInChatApproval(messageText: string): { action: 'approve' | 'reject'; approvalId: string } | null {
+function detectInChatApproval(messageText: string): { action: 'approve' | 'reject' | 'list'; approvalId?: string } | null {
+  // 列出待审批
+  const listMatch = messageText.match(/^(审批|待审批|pending|approvals)$/i);
+  if (listMatch) {
+    return { action: 'list' };
+  }
+
   const approveMatch = messageText.match(/^(批准|approve|审批|通过)\s+#?(\S+)/i);
   if (approveMatch) {
     return { action: 'approve', approvalId: approveMatch[2] };
@@ -134,11 +143,37 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   const approvalAction = detectInChatApproval(messageText);
   if (approvalAction) {
     const { approvalFlow } = await import('./approval.js');
+
+    // 列出待审批
+    if (approvalAction.action === 'list') {
+      const pending = await approvalFlow.pending(agentId);
+      let responseText: string;
+
+      if (pending.length === 0) {
+        responseText = '📭 当前没有待审批的请求';
+      } else {
+        const lines = [`📋 **待审批列表** (${pending.length} 条)\n`];
+        for (const req of pending) {
+          lines.push(`• **${req.action_type}** - ${req.target_resource}`);
+          lines.push(`  ID: \`${req.id}\`${req.description ? ` - ${req.description}` : ''}`);
+        }
+        lines.push('\n使用以下命令进行审批:');
+        lines.push('• 批准 <ID> 或 /approval <ID> approve');
+        lines.push('• 拒绝 <ID> 或 /approval <ID> reject');
+        responseText = lines.join('\n');
+      }
+
+      await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
+      pushWsResult(agentId, sessionKey, responseText);
+      return { response: responseText, toolCalls: [], finished: true };
+    }
+
+    // 批准或拒绝
     let result;
     if (approvalAction.action === 'approve') {
-      result = await approvalFlow.approve(approvalAction.approvalId, 'user', {});
+      result = await approvalFlow.approve(approvalAction.approvalId!, 'user', {});
     } else {
-      result = await approvalFlow.reject(approvalAction.approvalId, 'user', '用户在聊天中拒绝');
+      result = await approvalFlow.reject(approvalAction.approvalId!, 'user', '用户在聊天中拒绝');
     }
     const responseText = result
       ? `审批${approvalAction.action === 'approve' ? '已通过' : '已拒绝'}，审批ID: ${approvalAction.approvalId}`
