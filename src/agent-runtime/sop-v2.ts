@@ -1029,3 +1029,267 @@ export function formatTaskBreakdown(state: SopState): string {
 
   return lines.join('\n');
 }
+
+// ─── 方案 C：用户偏好记忆 ─────────────────────────────────────────
+
+interface UserPreference {
+  preferredPurpose?: 'paper' | 'research' | 'learning';
+  stepDetailLevel?: 'detailed' | 'concise';
+  commonModifications: string[];
+  lastTaskType?: string;
+}
+
+const SOP_PREFERENCE_KEY = 'sop:user_preference';
+
+/**
+ * 保存用户偏好到记忆
+ */
+export async function saveUserPreference(
+  agentId: string,
+  preference: Partial<UserPreference>
+): Promise<void> {
+  try {
+    // 获取现有偏好
+    const existing = await getUserPreference(agentId);
+    const merged = { ...existing, ...preference };
+
+    await addMemory(agentId, SOP_PREFERENCE_KEY, JSON.stringify(merged), {
+      type: 'sop_preference',
+    });
+    console.log('[SOP] User preference saved:', preference);
+  } catch (e) {
+    console.error('[SOP] Failed to save user preference:', e);
+  }
+}
+
+/**
+ * 获取用户偏好
+ */
+export async function getUserPreference(agentId: string): Promise<UserPreference> {
+  try {
+    const results = await searchMemory(agentId, SOP_PREFERENCE_KEY, 1);
+    if (results.length > 0) {
+      return JSON.parse(results[0].content) as UserPreference;
+    }
+  } catch (e) {
+    console.error('[SOP] Failed to get user preference:', e);
+  }
+  return { commonModifications: [] };
+}
+
+/**
+ * 记录用户研究目的选择
+ */
+export async function recordPurposeSelection(
+  agentId: string,
+  purpose: 'paper' | 'research' | 'learning'
+): Promise<void> {
+  const pref = await getUserPreference(agentId);
+  await saveUserPreference(agentId, { ...pref, preferredPurpose: purpose });
+}
+
+/**
+ * 记录用户修改意见
+ */
+export async function recordModification(
+  agentId: string,
+  modification: string
+): Promise<void> {
+  const pref = await getUserPreference(agentId);
+  const mods = pref.commonModifications || [];
+  // 保留最近 10 条修改意见
+  mods.push(modification);
+  if (mods.length > 10) mods.shift();
+  await saveUserPreference(agentId, { ...pref, commonModifications: mods });
+}
+
+/**
+ * 应用用户偏好到任务分析
+ */
+export async function applyUserPreference(
+  agentId: string,
+  analysis: TaskAnalysis
+): Promise<TaskAnalysis> {
+  const pref = await getUserPreference(agentId);
+
+  // 如果用户有偏好目的且 AI 未检测出，使用偏好
+  if (!analysis.researchPurpose && pref.preferredPurpose) {
+    console.log('[SOP] Applying user preferred purpose:', pref.preferredPurpose);
+    analysis.researchPurpose = pref.preferredPurpose;
+  }
+
+  return analysis;
+}
+
+// ─── 方案 D：流程自优化建议 ─────────────────────────────────────────
+
+interface StepMetrics {
+  stepName: string;
+  executionCount: number;
+  rejectionCount: number;
+  avgExecutionTime: number;
+  commonIssues: string[];
+}
+
+interface OptimizationSuggestion {
+  stepIndex: number;
+  stepName: string;
+  issue: string;
+  suggestion: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+const SOP_METRICS_KEY = 'sop:metrics';
+
+/**
+ * 记录步骤执行指标
+ */
+export async function recordStepMetrics(
+  agentId: string,
+  taskId: string,
+  stepIndex: number,
+  stepName: string,
+  rejected: boolean,
+  executionTimeMs: number,
+  issue?: string
+): Promise<void> {
+  try {
+    const key = `${SOP_METRICS_KEY}:${taskId}:${stepIndex}`;
+    await addMemory(agentId, key, JSON.stringify({
+      stepName,
+      rejected,
+      executionTimeMs,
+      issue: issue || null,
+      timestamp: new Date().toISOString(),
+    }), {
+      type: 'sop_metrics',
+      taskId,
+      stepIndex,
+    });
+  } catch (e) {
+    console.error('[SOP] Failed to record step metrics:', e);
+  }
+}
+
+/**
+ * 分析执行历史，生成优化建议
+ */
+export async function analyzeAndSuggestOptimizations(
+  agentId: string
+): Promise<OptimizationSuggestion[]> {
+  try {
+    // 搜索所有步骤指标
+    const results = await searchMemory(agentId, SOP_METRICS_KEY, 50);
+    if (results.length === 0) return [];
+
+    // 按步骤名聚合
+    const metricsByStep: Record<string, StepMetrics> = {};
+
+    for (const result of results) {
+      try {
+        const data = JSON.parse(result.content);
+        const stepName = data.stepName;
+
+        if (!metricsByStep[stepName]) {
+          metricsByStep[stepName] = {
+            stepName,
+            executionCount: 0,
+            rejectionCount: 0,
+            avgExecutionTime: 0,
+            commonIssues: [],
+          };
+        }
+
+        const m = metricsByStep[stepName];
+        m.executionCount++;
+        if (data.rejected) m.rejectionCount++;
+        m.avgExecutionTime = (m.avgExecutionTime * (m.executionCount - 1) + data.executionTimeMs) / m.executionCount;
+        if (data.issue) m.commonIssues.push(data.issue);
+      } catch { /* skip */ }
+    }
+
+    // 生成建议
+    const suggestions: OptimizationSuggestion[] = [];
+
+    for (const [stepName, metrics] of Object.entries(metricsByStep)) {
+      // 高打回率
+      if (metrics.rejectionCount > 0 && metrics.executionCount > 0) {
+        const rejectionRate = metrics.rejectionCount / metrics.executionCount;
+        if (rejectionRate > 0.3) {
+          suggestions.push({
+            stepIndex: 0,
+            stepName,
+            issue: `打回率 ${(rejectionRate * 100).toFixed(0)}%`,
+            suggestion: '考虑优化步骤描述或增加引导说明',
+            priority: rejectionRate > 0.5 ? 'high' : 'medium',
+          });
+        }
+      }
+
+      // 执行时间过长
+      if (metrics.avgExecutionTime > 60000) { // 超过 1 分钟
+        suggestions.push({
+          stepIndex: 0,
+          stepName,
+          issue: `平均执行时间 ${(metrics.avgExecutionTime / 1000).toFixed(0)} 秒`,
+          suggestion: '考虑拆分为多个子步骤',
+          priority: metrics.avgExecutionTime > 120000 ? 'high' : 'medium',
+        });
+      }
+
+      // 常见问题
+      if (metrics.commonIssues.length >= 3) {
+        const uniqueIssues = [...new Set(metrics.commonIssues)];
+        if (uniqueIssues.length > 0) {
+          suggestions.push({
+            stepIndex: 0,
+            stepName,
+            issue: `常见问题: ${uniqueIssues.slice(0, 3).join(', ')}`,
+            suggestion: '考虑在步骤引导中预先说明注意事项',
+            priority: 'low',
+          });
+        }
+      }
+    }
+
+    // 按优先级排序
+    suggestions.sort((a, b) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return order[a.priority] - order[b.priority];
+    });
+
+    return suggestions;
+  } catch (e) {
+    console.error('[SOP] Failed to analyze optimizations:', e);
+    return [];
+  }
+}
+
+/**
+ * 生成优化报告
+ */
+export async function generateOptimizationReport(agentId: string): Promise<string> {
+  const suggestions = await analyzeAndSuggestOptimizations(agentId);
+
+  if (suggestions.length === 0) {
+    return '📊 **SOP 流程优化报告**\n\n暂无优化建议。继续使用以积累更多数据。';
+  }
+
+  const lines: string[] = [
+    '📊 **SOP 流程优化报告**\n',
+    `发现 ${suggestions.length} 条优化建议：\n`,
+  ];
+
+  for (let i = 0; i < suggestions.length; i++) {
+    const s = suggestions[i];
+    const priorityIcon = s.priority === 'high' ? '🔴' : s.priority === 'medium' ? '🟡' : '🟢';
+    lines.push(`${i + 1}. ${priorityIcon} **${s.stepName}**`);
+    lines.push(`   问题：${s.issue}`);
+    lines.push(`   建议：${s.suggestion}`);
+    lines.push('');
+  }
+
+  lines.push('回复"应用优化"自动调整流程，或手动调整特定步骤。');
+
+  return lines.join('\n');
+}

@@ -35,6 +35,12 @@ import {
   formatTaskBreakdown,
   formatSopList,
   summarizeSubAgentResult,
+  // 用户偏好与优化
+  applyUserPreference,
+  recordPurposeSelection,
+  recordModification,
+  recordStepMetrics,
+  generateOptimizationReport,
   type SopState,
   type TaskAnalysis,
 } from './sop-v2.js';
@@ -69,6 +75,16 @@ export async function handleSopFlow(
     }
     return {
       response: '当前没有进行中的 SOP 流程。',
+      state: null,
+      action: 'none',
+    };
+  }
+
+  // 1.5 检测优化报告请求
+  if (/sop优化报告|优化建议|流程优化/i.test(userMessage)) {
+    const report = await generateOptimizationReport(agentId);
+    return {
+      response: report,
       state: null,
       action: 'none',
     };
@@ -183,7 +199,11 @@ export async function handleSopFlow(
   // 8. 无活跃任务，分析是否为新任务
   if (!state) {
     console.log('[SOP Handler] No active task, analyzing...');
-    const analysis = await aiAnalyzeTask(userMessage);
+    let analysis = await aiAnalyzeTask(userMessage);
+
+    // 应用用户偏好
+    analysis = await applyUserPreference(agentId, analysis);
+
     console.log('[SOP Handler] Analysis result:', analysis.isAcademicTask, analysis.taskType, analysis.researchPurpose);
 
     if (!analysis.isAcademicTask) {
@@ -254,6 +274,8 @@ export async function handleSopFlow(
     const purpose = detectResearchPurpose(userMessage);
     if (purpose) {
       console.log('[SOP Handler] User selected purpose:', purpose);
+      // 记录用户偏好
+      await recordPurposeSelection(agentId, purpose);
       // 重新让AI根据目的生成步骤
       const purposeText = purpose === 'paper' ? '写论文' : purpose === 'research' ? '做研究' : '学习';
       const analysis = await aiAnalyzeTask(`${state.taskSummary}\n\n研究目的：${purposeText}`);
@@ -273,6 +295,8 @@ export async function handleSopFlow(
   if (state.currentStep === 1 && state.steps[0]?.status === 'in_progress') {
     // 检测修改意图
     if (detectModification(userMessage)) {
+      // 记录修改意见
+      await recordModification(agentId, userMessage);
       // 重新分析并拆解，使用原始任务摘要 + 用户修改意见
       const analysis = await aiAnalyzeTask(state.taskSummary + '\n\n用户修改意见：' + userMessage);
       if (analysis.isAcademicTask) {
@@ -338,7 +362,8 @@ export async function handleSopFlow(
         action: 'submitted',
       };
     } else {
-      // 审核打回
+      // 审核打回，记录指标
+      await recordStepMetrics(agentId, state.taskId, state.currentStep, currentStep.name, true, 0, review.reason);
       const rejectedState = await rejectAndRetry(newState, review.reason);
       return {
         response: `**审核未通过：** ${review.reason}\n\n**改进建议：**\n${review.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n请重新提交数据。`,
@@ -351,6 +376,9 @@ export async function handleSopFlow(
   // 7. 等待用户确认审核结果
   if (currentStep?.subAgentResult && !currentStep.approved) {
     if (detectConfirmation(userMessage)) {
+      // 记录步骤通过指标
+      await recordStepMetrics(agentId, state.taskId, state.currentStep, currentStep.name, false, 0);
+
       state = await approveAndAdvance(state);
 
       if (state.status === 'completed') {
