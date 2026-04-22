@@ -169,6 +169,7 @@
     <div class="tab" data-tab="subagent" data-i18n="SubAgent">SubAgent</div>
     <div class="tab" data-tab="workspace" data-i18n="Workspace">Workspace</div>
     <div class="tab" data-tab="sop" data-i18n="SOP">SOP</div>
+    <div class="tab" data-tab="profile" data-i18n="Profile">Profile</div>
     <div class="tab" data-tab="search" data-i18n="Search">Search</div>
     <div class="tab" data-tab="llm" data-i18n="LLM">LLM</div>
     <div class="tab" data-tab="notifications" data-i18n="Notifications">Notifications</div>
@@ -397,6 +398,110 @@
       </div>
       <div id="sop-content">
         <div class="empty"><p data-i18n="Choose Agent and session">选择 Agent 和 session 查看 SOP 进度</p></div>
+      </div>
+    </div>
+
+    <!-- User Profile -->
+    <div class="section" id="sec-profile">
+      <div class="page-header">
+        <h2 data-i18n="User Profile">User Profile</h2>
+        <div style="display:flex;gap:8px">
+          <select id="profile-agent-select" onchange="loadProfile()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="" data-i18n="Select Agent">Select Agent</option>
+          </select>
+          <button class="btn" onclick="saveProfile()" data-i18n="Save Profile">Save Profile</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Basic Info">Basic Info</h3>
+        <div class="settings-row">
+          <label data-i18n="Name">Name</label>
+          <input type="text" id="profile-name" placeholder="Your name">
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Role">Role</label>
+          <select id="profile-role" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="">-- Select --</option>
+            <option value="student">Student</option>
+            <option value="researcher">Researcher</option>
+            <option value="developer">Developer</option>
+            <option value="writer">Writer</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Organization">Organization</label>
+          <input type="text" id="profile-organization" placeholder="University / Company">
+        </div>
+        <div class="form-group">
+          <label data-i18n="Bio">Bio</label>
+          <textarea id="profile-bio" placeholder="Brief introduction about yourself..." style="min-height:80px"></textarea>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Expertise">Expertise</h3>
+        <div class="settings-row">
+          <label data-i18n="Level">Level</label>
+          <select id="profile-expertise" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="">-- Select --</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="expert">Expert</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Research Fields">Research Fields</label>
+          <input type="text" id="profile-fields" placeholder='["AI", "Physics"]'>
+          <small>JSON array</small>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Skills">Skills</label>
+          <input type="text" id="profile-skills" placeholder='["Python", "LaTeX"]'>
+          <small>JSON array</small>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Languages">Languages</label>
+          <input type="text" id="profile-languages" placeholder='["Chinese", "English"]'>
+          <small>JSON array</small>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Preferences">Preferences</h3>
+        <div class="settings-row">
+          <label data-i18n="Communication Style">Communication Style</label>
+          <select id="profile-comm-style" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="">-- Default --</option>
+            <option value="formal">Formal</option>
+            <option value="casual">Casual</option>
+            <option value="technical">Technical</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Response Length">Response Length</label>
+          <select id="profile-response-length" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="">-- Default --</option>
+            <option value="brief">Brief</option>
+            <option value="detailed">Detailed</option>
+            <option value="comprehensive">Comprehensive</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Preferred Language">Preferred Language</label>
+          <input type="text" id="profile-pref-lang" placeholder="Chinese / English">
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Goals & Projects">Goals & Projects</h3>
+        <div class="settings-row">
+          <label data-i18n="Goals">Goals</label>
+          <input type="text" id="profile-goals" placeholder='["Complete thesis", "Learn AI"]'>
+          <small>JSON array</small>
+        </div>
+        <div class="settings-row">
+          <label data-i18n="Current Projects">Current Projects</label>
+          <input type="text" id="profile-projects" placeholder='["Project A", "Project B"]'>
+          <small>JSON array</small>
+        </div>
       </div>
     </div>
 
@@ -1115,6 +1220,7 @@ function initDashboard() {
       if (tab.dataset.tab === 'llm') loadLlmSettings();
       if (tab.dataset.tab === 'notifications') loadNotificationSettings();
       if (tab.dataset.tab === 'sop') { loadAgentsForSop(); }
+      if (tab.dataset.tab === 'profile') { loadProfileAgentSelect(); }
     });
   });
 
@@ -1907,6 +2013,77 @@ function wsHandleFileSelect(event) {
 
   // Reset input
   event.target.value = '';
+}
+
+// ─── User Profile ──────────────────────────────────────────────
+
+function loadProfileAgentSelect() {
+  api('/api/agents').then(agents => {
+    const select = document.getElementById('profile-agent-select');
+    select.innerHTML = '<option value="">Select Agent</option>' +
+      agents.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+  }).catch(() => {});
+}
+
+function loadProfile() {
+  const agentId = document.getElementById('profile-agent-select').value;
+  if (!agentId) return;
+
+  api(`/api/profile/${agentId}`).then(profile => {
+    document.getElementById('profile-name').value = profile.name || '';
+    document.getElementById('profile-role').value = profile.role || '';
+    document.getElementById('profile-organization').value = profile.organization || '';
+    document.getElementById('profile-bio').value = profile.bio || '';
+    document.getElementById('profile-expertise').value = profile.expertise_level || '';
+    document.getElementById('profile-fields').value = profile.research_fields ? JSON.stringify(profile.research_fields) : '';
+    document.getElementById('profile-skills').value = profile.skills ? JSON.stringify(profile.skills) : '';
+    document.getElementById('profile-languages').value = profile.languages ? JSON.stringify(profile.languages) : '';
+    document.getElementById('profile-comm-style').value = profile.communication_style || '';
+    document.getElementById('profile-response-length').value = profile.response_length || '';
+    document.getElementById('profile-pref-lang').value = profile.preferred_language || '';
+    document.getElementById('profile-goals').value = profile.goals ? JSON.stringify(profile.goals) : '';
+    document.getElementById('profile-projects').value = profile.current_projects ? JSON.stringify(profile.current_projects) : '';
+  }).catch(() => toast('Failed to load profile', 'error'));
+}
+
+function saveProfile() {
+  const agentId = document.getElementById('profile-agent-select').value;
+  if (!agentId) {
+    toast('Please select an Agent', 'error');
+    return;
+  }
+
+  const update = {
+    name: document.getElementById('profile-name').value || undefined,
+    role: document.getElementById('profile-role').value || undefined,
+    organization: document.getElementById('profile-organization').value || undefined,
+    bio: document.getElementById('profile-bio').value || undefined,
+    expertise_level: document.getElementById('profile-expertise').value || undefined,
+    communication_style: document.getElementById('profile-comm-style').value || undefined,
+    response_length: document.getElementById('profile-response-length').value || undefined,
+    preferred_language: document.getElementById('profile-pref-lang').value || undefined,
+  };
+
+  // Parse JSON arrays
+  try {
+    const fields = document.getElementById('profile-fields').value.trim();
+    if (fields) update.research_fields = JSON.parse(fields);
+    const skills = document.getElementById('profile-skills').value.trim();
+    if (skills) update.skills = JSON.parse(skills);
+    const langs = document.getElementById('profile-languages').value.trim();
+    if (langs) update.languages = JSON.parse(langs);
+    const goals = document.getElementById('profile-goals').value.trim();
+    if (goals) update.goals = JSON.parse(goals);
+    const projects = document.getElementById('profile-projects').value.trim();
+    if (projects) update.current_projects = JSON.parse(projects);
+  } catch (e) {
+    toast('Invalid JSON format in array fields', 'error');
+    return;
+  }
+
+  api(`/api/profile/${agentId}`, 'PUT', update)
+    .then(() => toast('Profile saved'))
+    .catch(() => toast('Failed to save profile', 'error'));
 }
 
 // ─── Search / SearXNG Settings ───────────────────────────────

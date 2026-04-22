@@ -725,6 +725,50 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── User Profile ──
+    // GET /api/profile/:agentId - 获取用户画像
+    const profileMatch = path.match(/^\/api\/profile\/([a-f0-9-]+)$/);
+    if (profileMatch && method === 'GET') {
+      const agentId = profileMatch[1];
+      const { getUserProfile } = await import('./services/user-profile.js');
+      const profile = await getUserProfile(agentId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(profile || {}));
+      return;
+    }
+
+    // PUT /api/profile/:agentId - 更新用户画像
+    if (profileMatch && method === 'PUT') {
+      const agentId = profileMatch[1];
+      const body = await parseBody(req);
+      const { upsertUserProfile } = await import('./services/user-profile.js');
+      const profile = await upsertUserProfile(agentId, body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(profile));
+      return;
+    }
+
+    // DELETE /api/profile/:agentId - 删除用户画像
+    if (profileMatch && method === 'DELETE') {
+      const agentId = profileMatch[1];
+      const { deleteUserProfile } = await import('./services/user-profile.js');
+      await deleteUserProfile(agentId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // GET /api/profile/:agentId/summary - 获取画像摘要
+    const profileSummaryMatch = path.match(/^\/api\/profile\/([a-f0-9-]+)\/summary$/);
+    if (profileSummaryMatch && method === 'GET') {
+      const agentId = profileSummaryMatch[1];
+      const { getProfileSummary } = await import('./services/user-profile.js');
+      const summary = await getProfileSummary(agentId);
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(summary);
+      return;
+    }
+
     // ── Workspace File Browser ──
     // GET /api/workspace/:subAgentId - list workspace contents
     // GET /api/workspace/:subAgentId/files/*path - download file

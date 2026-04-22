@@ -310,3 +310,36 @@ CREATE TABLE IF NOT EXISTS knowledge_base (
 
 CREATE INDEX IF NOT EXISTS idx_knowledge_base_category ON knowledge_base(category);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_base_unique ON knowledge_base(category, name);
+
+-- 用户画像
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id UUID NOT NULL UNIQUE REFERENCES agents(id) ON DELETE CASCADE,
+
+  -- 基本信息
+  name VARCHAR(255),
+  role VARCHAR(50),
+  organization VARCHAR(255),
+  bio TEXT,
+
+  -- 专业背景
+  expertise_level VARCHAR(50),
+  research_fields JSONB DEFAULT '[]',
+  skills JSONB DEFAULT '[]',
+  languages JSONB DEFAULT '[]',
+
+  -- 偏好设置
+  communication_style VARCHAR(50),
+  response_length VARCHAR(50),
+  preferred_language VARCHAR(50),
+
+  -- 目标与项目
+  goals JSONB DEFAULT '[]',
+  current_projects JSONB DEFAULT '[]',
+
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_profiles_agent ON user_profiles(agent_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
