@@ -653,6 +653,67 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── Security APIs (Poisoning Defense) ──
+    if (path === '/api/security/trust-status' && method === 'GET') {
+      const rows = await query('SELECT * FROM agent_trust_records ORDER BY updated_at DESC');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(rows));
+      return;
+    }
+    if (path.match(/^\/api\/security\/trust-status\/[^/]+\/reset$/) && method === 'POST') {
+      const agentId = path.split('/')[4];
+      await query(
+        `UPDATE agent_trust_records SET trust_score = 1.0, status = 'trusted', poisoning_attempts = 0, last_violation_at = NULL WHERE agent_id = $1`,
+        [agentId]
+      );
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+    if (path === '/api/security/poisoning-attempts' && method === 'GET') {
+      const { listPoisoningAttempts } = await import('./services/poison-defense.js');
+      const agentId = url.searchParams.get('agentId') || undefined;
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      const result = await listPoisoningAttempts(agentId, limit);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+    if (path.match(/^\/api\/security\/poisoning-attempts\/[^/]+$/) && method === 'GET') {
+      const id = path.split('/')[4];
+      const row = await queryOne<{ id: string; source: string; issues: string }>('SELECT * FROM poisoning_attempts WHERE id = $1', [id]);
+      if (!row) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Not found' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ...row,
+        source: typeof row.source === 'string' ? JSON.parse(row.source) : row.source,
+        issues: typeof row.issues === 'string' ? JSON.parse(row.issues) : row.issues,
+      }));
+      return;
+    }
+    if (path === '/api/security/write-audit' && method === 'GET') {
+      const limit = parseInt(url.searchParams.get('limit') || '50');
+      const rows = await query<{ id: string; source: string }>('SELECT * FROM content_write_audit ORDER BY created_at DESC LIMIT $1', [limit]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(rows.map((r: { id: string; source: string }) => ({
+        ...r,
+        source: typeof r.source === 'string' ? JSON.parse(r.source) : r.source,
+      }))));
+      return;
+    }
+    if (path === '/api/security/rollback' && method === 'POST') {
+      const { rollbackPoisonedContent } = await import('./services/poison-defense.js');
+      const body = await parseBody(req) as { contentType: 'memory' | 'skill' | 'knowledge'; contentKey: string };
+      const success = await rollbackPoisonedContent(body.contentType, body.contentKey);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success }));
+      return;
+    }
+
     // ── Tools List ──
     if (path === '/api/tools' && method === 'GET') {
       const { listTools } = await import('./agent-runtime/tools/executor.js');

@@ -343,3 +343,52 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_agent ON user_profiles(agent_id);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
+
+-- ─── 投毒防御系统 ─────────────────────────────────────────────────────
+
+-- Agent 信任记录
+CREATE TABLE IF NOT EXISTS agent_trust_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id UUID NOT NULL UNIQUE REFERENCES agents(id) ON DELETE CASCADE,
+  trust_score REAL NOT NULL DEFAULT 1.0,
+  poisoning_attempts INT NOT NULL DEFAULT 0,
+  status VARCHAR(20) NOT NULL DEFAULT 'trusted',  -- trusted, warning, restricted
+  last_violation_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_trust_status ON agent_trust_records(status);
+
+-- 投毒尝试记录
+CREATE TABLE IF NOT EXISTS poisoning_attempts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  content_type VARCHAR(50) NOT NULL,  -- memory, skill, rule, profile, knowledge
+  content_key VARCHAR(255) NOT NULL,
+  content_preview TEXT NOT NULL,
+  source JSONB NOT NULL DEFAULT '{}',
+  issues JSONB NOT NULL DEFAULT '[]',
+  detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  action_taken VARCHAR(20) NOT NULL DEFAULT 'blocked'  -- blocked, flagged, allowed_with_warning
+);
+
+CREATE INDEX IF NOT EXISTS idx_poisoning_attempts_agent ON poisoning_attempts(agent_id);
+CREATE INDEX IF NOT EXISTS idx_poisoning_attempts_type ON poisoning_attempts(content_type);
+CREATE INDEX IF NOT EXISTS idx_poisoning_attempts_detected ON poisoning_attempts(detected_at DESC);
+
+-- 内容写入审计（用于回滚）
+CREATE TABLE IF NOT EXISTS content_write_audit (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  content_type VARCHAR(50) NOT NULL,
+  content_key VARCHAR(255) NOT NULL,
+  trust_level VARCHAR(20) NOT NULL,  -- high, medium, low
+  source JSONB NOT NULL DEFAULT '{}',
+  content_snapshot TEXT,  -- 写入前内容快照（用于回滚）
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_write_audit_agent ON content_write_audit(agent_id);
+CREATE INDEX IF NOT EXISTS idx_content_write_audit_type ON content_write_audit(content_type);
+CREATE INDEX IF NOT EXISTS idx_content_write_audit_created ON content_write_audit(created_at DESC);

@@ -173,6 +173,7 @@
     <div class="tab" data-tab="search" data-i18n="Search">Search</div>
     <div class="tab" data-tab="llm" data-i18n="LLM">LLM</div>
     <div class="tab" data-tab="notifications" data-i18n="Notifications">Notifications</div>
+    <div class="tab" data-tab="security" data-i18n="Security">Security</div>
   </div>
 
   <div class="content">
@@ -647,6 +648,75 @@
         </div>
       </div>
     </div>
+
+    <!-- Security (Poisoning Defense) -->
+    <div class="section" id="sec-security">
+      <div class="page-header">
+        <h2 data-i18n="Security Center">Security Center</h2>
+        <button class="btn secondary" onclick="refreshSecurityData()" data-i18n="Refresh">Refresh</button>
+      </div>
+
+      <!-- Trust Status -->
+      <div class="card" style="margin-bottom:20px; background:var(--surface); border-radius:8px; padding:16px;">
+        <h3 style="font-size:14px; margin-bottom:12px;" data-i18n="Agent Trust Status">Agent Trust Status</h3>
+        <table id="trust-status-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Trust Score</th>
+              <th>Status</th>
+              <th>Violations</th>
+              <th>Last Violation</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="trust-status-body">
+            <tr><td colspan="6" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Poisoning Attempts -->
+      <div class="card" style="margin-bottom:20px; background:var(--surface); border-radius:8px; padding:16px;">
+        <h3 style="font-size:14px; margin-bottom:12px;" data-i18n="Poisoning Attempts">Poisoning Attempts</h3>
+        <table id="poisoning-attempts-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Agent</th>
+              <th>Type</th>
+              <th>Key</th>
+              <th>Issues</th>
+              <th>Action</th>
+              <th>Operations</th>
+            </tr>
+          </thead>
+          <tbody id="poisoning-attempts-body">
+            <tr><td colspan="7" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Content Write Audit -->
+      <div class="card" style="background:var(--surface); border-radius:8px; padding:16px;">
+        <h3 style="font-size:14px; margin-bottom:12px;" data-i18n="Write Audit Log">Write Audit Log</h3>
+        <table id="write-audit-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Agent</th>
+              <th>Type</th>
+              <th>Key</th>
+              <th>Trust Level</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="write-audit-body">
+            <tr><td colspan="6" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -692,6 +762,7 @@ const I18N = {
     'Search': '搜索',
     'LLM': 'LLM',
     'Notifications': '通知',
+    'Security': '安全',
     // Feishu
     'Feishu Settings': '飞书设置',
     'Save Settings': '保存设置',
@@ -906,6 +977,7 @@ const I18N = {
     'Search': 'Search',
     'LLM': 'LLM',
     'Notifications': 'Notifications',
+    'Security': 'Security',
     // Feishu
     'Feishu Settings': 'Feishu Settings',
     'Save Settings': 'Save Settings',
@@ -2325,6 +2397,155 @@ function esc(s) {
 document.getElementById('modal-overlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
+
+// ─── Security (Poisoning Defense) ───────────────────────────────────────────────────
+
+async function refreshSecurityData() {
+  await Promise.all([loadTrustStatus(), loadPoisoningAttempts(), loadWriteAudit()]);
+}
+
+async function loadTrustStatus() {
+  const tbody = document.getElementById('trust-status-body');
+  try {
+    const res = await fetch('/api/security/trust-status', { headers: { 'X-API-Key': apiKey } });
+    const data = await res.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No trust records</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${esc(r.agent_id)}</td>
+        <td>${(r.trust_score * 100).toFixed(0)}%</td>
+        <td><span class="badge ${r.status === 'trusted' ? 'approved' : r.status === 'warning' ? 'pending' : 'rejected'}">${esc(r.status)}</span></td>
+        <td>${r.poisoning_attempts}</td>
+        <td>${r.last_violation_at ? new Date(r.last_violation_at).toLocaleString() : '-'}</td>
+        <td class="actions">
+          ${r.status !== 'trusted' ? `<button class="btn secondary" onclick="resetTrust('${r.agent_id}')">Reset</button>` : ''}
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger)">Failed to load</td></tr>';
+  }
+}
+
+async function loadPoisoningAttempts() {
+  const tbody = document.getElementById('poisoning-attempts-body');
+  try {
+    const res = await fetch('/api/security/poisoning-attempts', { headers: { 'X-API-Key': apiKey } });
+    const data = await res.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No poisoning attempts</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${new Date(r.detected_at).toLocaleString()}</td>
+        <td>${esc(r.agent_id)}</td>
+        <td>${esc(r.content_type)}</td>
+        <td>${esc(r.content_key)}</td>
+        <td>${r.issues.map(i => `<span style="color:var(--danger)">${esc(i)}</span>`).join(', ')}</td>
+        <td><span class="badge ${r.action_taken === 'blocked' ? 'rejected' : 'pending'}">${esc(r.action_taken)}</span></td>
+        <td class="actions">
+          <button class="btn secondary" onclick="viewPoisoningDetail('${r.id}')">View</button>
+          <button class="btn danger" onclick="rollbackContent('${r.content_type}', '${r.content_key}')">Rollback</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Failed to load</td></tr>';
+  }
+}
+
+async function loadWriteAudit() {
+  const tbody = document.getElementById('write-audit-body');
+  try {
+    const res = await fetch('/api/security/write-audit?limit=50', { headers: { 'X-API-Key': apiKey } });
+    const data = await res.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No write audit records</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${new Date(r.created_at).toLocaleString()}</td>
+        <td>${esc(r.agent_id)}</td>
+        <td>${esc(r.content_type)}</td>
+        <td>${esc(r.content_key)}</td>
+        <td><span class="badge ${r.trust_level === 'high' ? 'approved' : r.trust_level === 'medium' ? 'pending' : 'rejected'}">${esc(r.trust_level)}</span></td>
+        <td>${esc(r.source?.type || '-')}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger)">Failed to load</td></tr>';
+  }
+}
+
+async function resetTrust(agentId) {
+  if (!confirm(`Reset trust for agent ${agentId}?`)) return;
+  try {
+    await fetch(`/api/security/trust-status/${agentId}/reset`, {
+      method: 'POST',
+      headers: { 'X-API-Key': apiKey }
+    });
+    toast('Trust reset successfully');
+    loadTrustStatus();
+  } catch (e) {
+    toast('Failed to reset trust', 'error');
+  }
+}
+
+async function rollbackContent(contentType, contentKey) {
+  if (!confirm(`Rollback ${contentType}: ${contentKey}? This will delete the content.`)) return;
+  try {
+    const res = await fetch('/api/security/rollback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      body: JSON.stringify({ contentType, contentKey })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('Rollback successful');
+      loadPoisoningAttempts();
+    } else {
+      toast(data.error || 'Rollback failed', 'error');
+    }
+  } catch (e) {
+    toast('Rollback failed', 'error');
+  }
+}
+
+async function viewPoisoningDetail(id) {
+  try {
+    const res = await fetch(`/api/security/poisoning-attempts/${id}`, { headers: { 'X-API-Key': apiKey } });
+    const data = await res.json();
+    openModal('Poisoning Attempt Detail', `
+      <div class="form-group">
+        <label>Content Type</label>
+        <input type="text" value="${esc(data.content_type)}" readonly>
+      </div>
+      <div class="form-group">
+        <label>Content Key</label>
+        <input type="text" value="${esc(data.content_key)}" readonly>
+      </div>
+      <div class="form-group">
+        <label>Content Preview</label>
+        <textarea readonly style="min-height:150px">${esc(data.content_preview)}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Issues</label>
+        <textarea readonly>${esc(data.issues.join('\n'))}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Source</label>
+        <textarea readonly>${esc(JSON.stringify(data.source, null, 2))}</textarea>
+      </div>
+    `, '');
+  } catch (e) {
+    toast('Failed to load detail', 'error');
+  }
+}
 </script>
 </body>
 </html>
