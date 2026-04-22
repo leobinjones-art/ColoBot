@@ -380,6 +380,57 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // POST /api/skills/import/clawhub - 从 ClawHub 格式导入
+    if (path === '/api/skills/import/clawhub' && method === 'POST') {
+      const body = await parseBody(req);
+      const { importFromClawHub, importFromClawHubUrl } = await import('./agent-runtime/tools/clawhub-compat.js');
+
+      try {
+        let skill;
+        if (body.url) {
+          skill = await importFromClawHubUrl(body.url as string);
+        } else if (body.content) {
+          skill = await importFromClawHub(body.content as string);
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'content or url required' }));
+          return;
+        }
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, skill }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e) }));
+      }
+      return;
+    }
+
+    // GET /api/skills/:id/export/clawhub - 导出为 ClawHub 格式
+    const skillExportMatch = path.match(/^\/api\/skills\/([a-f0-9-]+)\/export\/clawhub$/);
+    if (skillExportMatch && method === 'GET') {
+      const skillId = skillExportMatch[1];
+      const { exportToClawHub } = await import('./agent-runtime/tools/clawhub-compat.js');
+
+      try {
+        const content = await exportToClawHub(skillId);
+        res.writeHead(200, { 'Content-Type': 'text/markdown' });
+        res.end(content);
+      } catch (e) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e) }));
+      }
+      return;
+    }
+
+    // GET /api/skills/export/clawhub - 导出所有 Skill 为 ClawHub 格式
+    if (path === '/api/skills/export/clawhub' && method === 'GET') {
+      const { exportAllToClawHub } = await import('./agent-runtime/tools/clawhub-compat.js');
+      const content = await exportAllToClawHub();
+      res.writeHead(200, { 'Content-Type': 'text/markdown' });
+      res.end(content);
+      return;
+    }
+
     // ── Knowledge ──
     if (path === '/api/knowledge' && method === 'GET') {
       const category = url.searchParams.get('category') || undefined;
