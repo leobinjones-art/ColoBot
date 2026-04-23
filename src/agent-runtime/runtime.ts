@@ -175,9 +175,13 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     } else {
       result = await approvalFlow.reject(approvalAction.approvalId!, 'user', '用户在聊天中拒绝');
     }
+    const { getMessages, detectLocale } = await import('../i18n/index.js');
+    const messages = getMessages(detectLocale(messageText));
     const responseText = result
-      ? `审批${approvalAction.action === 'approve' ? '已通过' : '已拒绝'}，审批ID: ${approvalAction.approvalId}`
-      : `未找到待审批的请求: ${approvalAction.approvalId}`;
+      ? (detectLocale(messageText) === 'zh'
+          ? `审批${approvalAction.action === 'approve' ? '已通过' : '已拒绝'}，审批ID: ${approvalAction.approvalId}`
+          : `Approval ${approvalAction.action === 'approve' ? 'approved' : 'rejected'}, ID: ${approvalAction.approvalId}`)
+      : messages.errors.noApprovalRequest(approvalAction.approvalId!);
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', responseText);
     pushWsResult(agentId, sessionKey, responseText);
     return { response: responseText, toolCalls: [], finished: true };
@@ -232,7 +236,9 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
       ipAddress,
       result: 'blocked',
     });
-    const blockResponse = '抱歉，您的消息无法处理。请调整内容后重试。';
+    const { getMessages, detectLocale } = await import('../i18n/index.js');
+    const messages = getMessages(detectLocale(messageTextStr));
+    const blockResponse = messages.errors.messageBlocked;
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', blockResponse);
     pushWsResult(agentId, sessionKey, blockResponse);
     return { response: blockResponse, toolCalls: [], finished: true };
@@ -467,7 +473,9 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
       ipAddress,
       result: 'blocked',
     });
-    const safeResponse = '抱歉，回复内容无法呈现。请稍后重试。';
+    const { getMessages, detectLocale } = await import('../i18n/index.js');
+    const messages = getMessages(detectLocale(messageTextStr));
+    const safeResponse = messages.errors.outputBlocked;
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', safeResponse);
     pushWsResult(agentId, sessionKey, safeResponse);
     return { response: safeResponse, toolCalls: [], finished: true };
@@ -596,7 +604,9 @@ export async function runAgentStream(
       ipAddress,
       result: 'blocked',
     });
-    const blockResponse = '抱歉，您的消息无法处理。请调整内容后重试。';
+    const { getMessages, detectLocale } = await import('../i18n/index.js');
+    const messages = getMessages(detectLocale(messageText));
+    const blockResponse = messages.errors.messageBlocked;
     pushWsResult(agentId, sessionKey, blockResponse);
     pushWsDone(agentId, sessionKey);
     return;
@@ -960,7 +970,9 @@ export async function continueRun(
         ipAddress,
         result: 'blocked',
       });
-      const safeResponse = '抱歉，回复内容无法呈现。请稍后重试。';
+      const { getMessages, detectLocale } = await import('../i18n/index.js');
+      const messages = getMessages(detectLocale(responseStr));
+      const safeResponse = messages.errors.outputBlocked;
       await sessionManager.appendMessage(agentId, sessionKey, 'assistant', safeResponse);
       pushWsResult(agentId, sessionKey, safeResponse);
       pushWsDone(agentId, sessionKey);

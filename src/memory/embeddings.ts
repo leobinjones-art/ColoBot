@@ -3,6 +3,7 @@
  */
 
 import { getMockLLM, getOpenAIApiKey, getMinimaxApiKey, getLlmProvider } from '../services/settings-cache.js';
+import { getEmbeddingConfig } from '../config/llm.js';
 
 export interface EmbedResult {
   embedding: number[] | null;
@@ -44,14 +45,18 @@ async function embedOpenAI(text: string): Promise<EmbedResult> {
     return mockEmbed(text);
   }
 
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
+  const config = getEmbeddingConfig('openai');
+  const model = config?.model || 'text-embedding-3-small';
+  const endpoint = config?.endpoint || 'https://api.openai.com/v1/embeddings';
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'text-embedding-3-small',
+      model,
       input: text.slice(0, 8000),
     }),
   });
@@ -72,14 +77,18 @@ async function embedMinimax(text: string): Promise<EmbedResult> {
   const apiKey = getMinimaxApiKey();
   if (!apiKey) return { embedding: null, model: '' };
 
-  const res = await fetch('https://api.minimaxi.com/v1/embeddings', {
+  const config = getEmbeddingConfig('minimax');
+  const model = config?.model || 'embo-01';
+  const endpoint = config?.endpoint || 'https://api.minimaxi.com/v1/embeddings';
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'embo-01',
+      model,
       texts: [text.slice(0, 8000)],
       type: 'db',
     }),
@@ -97,5 +106,5 @@ async function embedMinimax(text: string): Promise<EmbedResult> {
     // 静默 fallback，避免日志刷屏
     return mockEmbed(text);
   }
-  return { embedding: data.vectors[0], model: 'embo-01' };
+  return { embedding: data.vectors[0], model };
 }

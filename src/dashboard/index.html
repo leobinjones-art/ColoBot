@@ -400,6 +400,29 @@
       <div id="sop-content">
         <div class="empty"><p data-i18n="Choose Agent and session">选择 Agent 和 session 查看 SOP 进度</p></div>
       </div>
+
+      <!-- SOP Configuration -->
+      <div class="page-header" style="margin-top:24px">
+        <h2 data-i18n="SOP Configuration">SOP Configuration</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn secondary" onclick="loadSopConfig()" data-i18n="Refresh">Refresh</button>
+          <button class="btn secondary" onclick="exportSopConfig()" data-i18n="Export Config">Export Config</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Prompt Templates">Prompt Templates</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px" data-i18n="sop-prompts-hint">Click to edit prompts. Changes are saved to database.</p>
+        <div id="sop-prompts-list" style="max-height:400px;overflow-y:auto">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Sub-Agent Configs">Sub-Agent Configs</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px" data-i18n="sop-subagent-hint">Click to edit configs. Changes are saved to database.</p>
+        <div id="sop-subagent-list" style="max-height:400px;overflow-y:auto">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
     </div>
 
     <!-- User Profile -->
@@ -587,6 +610,13 @@
       <div class="settings-section">
         <h3 data-i18n="Available Models">Available Models</h3>
         <div id="llm-models-list" style="margin-top:8px">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 data-i18n="Default Models & Endpoints">Default Models & Endpoints</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px" data-i18n="llm-defaults-hint">These are fallback values when not configured in database. Customize via environment variables.</p>
+        <div id="llm-defaults-list" style="margin-top:8px">
           <div class="loading">Loading...</div>
         </div>
       </div>
@@ -879,7 +909,27 @@ const I18N = {
     '已完成步骤': '已完成步骤',
     '暂无已完成步骤': '暂无已完成步骤',
     '开始时间:': '开始时间:',
-    '加载失败:': '加载失败:',
+    '加载失败:': '加载失败：',
+    'SOP Configuration': 'SOP 配置',
+    'Prompt Templates': 'Prompt 模板',
+    'sop-prompts-hint': '点击编辑 Prompt，保存到数据库',
+    'Sub-Agent Configs': '子 Agent 配置',
+    'sop-subagent-hint': '点击编辑配置，保存到数据库',
+    'personality': '性格',
+    'rules': '规则',
+    'skills': '技能',
+    'tools': '工具',
+    'Copy': '复制',
+    'Edit': '编辑',
+    'Save': '保存',
+    'Cancel': '取消',
+    'Saved': '已保存',
+    'Export Config': '导出配置',
+    'Config exported': '配置已导出',
+    'Source': '来源',
+    'default': '默认',
+    'env': '环境变量',
+    'db': '数据库',
     // Search
     'SearXNG Search': 'SearXNG 搜索',
     'Instance URL': '实例 URL',
@@ -902,6 +952,10 @@ const I18N = {
     'MiniMax Key': 'MiniMax 密钥',
     'API keys are stored encrypted': 'API 密钥加密存储',
     'Available Models': '可用模型',
+    'Default Models & Endpoints': '默认模型和端点',
+    'llm-defaults-hint': '数据库未配置时的备用值，可通过环境变量自定义',
+    'Default Model': '默认模型',
+    'API Endpoint': 'API 端点',
     'No models available': '暂无可用模型',
     'Please configure API key first': '请先配置 API 密钥',
     'Click to copy model ID': '点击复制模型 ID',
@@ -1102,6 +1156,30 @@ const I18N = {
     '暂无已完成步骤': 'No completed steps yet',
     '开始时间:': 'Started:',
     '加载失败:': 'Load failed:',
+    'SOP Configuration': 'SOP Configuration',
+    'Prompt Templates': 'Prompt Templates',
+    'sop-prompts-hint': 'Click to edit prompts. Changes are saved to database.',
+    'Sub-Agent Configs': 'Sub-Agent Configs',
+    'sop-subagent-hint': 'Click to edit configs. Changes are saved to database.',
+    'personality': 'personality',
+    'rules': 'rules',
+    'skills': 'skills',
+    'tools': 'tools',
+    'Copy': 'Copy',
+    'Edit': 'Edit',
+    'Save': 'Save',
+    'Cancel': 'Cancel',
+    'Saved': 'Saved',
+    'Export Config': 'Export Config',
+    'Config exported': 'Config exported',
+    'Source': 'Source',
+    'default': 'default',
+    'env': 'env',
+    'db': 'db',
+    'tools': 'tools',
+    'Copy': 'Copy',
+    'Export Config': 'Export Config',
+    'Config exported': 'Config exported',
     // Search
     'SearXNG Search': 'SearXNG Search',
     'Instance URL': 'Instance URL',
@@ -1127,6 +1205,10 @@ const I18N = {
     'No models available': 'No models available',
     'Please configure API key first': 'Please configure API key first',
     'Click to copy model ID': 'Click to copy model ID',
+    'Default Models & Endpoints': 'Default Models & Endpoints',
+    'llm-defaults-hint': 'Fallback values when not configured in database. Customize via environment variables.',
+    'Default Model': 'Default Model',
+    'API Endpoint': 'API Endpoint',
     'Copied': 'Copied',
     'Please enter API key first': 'Please enter API key first',
     'Testing connection...': 'Testing connection...',
@@ -1291,7 +1373,7 @@ function initDashboard() {
       if (tab.dataset.tab === 'search') loadSearchSettings();
       if (tab.dataset.tab === 'llm') loadLlmSettings();
       if (tab.dataset.tab === 'notifications') loadNotificationSettings();
-      if (tab.dataset.tab === 'sop') { loadAgentsForSop(); }
+      if (tab.dataset.tab === 'sop') { loadAgentsForSop(); loadSopConfig(); }
       if (tab.dataset.tab === 'profile') { loadProfileAgentSelect(); }
     });
   });
@@ -2231,6 +2313,26 @@ function loadLlmModels() {
   }).catch(e => {
     el.innerHTML = '<div class="empty"><p>Failed to load models: ' + esc(e.message) + '</p></div>';
   });
+
+  // Load default models and endpoints
+  const defaultsEl = document.getElementById('llm-defaults-list');
+  api('/api/settings/sop/llm').then(data => {
+    const config = data.config || {};
+    const providers = ['openai', 'anthropic', 'minimax'];
+    const html = providers.map(p => {
+      const cfg = config[p] || {};
+      return `
+        <div style="margin-bottom:12px;padding:12px;background:var(--bg);border-radius:6px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--accent)">${esc(p)}</div>
+          <div style="font-size:12px;margin-bottom:4px"><b>${t('Default Model')}:</b> <code>${esc(cfg.defaultModel || '-')}</code></div>
+          <div style="font-size:12px"><b>${t('API Endpoint')}:</b> <code style="font-size:11px">${esc(cfg.apiEndpoint || '-')}</code></div>
+        </div>
+      `;
+    }).join('');
+    defaultsEl.innerHTML = html;
+  }).catch(e => {
+    defaultsEl.innerHTML = '<div class="empty"><p>Load failed: ' + esc(e.message) + '</p></div>';
+  });
 }
 
 function copyModelId(id) {
@@ -2317,6 +2419,152 @@ function loadSopProgress() {
   }).catch(err => {
     el.innerHTML = `<div class="empty"><p>加载失败: ${esc(err.message || 'unknown')}</p></div>`;
   });
+}
+
+// ─── SOP Configuration ───────────────────────────────────
+
+function loadSopConfig() {
+  // Load prompts
+  api('/api/settings/sop/prompts').then(data => {
+    const el = document.getElementById('sop-prompts-list');
+    const prompts = data.prompts || {};
+    const html = Object.entries(prompts).map(([name, item]) => {
+      const content = item.value || item;
+      const source = item.source || 'default';
+      const sourceBadge = source === 'db' ? '<span style="background:#22c55e33;color:#22c55e;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px">DB</span>' :
+                          source === 'env' ? '<span style="background:#f59e0b33;color:#f59e0b;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px">ENV</span>' : '';
+      return `
+        <div style="margin-bottom:12px;padding:12px;background:var(--bg);border-radius:6px;cursor:pointer" onclick="editSopPrompt('${esc(name)}', ${JSON.stringify(content).replace(/"/g, '&quot;')})">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-weight:600;font-size:13px">${esc(name)}${sourceBadge}</span>
+            <button class="btn secondary" style="padding:2px 8px;font-size:11px">${t('Edit')}</button>
+          </div>
+          <pre style="font-size:11px;color:var(--text-dim);white-space:pre-wrap;word-break:break-all;max-height:100px;overflow-y:auto;margin:0">${esc(String(content).slice(0, 300))}${String(content).length > 300 ? '...' : ''}</pre>
+        </div>
+      `;
+    }).join('');
+    el.innerHTML = html || '<div class="empty"><p>No prompts defined</p></div>';
+  }).catch(err => {
+    document.getElementById('sop-prompts-list').innerHTML = `<div class="empty"><p>Load failed: ${esc(err.message)}</p></div>`;
+  });
+
+  // Load sub-agent configs
+  api('/api/settings/sop/subagents').then(data => {
+    const el = document.getElementById('sop-subagent-list');
+    const configs = data.configs || {};
+    const html = Object.entries(configs).map(([type, item]) => {
+      const config = item.config || item;
+      const source = item.source || 'default';
+      const sourceBadge = source === 'db' ? '<span style="background:#22c55e33;color:#22c55e;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px">DB</span>' :
+                          source === 'env' ? '<span style="background:#f59e0b33;color:#f59e0b;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px">ENV</span>' : '';
+      return `
+        <div style="margin-bottom:12px;padding:12px;background:var(--bg);border-radius:6px;cursor:pointer" onclick="editSubAgentConfig('${esc(type)}', ${JSON.stringify(config).replace(/"/g, '&quot;')})">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-weight:600;font-size:13px;color:var(--accent)">${esc(type)}${sourceBadge}</span>
+            <button class="btn secondary" style="padding:2px 8px;font-size:11px">${t('Edit')}</button>
+          </div>
+          <div style="font-size:12px;margin-bottom:4px"><b>${t('personality')}:</b> ${esc(config.personality || '-')}</div>
+          <div style="font-size:12px;margin-bottom:4px"><b>${t('rules')}:</b> ${(config.rules || []).slice(0, 2).map(r => esc(r)).join(', ')}${(config.rules || []).length > 2 ? '...' : ''}</div>
+          <div style="font-size:12px"><b>${t('tools')}:</b> <code>${(config.tools || []).join(', ') || '-'}</code></div>
+        </div>
+      `;
+    }).join('');
+    el.innerHTML = html || '<div class="empty"><p>No configs defined</p></div>';
+  }).catch(err => {
+    document.getElementById('sop-subagent-list').innerHTML = `<div class="empty"><p>Load failed: ${esc(err.message)}</p></div>`;
+  });
+}
+
+function editSopPrompt(name, currentValue) {
+  showModal('Edit Prompt: ' + name, `
+    <div class="form-group">
+      <label>Prompt Template</label>
+      <textarea id="edit-prompt-value" style="min-height:300px;font-size:12px;font-family:monospace">${esc(currentValue)}</textarea>
+    </div>
+  `, `
+    <button class="btn secondary" onclick="closeModal()">${t('Cancel')}</button>
+    <button class="btn" onclick="saveSopPrompt('${esc(name)}')">${t('Save')}</button>
+  `);
+}
+
+function saveSopPrompt(name) {
+  const value = document.getElementById('edit-prompt-value').value;
+  api('/api/settings/sop/prompts/' + name, 'PUT', { value }).then(() => {
+    closeModal();
+    toast(t('Saved'));
+    loadSopConfig();
+  }).catch(err => toast('Save failed: ' + err.message, 'error'));
+}
+
+function editSubAgentConfig(type, currentConfig) {
+  const config = typeof currentConfig === 'string' ? JSON.parse(currentConfig) : currentConfig;
+  showModal('Edit SubAgent: ' + type, `
+    <div class="form-group">
+      <label>Personality</label>
+      <input type="text" id="edit-personality" value="${esc(config.personality || '')}">
+    </div>
+    <div class="form-group">
+      <label>Rules (one per line)</label>
+      <textarea id="edit-rules" style="min-height:100px">${(config.rules || []).join('\n')}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Skills (comma separated)</label>
+      <input type="text" id="edit-skills" value="${(config.skills || []).join(', ')}">
+    </div>
+    <div class="form-group">
+      <label>Tools (comma separated)</label>
+      <input type="text" id="edit-tools" value="${(config.tools || []).join(', ')}">
+    </div>
+  `, `
+    <button class="btn secondary" onclick="closeModal()">${t('Cancel')}</button>
+    <button class="btn" onclick="saveSubAgentConfig('${esc(type)}')">${t('Save')}</button>
+  `);
+}
+
+function saveSubAgentConfig(type) {
+  const config = {
+    personality: document.getElementById('edit-personality').value,
+    rules: document.getElementById('edit-rules').value.split('\n').map(s => s.trim()).filter(Boolean),
+    skills: document.getElementById('edit-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+    tools: document.getElementById('edit-tools').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+  api('/api/settings/sop/subagents/' + type, 'PUT', { config }).then(() => {
+    closeModal();
+    toast(t('Saved'));
+    loadSopConfig();
+  }).catch(err => toast('Save failed: ' + err.message, 'error'));
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => toast(t('Copied') + ': ' + text));
+}
+
+async function exportSopConfig() {
+  try {
+    const [prompts, subagents, llm] = await Promise.all([
+      api('/api/settings/sop/prompts'),
+      api('/api/settings/sop/subagents'),
+      api('/api/settings/sop/llm')
+    ]);
+
+    const config = {
+      prompts: prompts.prompts,
+      subAgents: subagents.configs,
+      llm: llm.config,
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'colobot-sop-config.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(t('Config exported'));
+  } catch (e) {
+    toast('Export failed: ' + e.message, 'error');
+  }
 }
 
 // ─── Notification Settings ───────────────────────────────────

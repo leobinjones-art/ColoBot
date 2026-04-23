@@ -1031,6 +1031,7 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req);
       const provider = body.provider || 'openai';
       const apiKey = String(body.api_key || '');
+      const { getDefaultModel, getApiEndpoint } = await import('./config/llm.js');
       try {
         if (provider === 'openai') {
           const res2 = await fetch('https://api.openai.com/v1/models', {
@@ -1040,26 +1041,30 @@ const server = http.createServer(async (req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true, provider: 'openai' }));
         } else if (provider === 'anthropic') {
-          const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+          const model = getDefaultModel('anthropic');
+          const endpoint = getApiEndpoint('anthropic');
+          const res2 = await fetch(endpoint, {
             method: 'POST',
             headers: {
               'x-api-key': apiKey,
               'anthropic-version': '2023-06-01',
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
+            body: JSON.stringify({ model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
           });
           if (!res2.ok) throw new Error(`Anthropic API error: ${res2.status}`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true, provider: 'anthropic' }));
         } else if (provider === 'minimax') {
-          const res2 = await fetch('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
+          const model = getDefaultModel('minimax');
+          const endpoint = process.env.MINIMAX_STREAM_ENDPOINT || 'https://api.minimaxi.com/v1/text/chatcompletion_v2';
+          const res2 = await fetch(endpoint, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${apiKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model: 'MiniMax-Text-01', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
           });
           if (!res2.ok) throw new Error(`MiniMax API error: ${res2.status}`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1136,6 +1141,55 @@ const server = http.createServer(async (req, res) => {
       await saveNotificationSettings(body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // ── SOP Configuration ──
+    // GET /api/settings/sop/prompts
+    if (path === '/api/settings/sop/prompts' && method === 'GET') {
+      const { getAllSopPrompts } = await import('./config/sop-prompts.js');
+      const prompts = await getAllSopPrompts();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ prompts }));
+      return;
+    }
+
+    // PUT /api/settings/sop/prompts/:name
+    if (path.startsWith('/api/settings/sop/prompts/') && method === 'PUT') {
+      const name = path.split('/')[4];
+      const { saveSopPromptToDb } = await import('./config/sop-prompts.js');
+      const body = await parseBody(req) as { value: string };
+      await saveSopPromptToDb(name, body.value);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // GET /api/settings/sop/subagents
+    if (path === '/api/settings/sop/subagents' && method === 'GET') {
+      const { getAllSubAgentConfigsAsync } = await import('./config/sub-agents.js');
+      const configs = await getAllSubAgentConfigsAsync();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ configs }));
+      return;
+    }
+
+    // PUT /api/settings/sop/subagents/:type
+    if (path.startsWith('/api/settings/sop/subagents/') && method === 'PUT') {
+      const type = path.split('/')[4];
+      const { saveSubAgentConfigToDb } = await import('./config/sub-agents.js');
+      const body = await parseBody(req);
+      await saveSubAgentConfigToDb(type, (body as { config: { personality: string; rules: string[]; skills: string[]; tools: string[] } }).config);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // GET /api/settings/sop/llm
+    if (path === '/api/settings/sop/llm' && method === 'GET') {
+      const { DEFAULT_LLM_CONFIG } = await import('./config/llm.js');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ config: DEFAULT_LLM_CONFIG }));
       return;
     }
 

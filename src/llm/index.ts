@@ -8,6 +8,7 @@
  */
 
 import { query } from '../memory/db.js';
+import { getDefaultModel, getApiEndpoint } from '../config/llm.js';
 
 // ─── Content Blocks (多模态) ──────────────────────────────────
 
@@ -263,14 +264,6 @@ function buildSystemPrompt(
   return parts.join('\n\n');
 }
 
-function getDefaultModel(provider: ProviderType): string {
-  switch (provider) {
-    case 'openai': return 'gpt-4o';
-    case 'anthropic': return 'claude-sonnet-4-20250514';
-    case 'minimax': return 'MiniMax-M2.7-highspeed';
-  }
-}
-
 // ─── Mock ───────────────────────────────────────────────────
 
 function getTextContent(content: string | ContentBlock[]): string {
@@ -318,9 +311,10 @@ async function chatOpenAI(
   const apiKey = getOpenAIApiKey();
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
-  const model = options.model || 'gpt-4o';
+  const model = options.model || getDefaultModel('openai');
+  const endpoint = getApiEndpoint('openai');
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -352,11 +346,12 @@ async function chatAnthropic(
   const apiKey = getAnthropicApiKey();
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
-  const model = options.model || 'claude-sonnet-4-20250514';
+  const model = options.model || getDefaultModel('anthropic');
+  const endpoint = getApiEndpoint('anthropic');
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -391,12 +386,12 @@ async function chatMinimax(
   const apiKey = getMinimaxApiKey();
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
-  const model = options.model || 'MiniMax-M2.7-highspeed';
+  const model = options.model || getDefaultModel('minimax');
+  const endpoint = getApiEndpoint('minimax');
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  // MiniMax Anthropic 兼容端点
-  const res = await fetch('https://api.minimaxi.com/anthropic/v1/messages', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -432,9 +427,10 @@ async function* chatStreamOpenAI(
   const apiKey = getOpenAIApiKey();
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
-  const model = options.model || 'gpt-4o';
+  const model = options.model || getDefaultModel('openai');
+  const endpoint = getApiEndpoint('openai');
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -504,11 +500,12 @@ async function* chatStreamAnthropic(
   const apiKey = getAnthropicApiKey();
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
-  const model = options.model || 'claude-sonnet-4-20250514';
+  const model = options.model || getDefaultModel('anthropic');
+  const endpoint = getApiEndpoint('anthropic');
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -579,11 +576,13 @@ async function* chatStreamMinimax(
   const apiKey = getMinimaxApiKey();
   if (!apiKey) throw new Error('MINIMAX_API_KEY not set');
 
-  const model = options.model || 'MiniMax-Text-01';
+  const model = options.model || getDefaultModel('minimax');
+  // MiniMax 流式使用不同的端点
+  const endpoint = process.env.MINIMAX_STREAM_ENDPOINT || 'https://api.minimaxi.com/v1/text/chatcompletion_v2';
   const systemMsg = messages.find(m => m.role === 'system');
   const nonSystem = messages.filter(m => m.role !== 'system');
 
-  const res = await fetch('https://api.minimaxi.com/v1/text/chatcompletion_v2', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
