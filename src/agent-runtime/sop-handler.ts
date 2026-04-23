@@ -233,7 +233,11 @@ export async function handleSopFlow(
 
     console.log('[SOP Handler] Analysis result:', analysis.isAcademicTask, analysis.taskType, analysis.researchPurpose);
 
-    if (!analysis.isAcademicTask) {
+    // 判断是否触发 SOP：学术任务 或 有明确研究目的（paper/research/learning）
+    const shouldTriggerSop = analysis.isAcademicTask ||
+      (analysis.researchPurpose && ['paper', 'research', 'learning'].includes(analysis.researchPurpose));
+
+    if (!shouldTriggerSop) {
       console.log('[SOP Handler] Not an academic task, skipping SOP');
       return {
         response: '',

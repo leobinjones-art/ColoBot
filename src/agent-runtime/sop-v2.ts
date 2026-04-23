@@ -95,10 +95,11 @@ ${userMessage.slice(0, 4000)}
    - null：无法判断，需要询问用户
 2. 如果用户说"学术研究"、"做研究"、"科研"等，researchPurpose = "research"
 3. 如果用户只是说"开始学术"、"开始研究"等意图表达，但没有提供具体课题/主题，则 informationComplete = false，missingInfo 应包含"课题主题"、"研究目的"等
-4. 步骤数量和内容完全根据任务需求和研究目的动态决定：
-   - paper：文献调研→分析→撰写→投稿
-   - research：问题定义→方法设计→实验/计算→结果分析
-   - learning：基础概念→深入学习→实践应用
+4. **步骤数量必须根据任务复杂度灵活决定**：
+   - 简单任务：2-4 步（如快速调研、简单学习）
+   - 中等任务：4-6 步（如标准研究、课程论文）
+   - 复杂任务：6-10 步（如毕业论文、大型研究项目）
+   - 不要总是生成相同数量的步骤，要根据实际需求调整
 5. 如果用户已提供完整信息（包括具体课题和研究目的），informationComplete = true
 6. 只回复 JSON，不要其他内容`;
 
@@ -731,6 +732,9 @@ export async function submitUserData(
   await createStepSubAgent(state);
   const result = await executeSubAgent(state, userInput);
 
+  // 保存子 Agent 结果
+  currentStep.subAgentResult = result;
+
   state.updatedAt = new Date().toISOString();
   await saveSopState(state);
 
@@ -937,7 +941,7 @@ export function detectPauseIntent(userMessage: string): boolean {
  */
 export function detectResumeIntent(userMessage: string): boolean {
   const resumePatterns = [
-    /继续sop/i, /恢复sop/i, /继续$/i, /恢复$/i, /resume/i,
+    /继续sop/i, /恢复sop/i, /恢复$/i, /resume sop/i, /resume$/i,
   ];
   return resumePatterns.some(p => p.test(userMessage.trim()));
 }
@@ -999,7 +1003,7 @@ export function detectRestartIntent(userMessage: string): number | null {
  */
 export function detectConfirmation(userMessage: string): boolean {
   const confirmPatterns = [
-    /^确认$/, /^是的$/, /^对$/, /^ok$/i, /^好$/, /^可以$/,
+    /^确认/, /^是的$/, /^对$/, /^ok$/i, /^好/, /^可以$/,
     /^确认任务拆解$/, /^同意$/,
   ];
   return confirmPatterns.some(p => p.test(userMessage.trim()));
