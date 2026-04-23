@@ -94,7 +94,7 @@ async function embedMinimax(text: string): Promise<EmbedResult> {
 
   const data = await res.json() as { vectors: number[][]; base_resp?: { status_code: number } };
   if (!data.vectors || data.vectors.length === 0) {
-    console.error('MiniMax Embed returned no vectors');
+    // 静默 fallback，避免日志刷屏
     return mockEmbed(text);
   }
   return { embedding: data.vectors[0], model: 'embo-01' };

@@ -748,6 +748,8 @@ export async function approveAndAdvance(state: SopState): Promise<SopState> {
   const currentStep = state.steps[state.currentStep - 1];
   if (!currentStep) return state;
 
+  console.log(`[SOP] approveAndAdvance: step ${state.currentStep}/${state.steps.length}`);
+
   // 标记当前步骤完成
   currentStep.status = 'done';
   currentStep.approved = true;
@@ -774,6 +776,7 @@ export async function approveAndAdvance(state: SopState): Promise<SopState> {
     nextStep.userData = '自动生成引导';
   } else {
     state.status = 'completed';
+    console.log(`[SOP] Task completed: ${state.taskId}`);
   }
 
   state.updatedAt = new Date().toISOString();
@@ -1026,33 +1029,37 @@ export function detectModification(userMessage: string): boolean {
  * 格式化 SOP 状态为用户可读文本（AI 动态生成）
  */
 export async function formatSopStatus(state: SopState): Promise<string> {
+  // 先生成确定性的状态信息
+  const doneCount = state.steps.filter(s => s.status === 'done').length;
+  const progressPercent = Math.round((doneCount / state.steps.length) * 100);
+
   const stepsInfo = state.steps.map(s => {
     const status = s.status === 'done' ? '✅' : s.status === 'in_progress' ? '🔄' : '⏳';
-    const current = s.step === state.currentStep ? ' (current)' : '';
-    return `${status} ${s.step}. ${s.name}${current}`;
+    return `${status} ${s.step}. ${s.name}`;
   }).join('\n');
 
-  const prompt = `Generate a status summary for the following SOP workflow.
+  const prompt = `Generate a workflow status display.
 
 Task: ${state.taskName}
-Current step: ${state.currentStep}/${state.steps.length}
+Progress: ${doneCount}/${state.steps.length} (${progressPercent}%)
+Current Step: ${state.currentStep} - ${state.steps[state.currentStep - 1]?.name || 'Unknown'}
 
 Steps:
 ${stepsInfo}
 
-Generate a concise status display with:
-1. Task name with emoji
-2. Progress indicator
+Generate a concise status display in the user's language (Chinese if task name is Chinese, otherwise English).
+Include:
+1. Task name
+2. Progress bar or percentage
 3. Step list with status icons
-4. Use English
 
-Response (just the formatted status):`;
+Response (just the formatted status, no explanation):`;
 
   try {
     const response = await chat([
-      { role: 'system', content: 'You are a workflow status display generator.' },
+      { role: 'system', content: 'You are a workflow status display generator. Be accurate and concise.' },
       { role: 'user', content: prompt }
-    ], { temperature: 0.7, maxTokens: 300 });
+    ], { temperature: 0.3, maxTokens: 300 });
 
     const content = response.content;
     const text = typeof content === 'string' ? content : (content as Array<{ type: string; text?: string }>).map(b => b.text || '').join('');
@@ -1597,6 +1604,7 @@ Generate a natural, helpful response for the user. Guidelines:
 5. ${languageHint}
 6. For task breakdown, show the steps clearly numbered
 7. For progress updates, show current step vs total
+8. IMPORTANT: If response type is "final_output_ready", you MUST ask the user: "是否生成最终研究报告/文档？回复'是'或'否'"
 
 Response (just the message, no JSON, no code blocks):`;
 
