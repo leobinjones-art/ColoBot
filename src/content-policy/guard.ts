@@ -107,10 +107,13 @@ export async function scanOutput(
       return { safe: true };
     }
     const first = response.results.find(r => !r.valid)!;
+    const reason = first.details?.[0]?.message ?? '内容安全扫描未通过';
+    const scanner = first.details?.[0]?.rule;
+    console.log('[Guard] Output scan blocked:', { scanner, reason, score: first.score });
     return {
       safe: false,
-      reason: first.details?.[0]?.message ?? '内容安全扫描未通过',
-      scanner: first.details?.[0]?.rule,
+      reason,
+      scanner,
       score: first.score,
     };
   } catch (e) {

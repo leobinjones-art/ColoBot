@@ -41,6 +41,10 @@ import {
   recordModification,
   recordStepMetrics,
   generateOptimizationReport,
+  // 最终输出生成
+  generateFinalOutput,
+  // AI 动态响应
+  generateSopResponse,
   type SopState,
   type TaskAnalysis,
 } from './sop-v2.js';
@@ -67,49 +71,74 @@ export async function handleSopFlow(
     const state = await getActiveSopTask(agentId, sessionKey);
     if (state) {
       await cancelSop(state);
-      return {
-        response: '已取消 SOP 流程。如需继续，请重新发送任务。',
-        state: null,
-        action: 'cancelled',
-      };
+      const response = await generateSopResponse({ type: 'cancelled', state, userMessage });
+      return { response, state: null, action: 'cancelled' };
     }
-    return {
-      response: '当前没有进行中的 SOP 流程。',
-      state: null,
-      action: 'none',
-    };
+    const response = await generateSopResponse({ type: 'no_active_task', userMessage });
+    return { response, state: null, action: 'none' };
   }
 
   // 1.5 检测优化报告请求
-  if (/sop优化报告|优化建议|流程优化/i.test(userMessage)) {
+  if (/sop优化报告|优化建议|流程优化|sop optimization|optimization report/i.test(userMessage)) {
     const report = await generateOptimizationReport(agentId);
-    return {
-      response: report,
-      state: null,
-      action: 'none',
-    };
+    return { response: report, state: null, action: 'none' };
   }
 
-  // 2. 获取当前活跃任务（包括暂停状态）
-  let state = await getActiveSopTask(agentId, sessionKey, true);
+  // 2. 获取当前活跃任务（包括暂停状态和完成状态）
+  let state = await getActiveSopTask(agentId, sessionKey, true, true);
   console.log('[SOP Handler] Active task:', state ? `${state.taskName} (${state.status})` : 'none');
+
+  // 2.5 如果是完成状态，直接处理最终输出
+  if (state?.status === 'completed') {
+    if (/^是$|^yes$/i.test(userMessage.trim())) {
+      const result = await generateFinalOutput(state);
+      if (result.success) {
+        const fileName = result.filePath?.split('/').pop();
+        const downloadUrl = fileName ? `/api/files/${state.agentId}/${fileName}` : undefined;
+        const response = await generateSopResponse({
+          type: 'final_output_generated',
+          state,
+          result: result.content,
+          filePath: result.filePath,
+          downloadUrl,
+          userMessage,
+        });
+        return { response, state, action: 'reviewed' };
+      } else {
+        const response = await generateSopResponse({
+          type: 'final_output_generated',
+          state,
+          reason: result.content,
+          userMessage,
+        });
+        return { response, state, action: 'reviewed' };
+      }
+    }
+    if (/^否$|^no$/i.test(userMessage.trim())) {
+      const response = await generateSopResponse({ type: 'cancelled', userMessage });
+      return { response, state: null, action: 'cancelled' };
+    }
+    // 其他消息，提示用户
+    const response = await generateSopResponse({ type: 'final_output_ready', state, userMessage });
+    return { response, state, action: 'none' };
+  }
 
   // 3. 检测暂停意图
   if (detectPauseIntent(userMessage)) {
     console.log('[SOP Handler] Pause intent detected');
     if (state && state.status === 'active') {
       await pauseSop(state);
-      return {
-        response: `已暂停 SOP 流程。当前进度：步骤 ${state.currentStep}/${state.steps.length}\n\n发送"继续"恢复执行。`,
+      const response = await generateSopResponse({
+        type: 'paused',
         state,
-        action: 'paused',
-      };
+        currentStep: state.currentStep,
+        totalSteps: state.steps.length,
+        userMessage,
+      });
+      return { response, state, action: 'paused' };
     }
-    return {
-      response: '当前没有进行中的 SOP 流程。',
-      state: null,
-      action: 'none',
-    };
+    const response = await generateSopResponse({ type: 'no_active_task', userMessage });
+    return { response, state: null, action: 'none' };
   }
 
   // 4. 检测恢复意图（显示列表让用户选择）
@@ -122,30 +151,27 @@ export async function handleSopFlow(
     if (pausedTask) {
       state = await resumeSop(pausedTask);
       const guidance = await generateStepGuidance(state);
-      return {
-        response: `已恢复 SOP 流程。\n\n${guidance}`,
+      const response = await generateSopResponse({
+        type: 'resumed',
         state,
-        action: 'resumed',
-      };
+        currentStep: state.currentStep,
+        totalSteps: state.steps.length,
+        userMessage,
+      });
+      return { response: `${response}\n\n${guidance}`, state, action: 'resumed' };
     }
 
     // 否则显示所有任务列表
-    return {
-      response: formatSopList(tasks) + '\n\n发送任务编号继续对应任务，或发送新任务开始新流程。',
-      state: null,
-      action: 'none',
-    };
+    const response = await generateSopResponse({ type: 'task_list', tasks, userMessage });
+    return { response, state: null, action: 'none' };
   }
 
   // 5. 检测列表意图
   if (detectListIntent(userMessage)) {
     console.log('[SOP Handler] List intent detected');
     const tasks = await listActiveSopTasks(agentId);
-    return {
-      response: formatSopList(tasks) + '\n\n发送任务编号继续对应任务，或发送新任务开始新流程。',
-      state: null,
-      action: 'none',
-    };
+    const response = await generateSopResponse({ type: 'task_list', tasks, userMessage });
+    return { response, state: null, action: 'none' };
   }
 
   // 5.5 检测任务编号选择
@@ -160,11 +186,13 @@ export async function handleSopFlow(
         state = selectedTask;
       }
       const guidance = await generateStepGuidance(state);
-      return {
-        response: `已选择任务：**${state.taskName}**\n\n${guidance}`,
+      const response = await generateSopResponse({
+        type: 'resumed',
         state,
-        action: 'resumed',
-      };
+        taskName: state.taskName,
+        userMessage,
+      });
+      return { response: `${response}\n\n${guidance}`, state, action: 'resumed' };
     }
   }
 
@@ -173,20 +201,19 @@ export async function handleSopFlow(
   if (restartStepNum !== null && state) {
     state = await restartStep(state, restartStepNum);
     const guidance = await generateStepGuidance(state);
-    return {
-      response: `已重启步骤 ${restartStepNum}。\n\n${guidance}`,
+    const response = await generateSopResponse({
+      type: 'restarted',
       state,
-      action: 'restarted',
-    };
+      currentStep: restartStepNum,
+      userMessage,
+    });
+    return { response: `${response}\n\n${guidance}`, state, action: 'restarted' };
   }
 
   // 7. 如果是暂停状态，不处理其他消息（除非是新建SOP）
   if (state?.status === 'paused' && !detectNewSopIntent(userMessage)) {
-    return {
-      response: 'SOP 流程已暂停。发送"继续"恢复执行，或"新建sop"开始新任务。',
-      state,
-      action: 'none',
-    };
+    const response = await generateSopResponse({ type: 'paused', state, userMessage });
+    return { response, state, action: 'none' };
   }
 
   // 7.5 新建SOP意图 - 先取消当前任务
@@ -240,11 +267,12 @@ export async function handleSopFlow(
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      return {
-        response: `检测到学术任务：**${analysis.taskName}**\n\n请选择您的研究目的：\n\n1. **写论文** - 发表期刊/毕业论文\n2. **做研究** - 科学研究、实验、分析\n3. **学习** - 学习某个领域的知识\n\n请回复数字或描述您的目的。`,
-        state: tempState,
-        action: 'created',
-      };
+      const response = await generateSopResponse({
+        type: 'purpose_selection',
+        taskName: analysis.taskName,
+        userMessage,
+      });
+      return { response, state: tempState, action: 'created' };
     }
 
     // 创建新任务
@@ -261,12 +289,8 @@ export async function handleSopFlow(
     }
 
     // 展示任务拆解结果
-    const breakdown = formatTaskBreakdown(state);
-    return {
-      response: breakdown,
-      state,
-      action: 'created',
-    };
+    const breakdown = await formatTaskBreakdown(state);
+    return { response: breakdown, state, action: 'created' };
   }
 
   // 5. 处理用户选择研究目的
@@ -281,12 +305,8 @@ export async function handleSopFlow(
       const analysis = await aiAnalyzeTask(`${state.taskSummary}\n\n研究目的：${purposeText}`);
       if (analysis.isAcademicTask) {
         state = await createSop(agentId, sessionKey, analysis, state.taskSummary);
-        const breakdown = formatTaskBreakdown(state);
-        return {
-          response: breakdown,
-          state,
-          action: 'created',
-        };
+        const breakdown = await formatTaskBreakdown(state);
+        return { response: breakdown, state, action: 'created' };
       }
     }
   }
@@ -312,11 +332,7 @@ export async function handleSopFlow(
         }));
         state.taskName = analysis.taskName;
         await createSop(agentId, sessionKey, analysis, state.taskSummary);
-        return {
-          response: formatTaskBreakdown(state),
-          state,
-          action: 'created',
-        };
+        return { response: await formatTaskBreakdown(state), state, action: 'created' };
       }
     }
 
@@ -324,21 +340,14 @@ export async function handleSopFlow(
     if (detectConfirmation(userMessage)) {
       state = await confirmTaskBreakdown(state, true);
       const guidance = await generateStepGuidance(state);
-      return {
-        response: `任务拆解已确认，开始执行。\n\n${guidance}`,
-        state,
-        action: 'confirmed',
-      };
+      const response = await generateSopResponse({ type: 'breakdown_confirm', state, userMessage });
+      return { response: `${response}\n\n${guidance}`, state, action: 'confirmed' };
     }
 
     // 用户未确认，继续等待确认
-    // 返回任务拆解结果，让用户确认（使用 action: 'continued' 避免LLM覆盖）
-    const breakdown = formatTaskBreakdown(state);
-    return {
-      response: `${breakdown}\n\n请回复"确认"开始执行，或提出修改意见。`,
-      state,
-      action: 'continued',
-    };
+    const breakdown = await formatTaskBreakdown(state);
+    const response = await generateSopResponse({ type: 'breakdown_confirm', state, userMessage });
+    return { response: `${breakdown}\n\n${response}`, state, action: 'continued' };
   }
 
   // 6. 中间步骤：用户提交数据
@@ -355,21 +364,26 @@ export async function handleSopFlow(
 
     if (review.approved) {
       // 审核通过，展示整理后的结果
-      const status = formatSopStatus(newState);
-      return {
-        response: `${summarizedResult}\n\n---\n\n${status}\n\n回复"确认"继续下一步，或提出修改意见。`,
+      const status = await formatSopStatus(newState);
+      const response = await generateSopResponse({
+        type: 'step_submitted',
         state: newState,
-        action: 'submitted',
-      };
+        result: summarizedResult,
+        userMessage,
+      });
+      return { response: `${summarizedResult}\n\n---\n\n${status}\n\n${response}`, state: newState, action: 'submitted' };
     } else {
       // 审核打回，记录指标
       await recordStepMetrics(agentId, state.taskId, state.currentStep, currentStep.name, true, 0, review.reason);
       const rejectedState = await rejectAndRetry(newState, review.reason);
-      return {
-        response: `**审核未通过：** ${review.reason}\n\n**改进建议：**\n${review.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n请重新提交数据。`,
+      const response = await generateSopResponse({
+        type: 'step_rejected',
         state: rejectedState,
-        action: 'rejected',
-      };
+        reason: review.reason,
+        suggestions: review.suggestions,
+        userMessage,
+      });
+      return { response, state: rejectedState, action: 'rejected' };
     }
   }
 
@@ -382,21 +396,22 @@ export async function handleSopFlow(
       state = await approveAndAdvance(state);
 
       if (state.status === 'completed') {
-        return {
-          response: '🎉 所有步骤已完成！\n\n是否需要生成最终输出（论文/报告）？回复"是"或"否"。',
-          state,
-          action: 'advanced',
-        };
+        const response = await generateSopResponse({ type: 'final_output_ready', state, userMessage });
+        return { response, state, action: 'advanced' };
       }
 
       // 展示新步骤的自动生成引导
       const newStep = state.steps[state.currentStep - 1];
-      const status = formatSopStatus(state);
-      return {
-        response: `已进入步骤 ${state.currentStep}：**${newStep.name}**\n\n${newStep.subAgentResult || ''}\n\n---\n\n${status}\n\n回复"确认"继续下一步，或提出修改意见。`,
+      const status = await formatSopStatus(state);
+      const response = await generateSopResponse({
+        type: 'step_advanced',
         state,
-        action: 'advanced',
-      };
+        currentStep: state.currentStep,
+        totalSteps: state.steps.length,
+        stepName: newStep.name,
+        userMessage,
+      });
+      return { response: `${response}\n\n${newStep.subAgentResult || ''}\n\n---\n\n${status}`, state, action: 'advanced' };
     }
 
     // 用户提交新数据或请求帮助，重新执行当前步骤
@@ -409,49 +424,21 @@ export async function handleSopFlow(
       // 重新执行子Agent
       const { state: newState, subAgentResult } = await submitUserData(state, userMessage);
       const summarizedResult = await summarizeSubAgentResult(newState, subAgentResult);
-      const status = formatSopStatus(newState);
-
-      return {
-        response: `${summarizedResult}\n\n---\n\n${status}\n\n回复"确认"继续下一步，或提出修改意见。`,
-        state: newState,
-        action: 'submitted',
-      };
+      const status = await formatSopStatus(newState);
+      const response = await generateSopResponse({ type: 'step_submitted', state: newState, result: summarizedResult, userMessage });
+      return { response: `${summarizedResult}\n\n---\n\n${status}\n\n${response}`, state: newState, action: 'submitted' };
     }
 
     // 短消息当作修改请求
-    const rejectedState = await rejectAndRetry(state, '用户要求修改');
+    const rejectedState = await rejectAndRetry(state, 'User requested modification');
     const guidance = await generateStepGuidance(rejectedState);
-    return {
-      response: `已打回重新执行。\n\n${guidance}`,
-      state: rejectedState,
-      action: 'rejected',
-    };
-  }
-
-  // 8. 流程已完成
-  if (state.status === 'completed') {
-    if (/^是$|^yes$/i.test(userMessage.trim())) {
-      // TODO: 调用写作 Agent 生成最终输出
-      return {
-        response: '正在生成最终输出...\n\n[此功能待实现：调用写作 Agent 生成论文/报告]',
-        state,
-        action: 'none',
-      };
-    }
-    return {
-      response: '流程已结束。如需开始新任务，请发送新的研究任务。',
-      state: null,
-      action: 'none',
-    };
+    const response = await generateSopResponse({ type: 'step_rejected', state: rejectedState, reason: 'User requested modification', userMessage });
+    return { response: `${response}\n\n${guidance}`, state: rejectedState, action: 'rejected' };
   }
 
   // 默认：生成引导
   const guidance = await generateStepGuidance(state);
-  return {
-    response: guidance,
-    state,
-    action: 'continued',
-  };
+  return { response: guidance, state, action: 'continued' };
 }
 
 /**

@@ -129,8 +129,9 @@ ${userMessage.slice(0, 4000)}
 
 /**
  * 获取用户当前活跃的 SOP 任务
+ * @param includeCompleted 是否包含已完成的任务（用于最终输出生成）
  */
-export async function getActiveSopTask(agentId: string, sessionKey: string, includePaused = false): Promise<SopState | null> {
+export async function getActiveSopTask(agentId: string, sessionKey: string, includePaused = false, includeCompleted = false): Promise<SopState | null> {
   console.log('[SOP] getActiveSopTask called:', agentId, sessionKey);
   try {
     const rows = await queryOne<{ memory_value: string }>(
@@ -149,8 +150,12 @@ export async function getActiveSopTask(agentId: string, sessionKey: string, incl
       const taskId = JSON.parse(rows.memory_value).taskId;
       console.log('[SOP] Found taskId:', taskId);
       const state = await getSopState(agentId, taskId);
-      // 只返回活跃状态的任务（或包含暂停状态）
-      if (state && (state.status === 'active' || (includePaused && state.status === 'paused'))) {
+      // 返回活跃状态的任务（或包含暂停/完成状态）
+      if (state && (
+        state.status === 'active' ||
+        (includePaused && state.status === 'paused') ||
+        (includeCompleted && state.status === 'completed')
+      )) {
         return state;
       }
       console.log('[SOP] Task not active:', state?.status);
@@ -189,19 +194,49 @@ export async function listActiveSopTasks(agentId: string): Promise<SopState[]> {
 }
 
 /**
- * 格式化 SOP 任务列表
+ * 格式化 SOP 任务列表（AI 动态生成）
  */
-export function formatSopList(tasks: SopState[]): string {
+export async function formatSopList(tasks: SopState[]): Promise<string> {
   if (tasks.length === 0) {
-    return '暂无进行中的 SOP 任务。\n\n发送新任务开始新流程。';
+    return '📋 No active SOP tasks.\n\nSend a new task to start a workflow.';
   }
 
-  const lines: string[] = ['📋 **SOP 任务列表**\n'];
+  const tasksInfo = tasks.map((t, i) => `${i + 1}. ${t.taskName} - Step ${t.currentStep}/${t.steps.length} (${t.status})`).join('\n');
+
+  const prompt = `Generate a formatted task list for the following SOP workflows.
+
+Tasks:
+${tasksInfo}
+
+Generate a clear task list with:
+1. A header with emoji
+2. Numbered list of tasks with status
+3. A call-to-action at the end
+4. Use English language
+
+Response (just the formatted message):`;
+
+  try {
+    const response = await chat([
+      { role: 'system', content: 'You are a helpful workflow assistant.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.7, maxTokens: 300 });
+
+    const content = response.content;
+    const text = typeof content === 'string' ? content : (content as Array<{ type: string; text?: string }>).map(b => b.text || '').join('');
+    return text.trim() || formatSopListFallback(tasks);
+  } catch (e) {
+    return formatSopListFallback(tasks);
+  }
+}
+
+function formatSopListFallback(tasks: SopState[]): string {
+  const lines: string[] = ['📋 **SOP Task List**\n'];
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];
     const statusIcon = task.status === 'paused' ? '⏸️' : '🔄';
     lines.push(`${i + 1}. ${statusIcon} **${task.taskName}**`);
-    lines.push(`   进度：${task.currentStep}/${task.steps.length} | 状态：${task.status === 'paused' ? '已暂停' : '进行中'}`);
+    lines.push(`   Progress: ${task.currentStep}/${task.steps.length} | Status: ${task.status}`);
   }
   return lines.join('\n');
 }
@@ -984,21 +1019,58 @@ export function detectModification(userMessage: string): boolean {
 // ─── 格式化输出 ───────────────────────────────────────────────────
 
 /**
- * 格式化 SOP 状态为用户可读文本
+ * 格式化 SOP 状态为用户可读文本（AI 动态生成）
  */
-export function formatSopStatus(state: SopState): string {
+export async function formatSopStatus(state: SopState): Promise<string> {
+  const stepsInfo = state.steps.map(s => {
+    const status = s.status === 'done' ? '✅' : s.status === 'in_progress' ? '🔄' : '⏳';
+    const current = s.step === state.currentStep ? ' (current)' : '';
+    return `${status} ${s.step}. ${s.name}${current}`;
+  }).join('\n');
+
+  const prompt = `Generate a status summary for the following SOP workflow.
+
+Task: ${state.taskName}
+Current step: ${state.currentStep}/${state.steps.length}
+
+Steps:
+${stepsInfo}
+
+Generate a concise status display with:
+1. Task name with emoji
+2. Progress indicator
+3. Step list with status icons
+4. Use English
+
+Response (just the formatted status):`;
+
+  try {
+    const response = await chat([
+      { role: 'system', content: 'You are a workflow status display generator.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.7, maxTokens: 300 });
+
+    const content = response.content;
+    const text = typeof content === 'string' ? content : (content as Array<{ type: string; text?: string }>).map(b => b.text || '').join('');
+    return text.trim() || formatSopStatusFallback(state);
+  } catch (e) {
+    return formatSopStatusFallback(state);
+  }
+}
+
+function formatSopStatusFallback(state: SopState): string {
   const lines: string[] = [
     `📋 **${state.taskName}**`,
-    `进度：${state.currentStep}/${state.steps.length}`,
+    `Progress: ${state.currentStep}/${state.steps.length}`,
     '',
-    '**步骤列表：**',
+    '**Steps:**',
   ];
 
   for (const step of state.steps) {
     const icon = step.status === 'done' ? '✅' :
                  step.status === 'in_progress' ? '🔄' :
                  step.status === 'blocked' ? '⚠️' : '⏳';
-    const current = step.step === state.currentStep ? ' ← 当前' : '';
+    const current = step.step === state.currentStep ? ' (current)' : '';
     lines.push(`${icon} ${step.step}. ${step.name}${current}`);
   }
 
@@ -1006,27 +1078,81 @@ export function formatSopStatus(state: SopState): string {
 }
 
 /**
- * 格式化任务拆解结果
+ * 格式化任务拆解结果（AI 动态生成）
  */
-export function formatTaskBreakdown(state: SopState): string {
-  const lines: string[] = [
-    `📋 **任务拆解结果**`,
-    '',
-    `**任务名称：** ${state.taskName}`,
-    '',
-    '**执行步骤：**',
-  ];
+export async function formatTaskBreakdown(state: SopState): Promise<string> {
+  const stepsInfo = state.steps.map(s => `${s.step}. ${s.name}${s.description ? `: ${s.description}` : ''}`).join('\n');
 
-  for (const step of state.steps) {
-    lines.push(`${step.step}. **${step.name}**`);
-    if (step.description) {
-      lines.push(`   ${step.description}`);
+  // 使用 taskSummary 判断语言
+  const isChinese = /[\u4e00-\u9fff]/.test(state.taskSummary);
+  const languageHint = isChinese ? 'Use Chinese (中文)' : 'Use English';
+
+  const prompt = `Generate a task breakdown summary for the following research workflow.
+
+Task name: ${state.taskName}
+Task summary: ${state.taskSummary}
+
+Steps:
+${stepsInfo}
+
+Generate a clear, well-formatted task breakdown message. Guidelines:
+1. Use appropriate emoji (📋, 🔢, etc.)
+2. Number each step clearly
+3. Include brief descriptions if available
+4. End with a call-to-action asking user to confirm or modify
+5. ${languageHint}
+
+Response (just the formatted message):`;
+
+  try {
+    const response = await chat([
+      { role: 'system', content: 'You are a helpful research workflow assistant. Generate clear, well-formatted task breakdowns in the user\'s language.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.7, maxTokens: 500 });
+
+    const content = response.content;
+    const text = typeof content === 'string' ? content : (content as Array<{ type: string; text?: string }>).map(b => b.text || '').join('');
+    return text.trim() || formatTaskBreakdownFallback(state, isChinese);
+  } catch (e) {
+    console.error('[SOP] Failed to generate task breakdown:', e);
+    return formatTaskBreakdownFallback(state, isChinese);
+  }
+}
+
+/**
+ * 备用任务拆解格式
+ */
+function formatTaskBreakdownFallback(state: SopState, isChinese: boolean): string {
+  if (isChinese) {
+    const lines: string[] = [
+      `📋 **任务拆解**`,
+      '',
+      `**任务：** ${state.taskName}`,
+      '',
+      '**步骤：**',
+    ];
+    for (const step of state.steps) {
+      lines.push(`${step.step}. **${step.name}**`);
+      if (step.description) lines.push(`   ${step.description}`);
     }
+    lines.push('');
+    lines.push('回复"确认"开始执行，或提出修改意见。');
+    return lines.join('\n');
   }
 
+  const lines: string[] = [
+    `📋 **Task Breakdown**`,
+    '',
+    `**Task:** ${state.taskName}`,
+    '',
+    '**Steps:**',
+  ];
+  for (const step of state.steps) {
+    lines.push(`${step.step}. **${step.name}**`);
+    if (step.description) lines.push(`   ${step.description}`);
+  }
   lines.push('');
-  lines.push('请确认是否开始执行？回复"确认"开始，或提出修改意见。');
-
+  lines.push('Reply "confirm" to start execution, or provide modifications.');
   return lines.join('\n');
 }
 
@@ -1297,4 +1423,272 @@ export async function generateOptimizationReport(agentId: string): Promise<strin
   lines.push('回复"应用优化"自动调整流程，或手动调整特定步骤。');
 
   return lines.join('\n');
+}
+
+// ─── 最终输出生成 ──────────────────────────────────────────────────
+
+/**
+ * 生成最终输出（论文/报告）
+ * 汇总所有步骤结果，调用写作 Agent 生成结构化文档
+ */
+export async function generateFinalOutput(state: SopState): Promise<{ success: boolean; content: string; filePath?: string }> {
+  // 1. 汇总所有步骤的结果
+  const stepSummaries: string[] = [];
+  for (const step of state.steps) {
+    if (step.subAgentResult) {
+      stepSummaries.push(`## ${step.name}\n\n${step.subAgentResult.slice(0, 2000)}`);
+    }
+  }
+
+  // 2. 构建写作任务
+  const task = `你是一个学术写作助手。请根据以下研究流程的各步骤结果，生成一份完整的研究报告。
+
+# 任务信息
+- 任务名称：${state.taskName}
+- 任务摘要：${state.taskSummary}
+
+# 各步骤结果
+
+${stepSummaries.join('\n\n---\n\n')}
+
+# 输出要求
+
+请生成一份结构化的 Markdown 格式研究报告，包含：
+
+1. **标题**：简洁明了的研究标题
+2. **摘要**：200-300字的研究摘要
+3. **引言**：研究背景和意义
+4. **方法**：研究方法和实验设计
+5. **结果**：主要研究发现（基于步骤结果）
+6. **讨论**：结果分析和局限性
+7. **结论**：总结和未来工作
+8. **参考文献**：列出提到的文献（如有）
+
+请直接输出 Markdown 格式的报告内容。`;
+
+  // 3. 创建写作类型的子 Agent
+  const writingConfig = SUB_AGENT_CONFIGS.writing;
+  const soulContent = JSON.stringify({
+    role: '学术写作助手',
+    personality: writingConfig.personality,
+    rules: writingConfig.rules,
+    skills: [...writingConfig.skills, '研究报告撰写'],
+  });
+
+  const agent = spawnSubAgent({
+    name: '最终输出-写作Agent',
+    soul_content: soulContent,
+    parentId: state.agentId,
+    ttlMs: 15 * 60 * 1000, // 15 分钟
+    allowedTools: ['search_memory', 'read_file', 'write_file'],
+  });
+
+  console.log(`[SOP] Final output agent created: ${agent.id}`);
+
+  try {
+    // 4. 执行写作任务
+    const result = await runSubAgentTask(agent, task, state.agentId);
+
+    // 5. 保存到文件
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const fileName = `research-report-${timestamp}.md`;
+    const filePath = `/workspace/${state.agentId}/${fileName}`;
+
+    // 使用 write_file 工具保存
+    const { executeToolCalls } = await import('./tools/executor.js');
+    const writeResult = await executeToolCalls(
+      [{ name: 'write_file', args: { file_path: filePath, content: result } }],
+      { agentId: state.agentId, sessionKey: '' }
+    );
+
+    const savedPath = writeResult[0]?.success ? filePath : undefined;
+
+    // 6. 销毁子 Agent
+    destroySubAgent(agent.id, state.agentId);
+
+    console.log(`[SOP] Final output generated: ${savedPath || 'memory only'}`);
+
+    return {
+      success: true,
+      content: result,
+      filePath: savedPath,
+    };
+  } catch (e) {
+    console.error('[SOP] Final output generation failed:', e);
+    destroySubAgent(agent.id, state.agentId);
+    return {
+      success: false,
+      content: `生成失败：${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
+// ─── AI 动态响应生成 ──────────────────────────────────────────────────
+
+export type SopResponseType =
+  | 'cancelled'
+  | 'paused'
+  | 'resumed'
+  | 'restarted'
+  | 'completed'
+  | 'purpose_selection'
+  | 'breakdown_confirm'
+  | 'step_guidance'
+  | 'step_submitted'
+  | 'step_rejected'
+  | 'step_advanced'
+  | 'final_output_ready'
+  | 'final_output_generated'
+  | 'task_list'
+  | 'no_active_task';
+
+export interface SopResponseContext {
+  type: SopResponseType;
+  state?: SopState;
+  taskName?: string;
+  currentStep?: number;
+  totalSteps?: number;
+  stepName?: string;
+  reason?: string;
+  suggestions?: string[];
+  result?: string;
+  filePath?: string;
+  downloadUrl?: string;
+  tasks?: SopState[];
+  userMessage?: string;
+}
+
+/**
+ * AI 动态生成 SOP 响应
+ * 根据上下文和用户语言偏好生成自然语言响应
+ */
+export async function generateSopResponse(context: SopResponseContext): Promise<string> {
+  // 从 state.taskSummary 或 userMessage 判断语言
+  const textToCheck = context.userMessage || context.state?.taskSummary || '';
+  const isChinese = /[\u4e00-\u9fff]/.test(textToCheck);
+  const languageHint = isChinese ? 'Use Chinese (中文)' : 'Use English';
+
+  const prompt = `You are an AI assistant helping with a research workflow (SOP - Standard Operating Procedure).
+
+Current context:
+- Response type: ${context.type}
+${context.state ? `- Task: ${context.state.taskName}` : ''}
+${context.state ? `- Task summary: ${context.state.taskSummary}` : ''}
+${context.taskName ? `- Task name: ${context.taskName}` : ''}
+${context.currentStep !== undefined ? `- Current step: ${context.currentStep}/${context.totalSteps}` : ''}
+${context.stepName ? `- Step name: ${context.stepName}` : ''}
+${context.reason ? `- Reason: ${context.reason}` : ''}
+${context.suggestions ? `- Suggestions: ${context.suggestions.join('; ')}` : ''}
+${context.result ? `- Result preview: ${context.result.slice(0, 300)}...` : ''}
+${context.filePath ? `- File saved: ${context.filePath}` : ''}
+${context.downloadUrl ? `- Download URL: ${context.downloadUrl}` : ''}
+${context.tasks ? `- Active tasks: ${context.tasks.length}` : ''}
+${context.userMessage ? `- User message: ${context.userMessage}` : ''}
+
+Generate a natural, helpful response for the user. Guidelines:
+1. Be concise but informative
+2. Use appropriate emoji for visual clarity (✅ ❌ 🎉 📋 🔄 ⏸️ etc.)
+3. Include actionable next steps
+4. If showing a file, make the download link clickable using markdown: [Download](url)
+5. ${languageHint}
+6. For task breakdown, show the steps clearly numbered
+7. For progress updates, show current step vs total
+
+Response (just the message, no JSON, no code blocks):`;
+
+  try {
+    const response = await chat([
+      { role: 'system', content: 'You are a helpful research workflow assistant. Generate natural, concise responses in the user\'s language.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.7, maxTokens: 500 });
+
+    const content = response.content;
+    const text = typeof content === 'string' ? content : (content as Array<{ type: string; text?: string }>).map(b => b.text || '').join('');
+    return text.trim() || generateFallbackResponse(context, isChinese);
+  } catch (e) {
+    console.error('[SOP] Failed to generate AI response:', e);
+    return generateFallbackResponse(context, isChinese);
+  }
+}
+
+/**
+ * 备用响应（当 AI 生成失败时）
+ */
+function generateFallbackResponse(context: SopResponseContext, isChinese: boolean): string {
+  if (isChinese) {
+    switch (context.type) {
+      case 'cancelled':
+        return '✅ SOP 流程已取消。发送新任务开始新流程。';
+      case 'paused':
+        return `⏸️ SOP 流程已暂停。进度：步骤 ${context.currentStep}/${context.totalSteps}。发送"继续"恢复。`;
+      case 'resumed':
+        return `🔄 SOP 流程已恢复。当前步骤：${context.currentStep}/${context.totalSteps}`;
+      case 'restarted':
+        return `🔄 步骤 ${context.currentStep} 已重启。`;
+      case 'completed':
+        return '🎉 所有步骤已完成！是否生成最终输出（论文/报告）？回复"是"或"否"。';
+      case 'purpose_selection':
+        return `检测到学术任务：**${context.taskName}**\n\n请选择研究目的：\n\n1. **写论文** - 发表期刊/毕业论文\n2. **做研究** - 科学研究、实验、分析\n3. **学习** - 学习某个领域的知识\n\n请回复数字或描述您的目的。`;
+      case 'breakdown_confirm':
+        return '请回复"确认"开始执行，或提出修改意见。';
+      case 'step_submitted':
+        return '步骤已完成。回复"确认"继续下一步，或提出修改意见。';
+      case 'step_rejected':
+        return `❌ 审核未通过：${context.reason}\n\n请改进后重新提交。`;
+      case 'step_advanced':
+        return `✅ 已进入步骤 ${context.currentStep}：**${context.stepName}**`;
+      case 'final_output_ready':
+        return '🎉 所有步骤已完成！是否生成最终输出（论文/报告）？回复"是"或"否"。';
+      case 'final_output_generated':
+        return context.downloadUrl
+          ? `✅ 报告已生成！[下载](${context.downloadUrl})`
+          : '✅ 报告已生成！';
+      case 'task_list':
+        return context.tasks && context.tasks.length > 0
+          ? `📋 **活跃任务**\n\n${context.tasks.map((t, i) => `${i + 1}. ${t.taskName} (${t.status})`).join('\n')}`
+          : '暂无活跃任务。发送新任务开始。';
+      case 'no_active_task':
+        return '暂无进行中的 SOP 流程。发送新任务开始。';
+      default:
+        return '处理中...';
+    }
+  }
+
+  // English fallback
+  switch (context.type) {
+    case 'cancelled':
+      return '✅ SOP workflow cancelled. Send a new task to start over.';
+    case 'paused':
+      return `⏸️ SOP workflow paused. Progress: Step ${context.currentStep}/${context.totalSteps}. Send "continue" to resume.`;
+    case 'resumed':
+      return `🔄 SOP workflow resumed. Current step: ${context.currentStep}/${context.totalSteps}`;
+    case 'restarted':
+      return `🔄 Step ${context.currentStep} restarted.`;
+    case 'completed':
+      return '🎉 All steps completed! Would you like to generate a final output (paper/report)? Reply "yes" or "no".';
+    case 'purpose_selection':
+      return `Detected academic task: **${context.taskName}**\n\nPlease select your research purpose:\n\n1. **Write Paper** - For publication/thesis\n2. **Do Research** - Scientific research, experiments, analysis\n3. **Learning** - Learn about a specific field\n\nReply with a number or describe your purpose.`;
+    case 'breakdown_confirm':
+      return 'Please reply "confirm" to start execution, or provide modifications.';
+    case 'step_submitted':
+      return `Step completed. Reply "confirm" to proceed to the next step, or provide modifications.`;
+    case 'step_rejected':
+      return `❌ Review failed: ${context.reason}\n\nPlease resubmit with improvements.`;
+    case 'step_advanced':
+      return `✅ Moved to step ${context.currentStep}: **${context.stepName}**`;
+    case 'final_output_ready':
+      return '🎉 All steps completed! Would you like to generate a final output (paper/report)? Reply "yes" or "no".';
+    case 'final_output_generated':
+      return context.downloadUrl
+        ? `✅ Report generated! [Download](${context.downloadUrl})`
+        : '✅ Report generated!';
+    case 'task_list':
+      return context.tasks && context.tasks.length > 0
+        ? `📋 **Active Tasks**\n\n${context.tasks.map((t, i) => `${i + 1}. ${t.taskName} (${t.status})`).join('\n')}`
+        : 'No active tasks. Send a new task to start.';
+    case 'no_active_task':
+      return 'No active SOP workflow. Send a new task to start.';
+    default:
+      return 'Processing...';
+  }
 }

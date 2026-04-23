@@ -894,6 +894,51 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    // ── Agent File Download (for SOP reports etc.) ──
+    // GET /api/files/:agentId/*path - download file from agent workspace
+    if (path.startsWith('/api/files/') && method === 'GET') {
+      const parts = path.split('/');
+      // ["", "api", "files", "{agentId}", "...path"]
+      if (parts.length >= 4 && parts[2] === 'files') {
+        const agentId = parts[3];
+        const filePath = parts.length >= 5 ? '/' + parts.slice(4).join('/') : '/';
+        const fullPath = `/workspace/${agentId}${filePath}`;
+
+        import('fs/promises').then(async (fsP) => {
+          try {
+            const stats = await fsP.stat(fullPath);
+            if (stats.isDirectory()) {
+              const entries = await fsP.readdir(fullPath, { withFileTypes: true });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                path: filePath,
+                entries: entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' }))
+              }));
+            } else {
+              const content = await fsP.readFile(fullPath);
+              const fileName = filePath.split('/').pop() || 'file';
+              res.writeHead(200, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': `attachment; filename="${fileName}"`,
+                'Content-Length': content.length
+              });
+              res.end(content);
+            }
+          } catch (e) {
+            const err = e as { code?: string };
+            if (err.code === 'ENOENT') {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'File not found' }));
+            } else {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: String(e) }));
+            }
+          }
+        });
+        return;
+      }
+    }
+
     // POST /api/workspace/:subAgentId/files/*path - upload file
     if (path.startsWith('/api/workspace/') && method === 'POST') {
       const parts = path.split('/');
