@@ -242,6 +242,7 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
   const sopResult = await handleSopFlow(messageTextStr, agentId, sessionKey);
 
   if (sopResult.action !== 'none' && sopResult.response) {
+    // SOP 响应直接返回，跳过内容安全检测（用户主动发起的研究任务）
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', sopResult.response);
     pushWsResult(agentId, sessionKey, sopResult.response);
     return { response: sopResult.response, toolCalls: [], finished: true };
@@ -605,6 +606,7 @@ export async function runAgentStream(
   const sopResult = await handleSopFlow(messageText, agentId, sessionKey);
 
   if (sopResult.action !== 'none' && sopResult.response) {
+    // SOP 响应直接返回，跳过内容安全检测（用户主动发起的研究任务）
     pushWsResult(agentId, sessionKey, sopResult.response);
     pushWsDone(agentId, sessionKey);
     return;
