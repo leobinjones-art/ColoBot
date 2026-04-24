@@ -4,99 +4,227 @@
 
 将 ColoBot 拆分为独立 npm 包，支持按需安装，降低部署复杂度。
 
+## 设计原则
+
+1. **核心最小化** - core 只包含必要功能
+2. **插件机制** - 可选包通过插件注册能力
+3. **命令行优先** - 配置管理优先使用 TUI/CLI，Dashboard 可选
+4. **类型共享** - 独立 types 包，所有包共用
+
 ## 包结构
 
 ```
 packages/
+├── types/                   # @colobot/types - 共享类型（新增）
+│   ├── src/
+│   │   ├── agent.ts         # Agent 类型
+│   │   ├── llm.ts           # LLM 类型
+│   │   ├── memory.ts        # 记忆类型
+│   │   ├── tool.ts          # 工具类型
+│   │   ├── config.ts        # 配置类型
+│   │   └── index.ts
+│   ├── package.json
+│   └── tsconfig.json
+│
 ├── core/                    # @colobot/core - 核心包（必需）
 │   ├── src/
 │   │   ├── agent-runtime/   # Agent 运行时
-│   │   ├── llm/             # LLM 抽象层
+│   │   ├── llm/             # LLM 抽象层（含 MiniMax/OpenAI/Anthropic）
 │   │   ├── memory/          # 记忆系统
 │   │   ├── config/          # 配置管理
+│   │   ├── plugin/          # 插件机制
+│   │   │   ├── registry.ts  # 插件注册
+│   │   │   └── types.ts     # 插件类型
 │   │   ├── utils/           # 工具函数
 │   │   └── index.ts         # 导出入口
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── sop/                     # @colobot/sop - SOP 流程（可选）
+├── tui/                     # @colobot/tui - 终端界面
 │   ├── src/
-│   │   ├── sop-v2.ts        # SOP 状态机
-│   │   ├── prompts.ts       # Prompt 模板
-│   │   ├── sub-agents.ts    # 子 Agent 配置
+│   │   ├── app.tsx          # 主应用
+│   │   ├── chat/            # 对话界面
+│   │   ├── sop/             # SOP 界面
+│   │   ├── config/          # 配置管理（命令行）
 │   │   └── index.ts
 │   ├── package.json
 │   └── tsconfig.json
+│
+├── sop/                     # @colobot/sop - SOP 流程（可选）
+│   ├── src/
+│   │   ├── index.ts         # 导出 + 插件注册
+│   │   ├── plugin.ts        # SOP 插件定义
+│   │   └── ...
+│   └── ...
 │
 ├── feishu/                  # @colobot/feishu - 飞书集成（可选）
 │   ├── src/
-│   │   ├── feishu.ts        # 飞书服务
-│   │   ├── webhook.ts       # Webhook 处理
-│   │   ├── cards.ts         # 交互式卡片
-│   │   └── index.ts
-│   ├── package.json
-│   └── tsconfig.json
+│   │   ├── index.ts         # 导出 + 插件注册
+│   │   ├── plugin.ts        # 飞书插件定义
+│   │   └── ...
+│   └── ...
 │
+├── skills-openclaw/         # @colobot/skills-openclaw（可选）
+├── tools-minimax/           # @colobot/tools-minimax（可选）
 ├── dashboard/               # @colobot/dashboard - Web 管理界面（可选）
-│   ├── src/
-│   │   ├── index.html       # 单文件前端
-│   │   └── serve.ts         # 静态文件服务
-│   ├── package.json
-│   └── tsconfig.json
-│
-└── server/                  # @colobot/server - 完整服务（整合包）
-    ├── src/
-    │   ├── colobot-server.ts
-    │   ├── routes/
-    │   └── index.ts
-    ├── package.json
-    └── tsconfig.json
+└── server/                  # @colobot/server - 完整服务
+```
+
+## 插件机制
+
+### 插件接口
+
+```typescript
+// @colobot/types
+interface ColoBotPlugin {
+  name: string
+  version: string
+  
+  // 工具注册
+  tools?: ToolDefinition[]
+  
+  // 配置 Schema
+  configSchema?: ConfigSchema
+  
+  // CLI 命令
+  cliCommands?: CLICommand[]
+  
+  // 初始化钩子
+  onInit?: (context: PluginContext) => void | Promise<void>
+}
+```
+
+### 插件注册
+
+```typescript
+// @colobot/core
+import { registerPlugin, getPlugins } from '@colobot/core'
+
+// 注册插件
+registerPlugin({
+  name: 'sop',
+  version: '0.1.0',
+  tools: [...sopTools],
+  configSchema: sopConfigSchema,
+  cliCommands: [
+    { name: 'sop:list', handler: listSopTasks },
+    { name: 'sop:resume', handler: resumeSop }
+  ]
+})
+
+// 获取所有插件
+const plugins = getPlugins()
+```
+
+### 可选包自动注册
+
+```typescript
+// @colobot/sop/src/index.ts
+import { registerPlugin } from '@colobot/core'
+import { sopPlugin } from './plugin.js'
+
+// 包导入时自动注册
+registerPlugin(sopPlugin)
+
+export { aiAnalyzeTask, createSop, ... }
+```
+
+## 配置管理（CLI 优先）
+
+### TUI 配置界面
+
+```bash
+# 打开配置管理
+colobot config
+
+# 直接设置
+colobot config set llm.provider openai
+colobot config set llm.api_key sk-xxx
+
+# 设置 SOP 配置
+colobot config set sop.prompts.taskAnalysis "custom prompt..."
+
+# 设置飞书配置
+colobot config set feishu.app_id cli_xxx
+```
+
+### 配置存储
+
+```typescript
+// 统一配置管理
+import { ConfigManager } from '@colobot/core'
+
+// 获取配置
+const provider = ConfigManager.get('llm.provider')
+
+// 设置配置（自动持久化到数据库）
+await ConfigManager.set('llm.api_key', 'sk-xxx')
+
+// 获取所有配置
+const config = ConfigManager.getAll()
+```
+
+### 配置优先级
+
+```
+数据库 > 环境变量 > 默认值
 ```
 
 ## 依赖关系
 
 ```
+@colobot/types
+    ↑
+    │ (所有包依赖)
+    │
+@colobot/core
+    ↑
+    ├── @colobot/sop
+    ├── @colobot/feishu
+    ├── @colobot/tools-minimax
+    ├── @colobot/skills-openclaw
+    │
+@colobot/tui
+    ↑
+    └── @colobot/core (动态加载插件命令)
+    
+@colobot/dashboard (可选，轻量)
+    ↑
+    └── @colobot/core
+
 @colobot/server
-    ├── @colobot/core (必需)
-    ├── @colobot/sop (可选)
-    ├── @colobot/feishu (可选)
-    └── @colobot/dashboard (可选)
-
-@colobot/sop
-    └── @colobot/core
-
-@colobot/feishu
-    └── @colobot/core
-
-@colobot/dashboard
-    └── @colobot/core
+    ↑
+    └── 所有包
 ```
 
 ## 安装方式
 
-### 最小安装（仅核心）
+### 最小安装（仅核心 + TUI）
 
 ```bash
-npm install @colobot/core
+npm install @colobot/core @colobot/tui
 ```
 
-功能：Agent 运行时、LLM 调用、记忆系统、基础工具
+功能：Agent 运行时、LLM 调用、记忆系统、终端配置
 
-### SOP 流程
+### 添加 SOP 流程
 
 ```bash
-npm install @colobot/core @colobot/sop
+npm install @colobot/sop
+# 导入时自动注册插件，TUI 自动识别
 ```
 
-功能：学术研究 SOP 流程、AI 动态拆解、步骤引导
-
-### 飞书集成
+### 添加飞书集成
 
 ```bash
-npm install @colobot/core @colobot/feishu
+npm install @colobot/feishu
 ```
 
-功能：飞书 Bot、交互式卡片、审批通知
+### 添加 MiniMax 工具
+
+```bash
+npm install @colobot/tools-minimax
+```
 
 ### 完整安装
 
@@ -104,227 +232,75 @@ npm install @colobot/core @colobot/feishu
 npm install @colobot/server
 ```
 
-功能：包含所有模块，开箱即用
+## TUI 动态命令
 
-## 包详情
+TUI 根据已安装的插件动态显示命令：
 
-### @colobot/core
+```bash
+# 仅安装 core + tui
+colobot> /help
+  /config    配置管理
+  /new       新对话
+  /quit      退出
 
-**职责**：核心 Agent 运行时、LLM 抽象、记忆系统
+# 安装 sop 后
+colobot> /help
+  /config    配置管理
+  /new       新对话
+  /sop       SOP 流程
+  /sop:list  任务列表
+  /quit      退出
 
-**导出**：
-```typescript
-// Agent
-export { AgentRuntime } from './agent-runtime/runtime.js'
-export { spawnSubAgent, destroySubAgent } from './agent-runtime/sub-agents.js'
-
-// LLM
-export { chat, chatStream } from './llm/index.js'
-export { getDefaultModel, getApiEndpoint } from './config/llm.js'
-
-// Memory
-export { addMemory, searchMemory } from './memory/vector.js'
-export { query, queryOne } from './memory/db.js'
-
-// Tools
-export { registerTool, executeTools } from './agent-runtime/tools/executor.js'
-
-// Config
-export { getSubAgentConfig } from './config/sub-agents.js'
-
-// Utils
-export { ColoBotError, safeExecute } from './utils/errors.js'
-export { detectLocale, getMessages } from './i18n/index.js'
+# 安装 feishu 后
+colobot> /help
+  /config    配置管理
+  /new       新对话
+  /sop       SOP 流程
+  /feishu    飞书状态
+  /quit      退出
 ```
 
-**依赖**：
-- `pg` - PostgreSQL 客户端
-- `pgvector` - 向量扩展
-- `ws` - WebSocket
+## Dashboard 定位
 
-### @colobot/sop
+Dashboard 是**可选的**轻量 Web 界面：
 
-**职责**：SOP 学术研究流程
+- 仅显示核心功能（Agent、LLM、配置）
+- 不依赖可选包的 UI 组件
+- 可选包的配置通过 TUI/CLI 管理
 
-**导出**：
-```typescript
-export { aiAnalyzeTask } from './sop-v2.js'
-export { createSop, getSopState, saveSopState } from './sop-v2.js'
-export { generateStepGuidance, aiReviewSubAgentOutput } from './sop-v2.js'
-export { generateFinalOutput } from './sop-v2.js'
-export { getSopPrompt, fillPrompt } from './prompts.js'
-export { getSubAgentConfig, SubAgentType } from './sub-agents.js'
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ColoBot Dashboard                                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  核心 Tab:  [Agents] [LLM] [Memory] [Config]               │
+│                                                             │
+│  注: SOP/Feishu 等配置请使用 TUI 命令:                      │
+│    colobot config                                           │
+│    colobot config set sop.xxx ...                           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**依赖**：
-- `@colobot/core`
+## 开发计划
 
-### @colobot/feishu
-
-**职责**：飞书 Bot 集成
-
-**导出**：
-```typescript
-export { FeishuService } from './feishu.js'
-export { handleFeishuEvent } from './webhook.js'
-export { sendInteractiveCard, updateCardStatus } from './cards.js'
-```
-
-**依赖**：
-- `@colobot/core`
-- `@larksuiteoapi/node-sdk`
-
-### @colobot/dashboard
-
-**职责**：Web 管理界面
-
-**导出**：
-```typescript
-export { serveDashboard } from './serve.js'
-```
-
-**依赖**：
-- `@colobot/core`
-
-### @colobot/server
-
-**职责**：完整服务，整合所有模块
-
-**导出**：
-```typescript
-export { startServer } from './index.js'
-```
-
-**依赖**：
-- `@colobot/core`
-- `@colobot/sop`
-- `@colobot/feishu`
-- `@colobot/dashboard`
-
-## 配置统一
-
-所有包共享同一套配置系统：
-
-```typescript
-// 配置优先级
-// 1. 代码中显式传入
-// 2. 数据库配置
-// 3. 环境变量
-// 4. 默认值
-
-import { ConfigManager } from '@colobot/core'
-
-const config = new ConfigManager({
-  db: { host: 'localhost', port: 5432 },
-  llm: { provider: 'openai', apiKey: 'sk-...' }
-})
-```
-
-## 迁移步骤
-
-### Phase 1: 准备工作
-
-1. 创建 `packages/` 目录结构
-2. 配置 monorepo 工具（pnpm workspace 或 turborepo）
-3. 抽取共享类型定义到 `@colobot/types`
-
-### Phase 2: 核心包
-
-1. 迁移 `src/agent-runtime/` → `packages/core/src/agent-runtime/`
-2. 迁移 `src/llm/` → `packages/core/src/llm/`
-3. 迁移 `src/memory/` → `packages/core/src/memory/`
-4. 迁移 `src/config/` → `packages/core/src/config/`
-5. 迁移 `src/utils/` → `packages/core/src/utils/`
-6. 迁移 `src/i18n/` → `packages/core/src/i18n/`
-7. 编写单元测试
-
-### Phase 3: 可选包
-
-1. 迁移 SOP 相关代码 → `packages/sop/`
-2. 迁移飞书相关代码 → `packages/feishu/`
-3. 迁移 Dashboard → `packages/dashboard/`
-
-### Phase 4: 整合包
-
-1. 创建 `packages/server/`
-2. 整合所有模块
-3. 编写启动脚本
-
-### Phase 5: 发布
-
-1. 配置 npm 发布流程
-2. 编写各包 README
-3. 发布到 npm
-
-## 使用示例
-
-### 仅使用核心包
-
-```typescript
-import { AgentRuntime, chat } from '@colobot/core'
-
-const runtime = new AgentRuntime({
-  agentId: 'my-agent',
-  dbConfig: { host: 'localhost' }
-})
-
-const response = await runtime.processMessage('Hello!')
-```
-
-### 使用 SOP 流程
-
-```typescript
-import { AgentRuntime } from '@colobot/core'
-import { aiAnalyzeTask, createSop } from '@colobot/sop'
-
-const analysis = await aiAnalyzeTask('量子计算研究')
-if (analysis.isAcademicTask) {
-  const sop = await createSop(agentId, sessionKey, analysis)
-}
-```
-
-### 使用飞书集成
-
-```typescript
-import { FeishuService } from '@colobot/feishu'
-
-const feishu = new FeishuService({
-  appId: 'cli_xxx',
-  appSecret: 'xxx'
-})
-
-await feishu.sendMessage(openId, 'Hello from ColoBot!')
-```
-
-### 完整服务
-
-```typescript
-import { startServer } from '@colobot/server'
-
-await startServer({
-  port: 18792,
-  db: { host: 'localhost' },
-  llm: { provider: 'openai' },
-  feishu: { appId: 'cli_xxx', appSecret: 'xxx' },
-  sop: { enabled: true }
-})
-```
+| 阶段 | 内容 | 时间 |
+|------|------|------|
+| Phase 0 | @colobot/types 类型包 | 1 天 |
+| Phase 1 | @colobot/core + 插件机制 | 3 天 |
+| Phase 2 | @colobot/tui 终端界面 | 5 天 |
+| Phase 3 | @colobot/sop 插件化 | 2 天 |
+| Phase 4 | @colobot/feishu 插件化 | 2 天 |
+| Phase 5 | @colobot/tools-minimax | 3 天 |
+| Phase 6 | @colobot/skills-openclaw | 3 天 |
+| Phase 7 | @colobot/dashboard（轻量） | 1 天 |
+| Phase 8 | @colobot/server 整合 | 1 天 |
+| **总计** | | **21 天** |
 
 ## 优势
 
-1. **按需安装**：用户只需安装需要的功能
-2. **依赖隔离**：不使用飞书的用户无需安装 `@larksuiteoapi/node-sdk`
-3. **版本独立**：各包可独立发布版本
-4. **易于扩展**：新增模块不影响核心包
-5. **社区友好**：开发者可贡献特定模块
-
-## 时间估算
-
-| 阶段 | 工作量 | 时间 |
-|------|--------|------|
-| Phase 1 | 准备工作 | 1 天 |
-| Phase 2 | 核心包 | 3 天 |
-| Phase 3 | 可选包 | 2 天 |
-| Phase 4 | 整合包 | 1 天 |
-| Phase 5 | 发布 | 1 天 |
-| **总计** | | **8 天** |
+1. **真正的按需安装** - 只装需要的包
+2. **配置统一** - CLI/TUI 统一管理，Dashboard 可选
+3. **插件自动发现** - 导入即注册，无需手动配置
+4. **类型安全** - 共享类型包，开发体验好
+5. **轻量 Dashboard** - 不依赖可选包，降低复杂度
