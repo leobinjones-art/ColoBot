@@ -288,7 +288,7 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 @colobot/feishu            # 飞书集成（可选）
 @colobot/dashboard         # Web 管理界面（可选）
 @colobot/skills-openclaw   # OpenClaw Skill 库兼容（可选）
-@colobot/llm-minimax       # MiniMax LLM 兼容（可选）
+@colobot/tools-minimax     # MiniMax 工具兼容（可选）
 @colobot/server            # 完整服务（整合包）
 ```
 
@@ -309,8 +309,8 @@ npm install @colobot/core @colobot/sop
 # 飞书集成
 npm install @colobot/core @colobot/feishu
 
-# MiniMax LLM（国内直连）
-npm install @colobot/core @colobot/llm-minimax
+# MiniMax 工具（语音、图像、音乐、视频）
+npm install @colobot/core @colobot/tools-minimax
 
 # OpenClaw Skill 兼容
 npm install @colobot/core @colobot/skills-openclaw
@@ -339,25 +339,28 @@ npx colobot-tui --agent my-agent
 
 详见 [TUI 设计文档](docs/tui-design.md)
 
-### MiniMax LLM 兼容
+### MiniMax 工具兼容
 
-`@colobot/llm-minimax` 提供国产 MiniMax 模型支持：
+`@colobot/tools-minimax` 提供 MiniMax 特有工具支持（LLM 模型已在 core 内置）：
 
 ```typescript
-import { MiniMaxProvider } from '@colobot/llm-minimax'
+import { registerMiniMaxTools } from '@colobot/tools-minimax'
 
-const minimax = new MiniMaxProvider({
+// 注册 MiniMax 工具
+registerMiniMaxTools({
   apiKey: 'your-api-key',
   groupId: 'your-group-id'
 })
 ```
 
-优势：
-- 🌐 国内直连，无需代理
-- 💰 成本更低
-- 🔐 符合国内监管
+工具：
+- 🎙️ `minimax_tts` - 文本转语音
+- 🎧 `minimax_asr` - 语音转文本
+- 🖼️ `minimax_image_gen` - 文生图
+- 🎵 `minimax_music_gen` - 音乐生成
+- 🎬 `minimax_video_gen` - 视频生成
 
-详见 [MiniMax 兼容文档](docs/llm-minimax.md)
+详见 [MiniMax 工具文档](docs/tools-minimax.md)
 
 ### OpenClaw Skill 兼容
 
