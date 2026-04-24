@@ -1,7 +1,7 @@
 /**
  * Embeddings 模块测试
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock settings-cache
 vi.mock('../services/settings-cache.js', () => ({
@@ -19,6 +19,10 @@ vi.mock('../config/llm.js', () => ({
 import { embed } from '../memory/embeddings.js';
 
 describe('Embeddings', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('embed (mock mode)', () => {
     it('should return embedding vector in mock mode', async () => {
       const result = await embed('test text');

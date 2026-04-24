@@ -3,11 +3,14 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock ws
+// Mock ws module with OPEN constant
+const WS_OPEN = 1;
 vi.mock('ws', () => ({
+  WebSocket: { OPEN: 1 },
   default: { OPEN: 1 },
 }));
 
+// Import after mock
 import {
   setWsClients,
   pushWsResult,
@@ -19,6 +22,7 @@ import {
 describe('WebSocket Push', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setWsClients(null as any);
   });
 
   describe('setWsClients', () => {
@@ -31,15 +35,14 @@ describe('WebSocket Push', () => {
 
   describe('pushWsResult', () => {
     it('should do nothing if no clients', () => {
-      // Reset clients
-      setWsClients(null as any);
       pushWsResult('agent-1', 'session-1', { test: true });
       // Should not throw
     });
 
     it('should send result to connected client', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -49,11 +52,14 @@ describe('WebSocket Push', () => {
       pushWsResult('agent-1', 'session-1', { response: 'test' });
 
       expect(mockWs.send).toHaveBeenCalled();
+      const sentData = JSON.parse(mockWs.send.mock.calls[0][0]);
+      expect(sentData.type).toBe('response');
     });
 
     it('should skip if client not found', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -68,6 +74,7 @@ describe('WebSocket Push', () => {
     it('should skip if not OPEN', () => {
       const mockWs = {
         readyState: 0, // CONNECTING
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -81,7 +88,8 @@ describe('WebSocket Push', () => {
 
     it('should handle send error', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(() => { throw new Error('Send failed'); }),
       };
       const clients = new Map();
@@ -97,7 +105,8 @@ describe('WebSocket Push', () => {
   describe('pushWsChunk', () => {
     it('should send chunk to client', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -106,16 +115,18 @@ describe('WebSocket Push', () => {
 
       pushWsChunk('agent-1', 'session-1', 'Hello');
 
-      expect(mockWs.send).toHaveBeenCalledWith(
-        expect.stringContaining('chunk')
-      );
+      expect(mockWs.send).toHaveBeenCalled();
+      const sentData = JSON.parse(mockWs.send.mock.calls[0][0]);
+      expect(sentData.type).toBe('chunk');
+      expect(sentData.payload.chunk).toBe('Hello');
     });
   });
 
   describe('pushWsDone', () => {
     it('should send done signal', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -124,16 +135,17 @@ describe('WebSocket Push', () => {
 
       pushWsDone('agent-1', 'session-1');
 
-      expect(mockWs.send).toHaveBeenCalledWith(
-        expect.stringContaining('done')
-      );
+      expect(mockWs.send).toHaveBeenCalled();
+      const sentData = JSON.parse(mockWs.send.mock.calls[0][0]);
+      expect(sentData.type).toBe('done');
     });
   });
 
   describe('pushWsApproval', () => {
     it('should send approval notification', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -142,14 +154,16 @@ describe('WebSocket Push', () => {
 
       pushWsApproval('agent-1', 'session-1', 'approved', 'approval-1');
 
-      expect(mockWs.send).toHaveBeenCalledWith(
-        expect.stringContaining('approval')
-      );
+      expect(mockWs.send).toHaveBeenCalled();
+      const sentData = JSON.parse(mockWs.send.mock.calls[0][0]);
+      expect(sentData.type).toBe('approval');
+      expect(sentData.payload.action).toBe('approved');
     });
 
     it('should include detail', () => {
       const mockWs = {
-        readyState: 1,
+        readyState: WS_OPEN,
+        OPEN: WS_OPEN,
         send: vi.fn(),
       };
       const clients = new Map();
@@ -159,6 +173,7 @@ describe('WebSocket Push', () => {
       pushWsApproval('agent-1', 'session-1', 'rejected', 'approval-1', { reason: 'test' });
 
       const sentData = JSON.parse(mockWs.send.mock.calls[0][0]);
+      expect(sentData.payload.action).toBe('rejected');
       expect(sentData.payload.reason).toBe('test');
     });
   });

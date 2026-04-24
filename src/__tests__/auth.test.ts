@@ -1,35 +1,146 @@
-import { describe, it, expect } from 'vitest';
-// We can't directly test auth.ts without mocking the module system
-// These tests verify the logic conceptually through the public API
+/**
+ * Auth Middleware 测试
+ */
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-describe('auth logic', () => {
-  // Note: Direct unit testing of auth.ts requires careful module mocking
-  // due to its use of process.argv and readline.
+// Mock process.argv and process.stdin
+const originalArgv = process.argv;
+const originalEnv = process.env;
 
-  describe('validateKey (conceptual)', () => {
-    it('empty key should be invalid when keys are configured', () => {
-      // When COLOBOT_API_KEY=1024 is set, an empty string should fail
-      // This is implicitly tested by the integration
-      expect(true).toBe(true);
+describe('Auth Middleware', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.argv = [...originalArgv];
+    process.env = { ...originalEnv };
+    delete process.env.COLOBOT_API_KEY;
+  });
+
+  afterEach(() => {
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  describe('setApiKeys', () => {
+    it('should set API keys', async () => {
+      const { setApiKeys, hasKeys, isAuthConfigured } = await import('../middleware/auth.js');
+      setApiKeys(['key1', 'key2']);
+      expect(hasKeys()).toBe(true);
+      expect(isAuthConfigured()).toBe(true);
     });
 
-    it('correct key should pass', () => {
-      // validateKey('1024') should return true when COLOBOT_API_KEY=1024
-      expect(true).toBe(true);
+    it('should filter empty keys', async () => {
+      const { setApiKeys, hasKeys } = await import('../middleware/auth.js');
+      setApiKeys(['key1', '', 'key2']);
+      expect(hasKeys()).toBe(true);
     });
   });
 
-  describe('isAuthConfigured', () => {
-    it('should report whether auth has been configured', () => {
-      // After initAuth() with COLOBOT_API_KEY set, should return true
-      expect(true).toBe(true);
+  describe('validateKey', () => {
+    it('should validate correct key', async () => {
+      const { setApiKeys, validateKey } = await import('../middleware/auth.js');
+      setApiKeys(['test-key']);
+      expect(validateKey('test-key')).toBe(true);
+    });
+
+    it('should reject incorrect key', async () => {
+      const { setApiKeys, validateKey } = await import('../middleware/auth.js');
+      setApiKeys(['test-key']);
+      expect(validateKey('wrong-key')).toBe(false);
+    });
+
+    it('should allow any key when not configured', async () => {
+      vi.resetModules();
+      const { validateKey } = await import('../middleware/auth.js');
+      expect(validateKey('any-key')).toBe(true);
     });
   });
 
-  describe('hasKeys', () => {
-    it('should report whether any API keys are loaded', () => {
-      // After loading keys via CLI args or env var, hasKeys() should be true
-      expect(true).toBe(true);
+  describe('requireAuth', () => {
+    it('should authenticate with valid Bearer token', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['secret-key']);
+
+      const ctx = requireAuth({
+        headers: { authorization: 'Bearer secret-key' },
+      });
+
+      expect(ctx.authenticated).toBe(true);
+      expect(ctx.apiKey).toBe('secret-key');
+    });
+
+    it('should authenticate with X-API-Key header', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['secret-key']);
+
+      const ctx = requireAuth({
+        headers: { 'x-api-key': 'secret-key' },
+      });
+
+      expect(ctx.authenticated).toBe(true);
+    });
+
+    it('should reject invalid key', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['secret-key']);
+
+      expect(() => requireAuth({
+        headers: { authorization: 'Bearer wrong-key' },
+      })).toThrow('Unauthorized');
+    });
+
+    it('should reject missing key when configured', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['secret-key']);
+
+      expect(() => requireAuth({
+        headers: {},
+      })).toThrow('Unauthorized');
+    });
+
+    it('should allow any request when not configured', async () => {
+      vi.resetModules();
+      const { requireAuth } = await import('../middleware/auth.js');
+
+      const ctx = requireAuth({
+        headers: {},
+      });
+
+      expect(ctx.authenticated).toBe(true);
+    });
+  });
+
+  describe('extractApiKey', () => {
+    it('should extract from Authorization Bearer', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['my-key']);
+
+      const ctx = requireAuth({
+        headers: { authorization: 'Bearer my-key' },
+      });
+
+      expect(ctx.apiKey).toBe('my-key');
+    });
+
+    it('should extract from X-API-Key', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['my-key']);
+
+      const ctx = requireAuth({
+        headers: { 'x-api-key': 'my-key' },
+      });
+
+      expect(ctx.apiKey).toBe('my-key');
+    });
+
+    it('should handle array headers', async () => {
+      const { setApiKeys, requireAuth } = await import('../middleware/auth.js');
+      setApiKeys(['my-key']);
+
+      const ctx = requireAuth({
+        headers: { 'x-api-key': ['my-key'] },
+      });
+
+      expect(ctx.apiKey).toBe('my-key');
     });
   });
 });

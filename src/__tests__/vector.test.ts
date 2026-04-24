@@ -4,18 +4,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock database
-vi.mock('./db.js', () => ({
+vi.mock('../memory/db.js', () => ({
   query: vi.fn(async () => []),
   queryOne: vi.fn(async () => null),
 }));
 
 // Mock embeddings
-vi.mock('./embeddings.js', () => ({
+vi.mock('../memory/embeddings.js', () => ({
   embed: vi.fn(async () => ({ embedding: Array(1536).fill(0.1), model: 'test' })),
 }));
 
-import { query } from './db.js';
-import { embed } from './embeddings.js';
+import { query } from '../memory/db.js';
+import { embed } from '../memory/embeddings.js';
 import {
   addMemory,
   searchMemory,

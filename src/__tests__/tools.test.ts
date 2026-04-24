@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock executor
+// Mock executor - capture registered tools
 const registeredTools = new Map<string, Function>();
 vi.mock('../agent-runtime/tools/executor.js', () => ({
   registerTool: vi.fn((name: string, fn: Function) => {
@@ -51,128 +51,148 @@ describe('Tool Modules Registration', () => {
 
   describe('memory tools', () => {
     it('should register memory tools', async () => {
-      await import('../agent-runtime/tools/memory.js');
+      const mod = await import('../agent-runtime/tools/memory.js');
+      mod.registerTools();
       expect(registeredTools.has('search_memory') || registeredTools.has('add_memory') || registeredTools.has('list_memory')).toBe(true);
     });
   });
 
   describe('web-search tools', () => {
     it('should register web search tools', async () => {
-      await import('../agent-runtime/tools/web-search.js');
+      const mod = await import('../agent-runtime/tools/web-search.js');
+      mod.registerTools();
       expect(registeredTools.has('web_search') || registeredTools.has('get_time')).toBe(true);
     });
   });
 
   describe('workspace tools', () => {
     it('should register workspace tools', async () => {
-      await import('../agent-runtime/tools/workspace.js');
+      const mod = await import('../agent-runtime/tools/workspace.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('knowledge tools', () => {
     it('should register knowledge tools', async () => {
-      await import('../agent-runtime/tools/knowledge.js');
+      const mod = await import('../agent-runtime/tools/knowledge.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('send-message tools', () => {
     it('should register send-message tools', async () => {
-      await import('../agent-runtime/tools/send-message.js');
+      const mod = await import('../agent-runtime/tools/send-message.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('agent-tools', () => {
     it('should register agent tools', async () => {
-      await import('../agent-runtime/tools/agent-tools.js');
+      const mod = await import('../agent-runtime/tools/agent-tools.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('exec-code tools', () => {
     it('should register exec-code tools', async () => {
-      await import('../agent-runtime/tools/exec-code.js');
+      const mod = await import('../agent-runtime/tools/exec-code.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('import-soul tools', () => {
     it('should register import-soul tools', async () => {
-      await import('../agent-runtime/tools/import-soul.js');
+      const mod = await import('../agent-runtime/tools/import-soul.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('install-skill tools', () => {
     it('should register install-skill tools', async () => {
-      await import('../agent-runtime/tools/install-skill.js');
+      const mod = await import('../agent-runtime/tools/install-skill.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('uninstall tools', () => {
     it('should register uninstall tools', async () => {
-      await import('../agent-runtime/tools/uninstall.js');
+      const mod = await import('../agent-runtime/tools/uninstall.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('minimax tools', () => {
     it('should register minimax-text tools', async () => {
-      await import('../agent-runtime/tools/minimax-text.js');
+      const mod = await import('../agent-runtime/tools/minimax-text.js');
+      mod.registerTools();
       // Should register without error
     });
 
     it('should register minimax-voice tools', async () => {
-      await import('../agent-runtime/tools/minimax-voice.js');
+      const mod = await import('../agent-runtime/tools/minimax-voice.js');
+      mod.registerTools();
       // Should register without error
     });
 
     it('should register minimax-tts tools', async () => {
-      await import('../agent-runtime/tools/minimax-tts.js');
+      const mod = await import('../agent-runtime/tools/minimax-tts.js');
+      mod.registerTools();
       // Should register without error
     });
 
     it('should register minimax-music tools', async () => {
-      await import('../agent-runtime/tools/minimax-music.js');
+      const mod = await import('../agent-runtime/tools/minimax-music.js');
+      mod.registerTools();
       // Should register without error
     });
 
     it('should register minimax-video tools', async () => {
-      await import('../agent-runtime/tools/minimax-video.js');
+      const mod = await import('../agent-runtime/tools/minimax-video.js');
+      mod.registerTools();
       // Should register without error
     });
 
     it('should register minimax-file tools', async () => {
-      await import('../agent-runtime/tools/minimax-file.js');
+      const mod = await import('../agent-runtime/tools/minimax-file.js');
+      mod.registerTools();
       // Should register without error
     });
 
     it('should register minimax-search tools', async () => {
-      await import('../agent-runtime/tools/minimax-search.js');
+      const mod = await import('../agent-runtime/tools/minimax-search.js');
+      mod.registerTools();
       // Should register without error
     });
   });
 
   describe('openclaw tools', () => {
-    it('should register openclaw tools', async () => {
-      await import('../agent-runtime/tools/openclaw.js');
-      // Should register without error
+    it('should parse OpenClaw soul', async () => {
+      const { parseOpenClawSoul } = await import('../agent-runtime/tools/openclaw.js');
+      const result = parseOpenClawSoul('# Test Role\n## Core Identity\nTest personality', 'test');
+      expect(result.role).toBe('Test Role');
+      expect(result.source).toBe('openclaw');
     });
   });
 
   describe('clawhub-compat tools', () => {
-    it('should register clawhub-compat tools', async () => {
+    it('should load clawhub-compat module', async () => {
       await import('../agent-runtime/tools/clawhub-compat.js');
-      // Should register without error
+      // Should load without error
     });
   });
 
   describe('subagent tools', () => {
     it('should register subagent tools', async () => {
-      await import('../agent-runtime/tools/subagent.js');
+      const mod = await import('../agent-runtime/tools/subagent.js');
+      mod.registerTools();
       // Should register without error
     });
   });

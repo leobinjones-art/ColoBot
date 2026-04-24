@@ -278,7 +278,7 @@ describe('runAgent', () => {
     });
 
     expect(result).toHaveProperty('response');
-    expect((result as any).response).toContain('无法处理');
+    expect((result as any).response).toContain('cannot be processed');
   });
 
   it('records audit log on chat start and complete', async () => {

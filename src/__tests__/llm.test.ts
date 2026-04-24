@@ -1,8 +1,11 @@
+/**
+ * LLM Module 测试
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dependencies
 vi.mock('../memory/db.js', () => ({
-  query: vi.fn(),
+  query: vi.fn(async () => []),
 }));
 
 vi.mock('../services/settings-cache.js', () => ({
@@ -13,9 +16,19 @@ vi.mock('../services/settings-cache.js', () => ({
   getMinimaxApiKey: vi.fn().mockReturnValue('test-minimax-key'),
 }));
 
+vi.mock('../config/llm.js', () => ({
+  getDefaultModel: vi.fn(() => 'gpt-4'),
+  getApiEndpoint: vi.fn(() => 'https://api.openai.com'),
+}));
+
+// Mock fetch
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
 describe('llm/index', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetch.mockReset();
   });
 
   describe('ContentBlock types', () => {
@@ -147,6 +160,22 @@ describe('llm/index', () => {
       expect(models[0]).toBe('openai:gpt-4o');
       expect(models[1]).toBe('anthropic:claude-sonnet');
       expect(models[2]).toBe('minimax:abab6.5-chat');
+    });
+  });
+
+  describe('getProviderName', () => {
+    it('should return provider from cache', async () => {
+      const { getProviderName } = await import('../llm/index.js');
+      const provider = getProviderName();
+      expect(provider).toBe('openai');
+    });
+  });
+
+  describe('setProvider', () => {
+    it('should set provider', async () => {
+      const { setProvider } = await import('../llm/index.js');
+      setProvider('anthropic');
+      // Should not throw
     });
   });
 });

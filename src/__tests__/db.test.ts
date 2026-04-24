@@ -1,17 +1,19 @@
 /**
  * Database Module 测试
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock pg
+// Mock pg Pool before any imports
+const mockQuery = vi.fn();
+const mockEnd = vi.fn();
+
 vi.mock('pg', () => ({
-  Pool: vi.fn().mockImplementation(() => ({
-    query: vi.fn(async (sql, params) => ({
-      rows: [],
-      rowCount: 0,
+  default: {
+    Pool: vi.fn().mockImplementation(() => ({
+      query: mockQuery,
+      end: mockEnd,
     })),
-    end: vi.fn(async () => {}),
-  })),
+  },
 }));
 
 vi.stubEnv('DB_HOST', 'localhost');
@@ -23,61 +25,92 @@ vi.stubEnv('DB_PASSWORD', 'test123');
 describe('Database Module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockQuery.mockReset();
+    mockEnd.mockReset();
   });
 
   describe('query', () => {
     it('should execute query and return rows', async () => {
-      // Import after mock
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ id: 1, name: 'test' }],
+        rowCount: 1,
+      });
+
+      // Re-import to get fresh module with mock
+      vi.resetModules();
       const { query } = await import('../memory/db.js');
 
       const result = await query('SELECT * FROM agents');
 
       expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(1);
     });
 
     it('should execute query with params', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ id: 'agent-1', name: 'Test' }],
+        rowCount: 1,
+      });
+
+      vi.resetModules();
       const { query } = await import('../memory/db.js');
 
       const result = await query('SELECT * FROM agents WHERE id = $1', ['agent-1']);
 
       expect(Array.isArray(result)).toBe(true);
+      expect(mockQuery).toHaveBeenCalledWith(
+        'SELECT * FROM agents WHERE id = $1',
+        ['agent-1']
+      );
     });
 
     it('should handle query error', async () => {
-      const pg = await import('pg');
-      const mockPool = vi.mocked(pg.Pool).mock.results[0].value;
-      mockPool.query.mockRejectedValueOnce(new Error('Query failed'));
+      mockQuery.mockRejectedValueOnce(new Error('Query failed'));
 
+      vi.resetModules();
       const { query } = await import('../memory/db.js');
 
-      await expect(query('SELECT * FROM invalid')).rejects.toThrow();
+      await expect(query('SELECT * FROM invalid')).rejects.toThrow('Query failed');
+    });
+
+    it('should return empty array for no results', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 0,
+      });
+
+      vi.resetModules();
+      const { query } = await import('../memory/db.js');
+
+      const result = await query('SELECT * FROM agents WHERE id = $1', ['nonexistent']);
+
+      expect(result).toEqual([]);
     });
   });
 
   describe('queryOne', () => {
     it('should return first row', async () => {
-      const pg = await import('pg');
-      const mockPool = vi.mocked(pg.Pool).mock.results[0].value;
-      mockPool.query.mockResolvedValueOnce({
+      mockQuery.mockResolvedValueOnce({
         rows: [{ id: 'agent-1', name: 'Test' }],
         rowCount: 1,
       });
 
+      vi.resetModules();
       const { queryOne } = await import('../memory/db.js');
 
       const result = await queryOne('SELECT * FROM agents WHERE id = $1', ['agent-1']);
 
       expect(result).not.toBeNull();
+      expect(result?.id).toBe('agent-1');
     });
 
     it('should return null for empty result', async () => {
-      const pg = await import('pg');
-      const mockPool = vi.mocked(pg.Pool).mock.results[0].value;
-      mockPool.query.mockResolvedValueOnce({
+      mockQuery.mockResolvedValueOnce({
         rows: [],
         rowCount: 0,
       });
 
+      vi.resetModules();
       const { queryOne } = await import('../memory/db.js');
 
       const result = await queryOne('SELECT * FROM agents WHERE id = $1', ['non-existent']);
@@ -88,11 +121,14 @@ describe('Database Module', () => {
 
   describe('closeDb', () => {
     it('should close pool', async () => {
+      mockEnd.mockResolvedValueOnce(undefined);
+
+      vi.resetModules();
       const { closeDb } = await import('../memory/db.js');
 
       await closeDb();
 
-      // Should not throw
+      expect(mockEnd).toHaveBeenCalled();
     });
   });
 });
