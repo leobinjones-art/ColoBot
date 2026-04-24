@@ -283,6 +283,7 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 
 ```
 @colobot/core          # 核心：Agent、记忆、工具、LLM 抽象
+@colobot/tui           # 终端界面（TUI）
 @colobot/sop           # SOP 流程（可选）
 @colobot/feishu        # 飞书集成（可选）
 @colobot/dashboard     # Web 管理界面（可选）
@@ -297,6 +298,9 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 # 最小安装（仅核心）
 npm install @colobot/core
 
+# 终端界面
+npm install @colobot/tui
+
 # SOP 流程
 npm install @colobot/core @colobot/sop
 
@@ -306,6 +310,26 @@ npm install @colobot/core @colobot/feishu
 # 完整安装
 npm install @colobot/server
 ```
+
+### TUI 终端界面
+
+`@colobot/tui` 提供终端交互界面：
+
+```bash
+# 启动 TUI
+npx colobot-tui
+
+# 指定 Agent
+npx colobot-tui --agent my-agent
+```
+
+功能：
+- 💬 实时对话
+- 📋 SOP 流程（终端内执行）
+- 🔧 配置管理
+- 🔍 搜索记忆
+
+详见 [TUI 设计文档](docs/tui-design.md)
 
 ### 功能规划
 
