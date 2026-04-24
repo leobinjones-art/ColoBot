@@ -282,11 +282,29 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 将 ColoBot 拆分为独立 npm 包，支持按需安装：
 
 ```
-@colobot/core          # 核心：Agent、记忆、工具
-@colobot/tui           # 终端界面（TUI）
-@colobot/sop           # SOP流程（可选）
+@colobot/core          # 核心：Agent、记忆、工具、LLM 抽象
+@colobot/sop           # SOP 流程（可选）
 @colobot/feishu        # 飞书集成（可选）
-@colobot/dashboard     # Web管理界面（可选）
+@colobot/dashboard     # Web 管理界面（可选）
+@colobot/server        # 完整服务（整合包）
+```
+
+详见 [模块化拆包方案](docs/modular-packages.md)
+
+### 安装示例
+
+```bash
+# 最小安装（仅核心）
+npm install @colobot/core
+
+# SOP 流程
+npm install @colobot/core @colobot/sop
+
+# 飞书集成
+npm install @colobot/core @colobot/feishu
+
+# 完整安装
+npm install @colobot/server
 ```
 
 ### 功能规划
