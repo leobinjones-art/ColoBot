@@ -282,12 +282,14 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 将 ColoBot 拆分为独立 npm 包，支持按需安装：
 
 ```
-@colobot/core          # 核心：Agent、记忆、工具、LLM 抽象
-@colobot/tui           # 终端界面（TUI）
-@colobot/sop           # SOP 流程（可选）
-@colobot/feishu        # 飞书集成（可选）
-@colobot/dashboard     # Web 管理界面（可选）
-@colobot/server        # 完整服务（整合包）
+@colobot/core              # 核心：Agent、记忆、工具、LLM 抽象
+@colobot/tui               # 终端界面（TUI）
+@colobot/sop               # SOP 流程（可选）
+@colobot/feishu            # 飞书集成（可选）
+@colobot/dashboard         # Web 管理界面（可选）
+@colobot/skills-openclaw   # OpenClaw Skill 库兼容（可选）
+@colobot/llm-minimax       # MiniMax LLM 兼容（可选）
+@colobot/server            # 完整服务（整合包）
 ```
 
 详见 [模块化拆包方案](docs/modular-packages.md)
@@ -306,6 +308,12 @@ npm install @colobot/core @colobot/sop
 
 # 飞书集成
 npm install @colobot/core @colobot/feishu
+
+# MiniMax LLM（国内直连）
+npm install @colobot/core @colobot/llm-minimax
+
+# OpenClaw Skill 兼容
+npm install @colobot/core @colobot/skills-openclaw
 
 # 完整安装
 npm install @colobot/server
@@ -330,6 +338,44 @@ npx colobot-tui --agent my-agent
 - 🔍 搜索记忆
 
 详见 [TUI 设计文档](docs/tui-design.md)
+
+### MiniMax LLM 兼容
+
+`@colobot/llm-minimax` 提供国产 MiniMax 模型支持：
+
+```typescript
+import { MiniMaxProvider } from '@colobot/llm-minimax'
+
+const minimax = new MiniMaxProvider({
+  apiKey: 'your-api-key',
+  groupId: 'your-group-id'
+})
+```
+
+优势：
+- 🌐 国内直连，无需代理
+- 💰 成本更低
+- 🔐 符合国内监管
+
+详见 [MiniMax 兼容文档](docs/llm-minimax.md)
+
+### OpenClaw Skill 兼容
+
+`@colobot/skills-openclaw` 支持 OpenClaw Skill 库导入：
+
+```typescript
+import { importOpenClawLibrary } from '@colobot/skills-openclaw'
+
+// 批量导入 OpenClaw Skill
+const skills = await importOpenClawLibrary('./openclaw-skills/')
+```
+
+功能：
+- 📥 YAML 格式导入
+- 🔄 自动格式转换
+- 📦 批量导入
+
+详见 [OpenClaw 兼容文档](docs/skills-openclaw.md)
 
 ### 功能规划
 
