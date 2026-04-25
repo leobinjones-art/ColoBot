@@ -1,14 +1,18 @@
 {
-  "name": "colobot",
-  "version": "0.1.0",
+  "name": "colobot-monorepo",
+  "version": "0.2.0",
   "description": "单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + SearXNG 搜索",
   "license": "Apache-2.0",
   "type": "module",
-  "main": "dist/colobot-server.js",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "release": "release-please release",
     "dev": "tsx watch src/colobot-server.ts",
     "build": "tsc",
+    "build:packages": "npm run build -ws",
     "start": "node dist/colobot-server.js",
     "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",
