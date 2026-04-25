@@ -1,0 +1,39 @@
+{
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "maxTokens": 4096,
+    "temperature": 0.7
+  },
+  "search": {
+    "engine": "duckduckgo",
+    "maxResults": 10,
+    "timeout": 30000
+  },
+  "subAgent": {
+    "maxConcurrent": 10,
+    "defaultTtlMs": 300000,
+    "defaultTimeoutMs": 300000,
+    "allowedTools": [
+      "read_file",
+      "write_file",
+      "list_dir",
+      "web_search",
+      "python",
+      "http"
+    ],
+    "blockedTools": [
+      "delete_file",
+      "execute_shell",
+      "system_access"
+    ]
+  },
+  "audit": {
+    "enabled": true,
+    "level": "info"
+  },
+  "memory": {
+    "type": "inmemory",
+    "maxEntries": 10000
+  }
+}

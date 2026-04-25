@@ -14,12 +14,13 @@
     "build": "tsc",
     "build:packages": "npm run build -ws",
     "start": "node dist/colobot-server.js",
+    "colobot": "tsx packages/server/src/cli.ts",
     "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src/ --max-warnings 200",
-    "test:e2e": "vitest run src/__tests__/e2e.test.ts",
-    "test:e2e:watch": "vitest src/__tests__/e2e.test.ts"
+    "test:e2e": "vitest run e2e/",
+    "test:e2e:watch": "vitest e2e/"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.60.0",

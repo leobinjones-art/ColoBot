@@ -105,47 +105,167 @@ graph TB
 
 ---
 
-## 🚀 快速开始
+## 📦 Monorepo 结构
 
-1. **克隆项目**
-   ```bash
-   git clone https://github.com/leobinjones-art/ColoBot.git
-   cd colobot
-   ```
+ColoBot 采用 monorepo 架构，支持按需安装：
 
-2. **安装依赖**
-   ```bash
-   npm install
-   ```
+```
+packages/
+├── types/          # @colobot/types - 共享类型定义
+├── core/           # @colobot/core - 核心逻辑
+├── tui/            # @colobot/tui - 终端界面
+├── sop/            # @colobot/sop - SOP 流程（规划中）
+├── feishu/         # @colobot/feishu - 飞书集成（规划中）
+├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（规划中）
+├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（规划中）
+├── dashboard/      # @colobot/dashboard - Web 管理界面（规划中）
+└── server/         # @colobot/server - 完整服务（规划中）
+```
 
-3. **配置环境变量**
-   ```bash
-   cp .env.example .env
-   # 编辑 .env 填入必要的配置
-   ```
+### 已发布包
 
-4. **启动 PostgreSQL（需 pgvector 扩展）**
-   ```bash
-   docker compose up -d postgres
-   ```
+| 包名 | 版本 | 说明 |
+|------|------|------|
+| `@colobot/types` | 0.1.0 | LLM、Agent、Tool、Memory 等类型定义 |
+| `@colobot/core` | 0.1.0 | Agent 运行时、子Agent、工具、搜索、大文件处理 |
+| `@colobot/tui` | 0.1.0 | 终端交互界面、命令面板、聊天组件 |
+| `@colobot/server` | 0.1.0 | 完整服务整合包，一键启动 |
 
-5. **初始化数据库**
-   ```bash
-   npm run db:init
-   ```
+### 安装示例
 
-6. **启动 ColoBot**
-   ```bash
-   npm run dev
-   ```
+```bash
+# 完整安装（推荐）
+npm install @colobot/server
 
-访问 `http://localhost:18792` 打开 Dashboard。
+# 最小安装（仅核心）
+npm install @colobot/core
 
-> **注意**：需使用带 pgvector 扩展的 PostgreSQL 镜像（如 `pgvector/pgvector:pg18`）。
+# 终端界面
+npm install @colobot/tui
+
+# 类型定义（开发依赖）
+npm install -D @colobot/types
+```
+
+### 快速启动
+
+```bash
+# 安装后直接运行（简单 CLI）
+npx colobot
+
+# TUI 界面
+npx colobot tui
+
+# 指定模型
+npx colobot --provider anthropic --model claude-sonnet-4-20250514
+
+# 设置并发数和工具白名单
+npx colobot --max-concurrent 5 --allowed-tools "read_file,web_search"
+
+# 查看版本
+npx colobot --version
+
+# 查看帮助
+npx colobot --help
+```
+
+### CLI 选项
+
+| 选项 | 说明 |
+|------|------|
+| `tui` | 启动 TUI 界面 |
+| `--provider` | LLM Provider (openai, anthropic) |
+| `--model` | 模型名称 |
+| `--search` | 搜索引擎 (duckduckgo, google, bing) |
+| `--api-key` | API Key |
+| `--max-concurrent` | 最大并发子 Agent 数 |
+| `--allowed-tools` | 允许的工具列表（逗号分隔） |
+| `--version, -v` | 显示版本 |
+| `--help, -h` | 显示帮助 |
+
+### @colobot/core 核心模块
+
+| 模块 | 说明 |
+|------|------|
+| `runtime` | Agent 运行时、LLM 抽象层 |
+| `subagents` | 父子 Agent 协作、TTL 过期、工具白名单 |
+| `task-breakdown` | AI 驱动任务拆解、依赖管理、并行执行 |
+| `chunking` | 大文件分块处理、多种合并策略 |
+| `search` | 多引擎搜索（SearXNG/DuckDuckGo/Google/Bing） |
+| `tools` | 12 个内置工具、工具注册表 |
+| `config` | 配置管理、模型能力自动计算、CLI 参数解析 |
+
+### @colobot/tui 组件
+
+| 组件 | 说明 |
+|------|------|
+| `TUI` | 主界面容器 |
+| `ChatUI` | 聊天消息展示 |
+| `CommandPalette` | 命令面板 |
+| `StatusBar` | 状态栏 |
+| `LogPanel` | 日志面板 |
 
 ---
 
-## 📋 SOP 学术研究流程
+## 🚀 快速开始
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 构建
+
+```bash
+# 构建所有包
+npm run build
+
+# 构建单个包
+npm run build --workspace=@colobot/core
+```
+
+### 测试
+
+```bash
+# 单元测试
+npm test
+
+# E2E 测试
+npm run test:e2e
+```
+
+### 启动 CLI
+
+```bash
+# Core CLI
+npm run cli
+
+# TUI CLI
+npm run tui
+```
+
+---
+
+## 未来规划
+
+### 模块化拆包（P0）
+
+将 ColoBot 拆分为独立 npm 包，支持按需安装：
+
+```
+@colobot/core              # 核心：Agent、记忆、工具、LLM 抽象 ✅
+@colobot/types             # 类型定义 ✅
+@colobot/tui               # 终端界面（TUI） ✅
+@colobot/sop               # SOP 流程（可选）
+@colobot/feishu            # 飞书集成（可选）
+@colobot/dashboard         # Web 管理界面（可选）
+@colobot/skills-openclaw   # OpenClaw Skill 库兼容（可选）
+@colobot/tools-minimax     # MiniMax 工具兼容（可选）
+@colobot/server            # 完整服务（整合包）
+```
+
+详见 [模块化拆包方案](docs/modular-packages.md)
 
 ColoBot 支持 AI 驱动的学术研究 SOP（标准操作流程），自动拆解任务、引导执行、审核结果。
 

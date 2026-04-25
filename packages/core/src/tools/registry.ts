@@ -21,6 +21,10 @@ export class ToolRegistry {
     this.tools.delete(name);
   }
 
+  clear(): void {
+    this.tools.clear();
+  }
+
   get(name: string): RuntimeTool | undefined {
     return this.tools.get(name);
   }

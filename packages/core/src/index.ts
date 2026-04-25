@@ -48,8 +48,88 @@ export {
   multimodalSearch,
   academicSearch,
   configureSearch,
+  getSearchConfig,
   type SearchOptions,
   type SearchResult,
   type SearchResponse,
   type AcademicPaper,
 } from './search.js';
+
+// 子智能体系统
+export {
+  spawnSubAgent,
+  getSubAgent,
+  listSubAgents,
+  destroySubAgent,
+  setSubAgentStatus,
+  touchSubAgent,
+  isToolAllowed,
+  getSubAgentWorkspacePath,
+  runSubAgentTask,
+  clearSubAgents,
+  setGlobalAllowedTools,
+  getGlobalAllowedTools,
+  type SubAgentConfig,
+  type SubAgent,
+  type SubAgentDeps,
+} from './subagents/index.js';
+
+// 任务拆解 - AI驱动的动态任务分解
+export {
+  analyzeRequest,
+  executeDynamicTask,
+  cleanupTaskResult,
+  DEFAULT_TOOLS,
+  type ToolDefinition,
+  type TaskAnalysis,
+  type SubTask,
+  type ExecutionResult,
+  type TaskResult,
+  type ExecutionContext,
+  type DynamicBreakdownDeps,
+} from './task-breakdown/index.js';
+
+// 大文件处理 - 分块、流式、合并
+export {
+  getFileInfo,
+  readChunksByBytes,
+  readChunksByLines,
+  readChunksByTokens,
+  processChunksParallel,
+  processStream,
+  processWithSlidingWindow,
+  compressWithLLM,
+  hierarchicalSummary,
+  mergeText,
+  mergeArray,
+  mergeStats,
+  mergeDedup,
+  CHUNK_TOOLS,
+  DEFAULT_CHUNK_CONFIG,
+  type ChunkConfig,
+  type Chunk,
+  type ChunkResult,
+  type FileInfo,
+  type ChunkProcessor,
+  type StreamProcessor,
+  type WindowProcessor,
+  type MergeStrategy,
+} from './chunking/index.js';
+
+// 配置管理 - 命令行配置系统
+export {
+  ConfigManager,
+  DEFAULT_CONFIG,
+  initConfig,
+  getConfigManager,
+  parseCLIArgs,
+  applyCLIOptions,
+  HELP_TEXT,
+  getModelCapabilities,
+  type CoreConfig,
+  type ModelConfig,
+  type SearchConfig,
+  type ModelCapabilities,
+  type CLIOptions,
+} from './config/index.js';
+export type { SubAgentConfig as SubAgentConfigFromCore } from './config/index.js';
