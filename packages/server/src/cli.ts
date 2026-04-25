@@ -23,6 +23,12 @@ interface CLIArgs {
   config?: string;
   maxConcurrent?: number;
   allowedTools?: string;
+  storage?: 'memory' | 'database';
+  dbHost?: string;
+  dbPort?: number;
+  dbName?: string;
+  dbUser?: string;
+  dbPassword?: string;
 }
 
 function parseArgs(args: string[]): CLIArgs {
@@ -80,6 +86,34 @@ function parseArgs(args: string[]): CLIArgs {
     } else if (arg === '--allowed-tools' && args[i + 1]) {
       result.allowedTools = args[i + 1];
       i++;
+    } else if (arg === '--storage' && args[i + 1]) {
+      const storage = args[i + 1];
+      if (storage !== 'memory' && storage !== 'database') {
+        console.error(`错误: 无效的存储类型 "${storage}"，可选值: memory, database`);
+        process.exit(1);
+      }
+      result.storage = storage as 'memory' | 'database';
+      i++;
+    } else if (arg === '--db-host' && args[i + 1]) {
+      result.dbHost = args[i + 1];
+      i++;
+    } else if (arg === '--db-port' && args[i + 1]) {
+      const val = parseInt(args[i + 1]);
+      if (isNaN(val)) {
+        console.error(`错误: --db-port 必须是数字`);
+        process.exit(1);
+      }
+      result.dbPort = val;
+      i++;
+    } else if (arg === '--db-name' && args[i + 1]) {
+      result.dbName = args[i + 1];
+      i++;
+    } else if (arg === '--db-user' && args[i + 1]) {
+      result.dbUser = args[i + 1];
+      i++;
+    } else if (arg === '--db-password' && args[i + 1]) {
+      result.dbPassword = args[i + 1];
+      i++;
     } else if (arg.startsWith('--')) {
       console.error(`错误: 未知选项 "${arg}"`);
       console.error('使用 --help 查看可用选项');
@@ -105,18 +139,29 @@ ColoBot CLI - AI 智能体协作平台
   --config <path>       配置文件路径
   --max-concurrent <n>  最大并发子 Agent 数
   --allowed-tools <list> 允许的工具列表（逗号分隔）
+  --storage <type>      存储类型 (memory, database)
+  --db-host <host>      数据库主机
+  --db-port <port>      数据库端口
+  --db-name <name>      数据库名
+  --db-user <user>      数据库用户
+  --db-password <pwd>   数据库密码
   --version, -v         显示版本
   --help, -h            显示帮助
 
 环境变量:
   OPENAI_API_KEY        OpenAI API Key
   ANTHROPIC_API_KEY     Anthropic API Key
+  DB_HOST               数据库主机
+  DB_PORT               数据库端口
+  DB_NAME               数据库名
+  DB_USER               数据库用户
+  DB_PASSWORD           数据库密码
 
 示例:
   npx colobot
   npx colobot tui
   npx colobot --provider anthropic --model claude-sonnet-4-20250514
-  npx colobot tui --search duckduckgo
+  npx colobot --storage database --db-host localhost --db-name colobot
   npx colobot --max-concurrent 5 --allowed-tools "read_file,web_search"
 `;
 
@@ -135,29 +180,33 @@ async function main() {
   }
 
   try {
+    const serverOptions = {
+      apiKey: args.apiKey,
+      provider: args.provider,
+      model: args.model,
+      searchEngine: args.searchEngine,
+      configPath: args.config,
+      maxConcurrent: args.maxConcurrent,
+      allowedTools: args.allowedTools,
+      storage: args.storage,
+      database: args.storage === 'database' ? {
+        host: args.dbHost,
+        port: args.dbPort,
+        database: args.dbName,
+        user: args.dbUser,
+        password: args.dbPassword,
+      } : undefined,
+    };
+
     if (args.tui) {
       // TUI 模式
       await startColoBot({
-        apiKey: args.apiKey,
-        provider: args.provider,
-        model: args.model,
-        searchEngine: args.searchEngine,
-        configPath: args.config,
-        maxConcurrent: args.maxConcurrent,
-        allowedTools: args.allowedTools,
+        ...serverOptions,
         enableTUI: true,
       });
     } else {
       // 简单 CLI 模式
-      const { runtime, configManager } = createRuntime({
-        apiKey: args.apiKey,
-        provider: args.provider,
-        model: args.model,
-        searchEngine: args.searchEngine,
-        configPath: args.config,
-        maxConcurrent: args.maxConcurrent,
-        allowedTools: args.allowedTools,
-      });
+      const { runtime, configManager } = createRuntime(serverOptions);
 
       const config = configManager.getConfig();
       const caps = configManager.getModelCapabilities();

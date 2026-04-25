@@ -180,8 +180,21 @@ npx colobot --help
 | `--api-key` | API Key |
 | `--max-concurrent` | 最大并发子 Agent 数 |
 | `--allowed-tools` | 允许的工具列表（逗号分隔） |
+| `--storage` | 存储类型 (memory, database) |
+| `--db-host` | 数据库主机 |
+| `--db-name` | 数据库名 |
 | `--version, -v` | 显示版本 |
 | `--help, -h` | 显示帮助 |
+
+### 存储模式
+
+```bash
+# 内存存储（默认，重启丢失）
+npx colobot
+
+# 数据库存储（持久化）
+npx colobot --storage database --db-host localhost --db-name colobot
+```
 
 ### @colobot/core 核心模块
 

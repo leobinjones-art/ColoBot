@@ -77,6 +77,7 @@ export {
 
   // 适配器
   InMemoryStore,
+  DatabaseStore,
   ConsoleAudit,
   ConsolePusher,
   ToolExecutorImpl,

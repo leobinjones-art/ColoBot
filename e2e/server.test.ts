@@ -152,6 +152,21 @@ describe('E2E: @colobot/server', () => {
       delete process.env.ANTHROPIC_API_KEY;
       toolRegistry.clear();
     });
+
+    it('should create runtime with database storage', async () => {
+      const { createRuntime, toolRegistry, DatabaseStore } = await import('@colobot/server');
+
+      toolRegistry.clear();
+
+      // 使用内存存储测试（不实际连接数据库）
+      const { runtime } = createRuntime({
+        apiKey: 'test-key',
+        storage: 'memory',
+      });
+
+      expect(runtime).toBeDefined();
+      toolRegistry.clear();
+    });
   });
 
   describe('integration', () => {

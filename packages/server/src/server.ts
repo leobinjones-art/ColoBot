@@ -13,12 +13,28 @@ import {
   ToolRegistry,
   ToolExecutorImpl,
   InMemoryStore,
+  DatabaseStore,
   NoOpScanner,
   ConsoleAudit,
   ConsolePusher,
+  initDb,
   type LLMProvider,
   type RuntimeDeps,
+  type MemoryStore,
 } from '@colobot/core';
+
+export interface DatabaseConfig {
+  /** 数据库主机 */
+  host?: string;
+  /** 数据库端口 */
+  port?: number;
+  /** 数据库名 */
+  database?: string;
+  /** 用户名 */
+  user?: string;
+  /** 密码 */
+  password?: string;
+}
 
 export interface ServerOptions {
   /** 配置文件路径 */
@@ -35,6 +51,10 @@ export interface ServerOptions {
   maxConcurrent?: number;
   /** 允许的工具列表（逗号分隔） */
   allowedTools?: string;
+  /** 存储类型：memory | database */
+  storage?: 'memory' | 'database';
+  /** 数据库配置（storage=database 时使用） */
+  database?: DatabaseConfig;
   /** 是否启用 TUI */
   enableTUI?: boolean;
 }
@@ -127,10 +147,28 @@ export function createRuntime(options: ServerOptions = {}): {
         defaultModel: config.model.model,
       });
 
-  // 6. 创建运行时
+  // 6. 创建存储
+  let memory: MemoryStore;
+
+  if (options.storage === 'database') {
+    // 数据库存储
+    const dbConfig = options.database || {};
+    memory = new DatabaseStore({
+      host: dbConfig.host || process.env.DB_HOST,
+      port: dbConfig.port || parseInt(process.env.DB_PORT || '5432'),
+      database: dbConfig.database || process.env.DB_NAME,
+      user: dbConfig.user || process.env.DB_USER,
+      password: dbConfig.password || process.env.DB_PASSWORD,
+    });
+  } else {
+    // 内存存储（默认）
+    memory = new InMemoryStore();
+  }
+
+  // 7. 创建运行时
   const runtime = new AgentRuntime({
     llm,
-    memory: new InMemoryStore(),
+    memory,
     tools: new ToolExecutorImpl(new ToolRegistry()),
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
@@ -162,6 +200,7 @@ export async function startColoBot(options: ServerOptions = {}): Promise<void> {
   console.log(`  Search:       ${config.search.engine}`);
   console.log(`  Max Agents:   ${config.subAgent.maxConcurrent}`);
   console.log(`  Tools:        ${config.subAgent.allowedTools.length} allowed`);
+  console.log(`  Storage:      ${options.storage || 'memory'}`);
   console.log('');
 
   // 如果启用 TUI，启动 TUI 界面
