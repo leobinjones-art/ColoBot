@@ -2,7 +2,7 @@
   "name": "@colobot/core",
   "version": "0.2.0",
   "description": "ColoBot Agent 运行时核心",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

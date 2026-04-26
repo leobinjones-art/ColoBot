@@ -2,7 +2,7 @@
   "name": "@colobot/tui",
   "version": "0.1.0",
   "description": "ColoBot 终端界面",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

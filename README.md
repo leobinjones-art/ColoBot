@@ -1,6 +1,6 @@
 # ColoBot
 
-![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
+![License](https://img.shields.io/badge/license-AGPL%203.0-blue.svg)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL%2Bpgvector-blue.svg)
@@ -714,4 +714,9 @@ ColoBot 是一个开源项目，我们欢迎各种形式的贡献！
 
 ## 📄 License
 
-Apache 2.0
+GNU Affero General Public License v3.0 (AGPL-3.0)
+
+**重要说明：**
+- AGPL-3.0 要求任何通过网络使用本软件的服务（包括 SaaS）必须开源
+- 修改后的版本必须以相同协议发布
+- 保留原作者版权声明

@@ -2,7 +2,7 @@
   "name": "colobot-monorepo",
   "version": "0.2.0",
   "description": "单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + SearXNG 搜索",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "type": "module",
   "private": true,
   "workspaces": [
