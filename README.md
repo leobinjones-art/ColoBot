@@ -438,7 +438,7 @@ packages/
 ├── core/           # @colobot/core - 核心运行时 ✅
 ├── tui/            # @colobot/tui - 终端界面 ✅
 ├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程 ✅
-├── tools-minimax/  # @colobot/tools-minimax - MiniMax 多模态工具（待开发）
+├── tools-minimax/  # @colobot/tools-minimax - MiniMax 平台工具（待开发）
 ├── tools-python/   # @colobot/tools-python - Python 代码执行（待开发）
 ├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 兼容（待开发）
 ├── dashboard/      # @colobot/dashboard - Web 管理界面（待迁移）
@@ -473,7 +473,7 @@ npm install @colobot/core @colobot/tui
 
 # 按需扩展
 npm install @colobot/sop-academic      # 学术研究
-npm install @colobot/tools-minimax     # 多模态（待发布）
+npm install @colobot/tools-minimax     # MiniMax 平台工具（待发布）
 npm install @colobot/tools-python      # Python 执行（待发布）
 npm install @colobot/skills-openclaw   # OpenClaw 兼容（待发布）
 
