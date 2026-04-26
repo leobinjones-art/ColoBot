@@ -18,6 +18,8 @@
   - [审计日志](#审计日志)
   - [系统设置](#系统设置)
   - [搜索服务](#搜索服务)
+- [包 API](#包-api)
+- [SDK 使用](#sdk-使用)
 
 ---
 
@@ -25,7 +27,7 @@
 
 ColoBot API 提供了完整的智能体管理和协作功能。支持多模态输入输出、Skill编排、自动审批流程等功能。
 
-**版本**: v0.1.0  
+**版本**: v0.2.0  
 **协议**: HTTP/1.1, WebSocket  
 **数据格式**: JSON
 
@@ -886,10 +888,99 @@ ws.send(JSON.stringify({
 
 ---
 
+## 包 API
+
+ColoBot 提供多个 npm 包，可通过编程方式使用：
+
+### @colobot/core
+
+核心运行时和工具：
+
+```typescript
+import { ColoBotRuntimeImpl, InMemoryStore, SQLiteStore } from '@colobot/core';
+
+// 使用 SQLite 存储
+const store = new SQLiteStore({ path: './data/colobot.db' });
+
+// 创建运行时
+const runtime = new ColoBotRuntimeImpl({
+  llm: new OpenAIProvider({ apiKey: 'sk-xxx' }),
+  stateStore: new InMemoryStateStore(),
+  memoryStore: store,
+});
+```
+
+### @colobot/sop-academic
+
+SOP 学术研究流程：
+
+```typescript
+import { createSopEngine, isAcademicIntent } from '@colobot/sop-academic';
+
+const sop = createSopEngine(runtime);
+
+if (isAcademicIntent(userMessage)) {
+  const analysis = await sop.analyzeTask(userMessage);
+  const state = await sop.createTask(agentId, sessionKey, analysis);
+}
+```
+
+### @colobot/types
+
+类型定义：
+
+```typescript
+import type { LLMMessage, AgentConfig, MemoryResult } from '@colobot/types';
+```
+
+---
+
+## SDK 使用
+
+### Node.js SDK
+
+```typescript
+import { ColoBotRuntimeImpl, OpenAIProvider } from '@colobot/core';
+
+const runtime = new ColoBotRuntimeImpl({
+  llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY }),
+  // ...
+});
+
+// 创建 Agent
+const agentId = await runtime.createAgent({
+  name: 'my-agent',
+  soul: '你是一个助手',
+});
+
+// 对话
+const response = await runtime.runAgent(agentId, '你好');
+```
+
+### Python SDK（规划中）
+
+```python
+from colobot import ColoBotClient
+
+client = ColoBotClient(api_key="your-api-key")
+
+# 创建 Agent
+agent = client.agents.create(
+    name="my-agent",
+    soul="你是一个助手"
+)
+
+# 对话
+response = agent.run("你好")
+```
+
+---
+
 ## 版本历史
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v0.2.0 | 2026-04-26 | 添加 SQLite 支持、ColoBotRuntime 接口 |
 | v0.1.0 | 2026-04-19 | 初始版本 |
 
 ---
@@ -899,5 +990,7 @@ ws.send(JSON.stringify({
 如有问题，请通过以下方式获取帮助：
 
 - 📖 [文档](../README.md)
+- 📚 [运行时接口文档](./runtime-interface.md)
+- 🚀 [部署教程](./deployment.md)
 - 🐛 [问题跟踪](https://github.com/leobinjones-art/ColoBot/issues)
 - 💬 [讨论区](https://github.com/leobinjones-art/ColoBot/discussions)

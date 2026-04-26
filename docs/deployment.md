@@ -1,6 +1,6 @@
 # ColoBot 部署教程
 
-本文档提供两种部署方式：**Docker Compose（推荐）** 和 **手动部署**。
+本文档提供三种部署方式：**Docker Compose（推荐）**、**手动部署** 和 **SQLite 轻量部署**。
 
 ---
 
@@ -10,6 +10,7 @@
 |------|----------|------|
 | Node.js | 22.x | 22.x LTS |
 | PostgreSQL | 16.x + pgvector | 18.x + pgvector |
+| SQLite | 3.x（内置） | - |
 | 内存 | 2 GB | 4 GB+ |
 | 磁盘 | 10 GB | 20 GB+ |
 
@@ -226,6 +227,62 @@ npm start
 curl http://localhost:18792/health
 # 应返回 {"ok":true,"timestamp":...}
 ```
+
+---
+
+## 方式三：SQLite 轻量部署（开发/测试）
+
+适合开发测试环境，无需 PostgreSQL 服务。
+
+### 1. 克隆和安装
+
+```bash
+git clone https://github.com/leobinjones-art/ColoBot.git
+cd colobot
+npm install
+```
+
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+**最小配置：**
+
+```env
+# LLM
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
+
+# 使用 SQLite（无需 PostgreSQL）
+DB_TYPE=sqlite
+DB_PATH=./data/colobot.db
+
+# Dashboard 访问密钥
+COLOBOT_API_KEY=your_random_api_key
+```
+
+### 3. 启动服务
+
+```bash
+npm run dev
+```
+
+### 4. 验证
+
+```bash
+curl http://localhost:18792/health
+```
+
+### SQLite 限制
+
+| 功能 | PostgreSQL | SQLite |
+|------|------------|--------|
+| 向量检索 | ✅ pgvector | ❌ 降级为文本匹配 |
+| 并发写入 | ✅ 高并发 | ⚠️ 单写入 |
+| 生产环境 | ✅ 推荐 | ❌ 不推荐 |
 
 ---
 
