@@ -732,7 +732,7 @@ GNU Affero General Public License v3.0 (AGPL-3.0)
 - **授权灵活** — 根据业务规模定制授权方案
 
 **联系方式：**
-- 📧 Email: [商业许可咨询]
+- 📧 Email: leo.bin.jones@gmail.com
 - 💬 GitHub Issues: [提交商业许可需求]
 
 ---
