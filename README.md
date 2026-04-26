@@ -175,6 +175,50 @@ console.log(`分成 ${chunks.length} 个块`);
 console.log(`每块约 ${processor.chunkSize} tokens`);
 ```
 
+### 性能考量
+
+> ⚠️ **重要提示**：并行处理性能受以下因素影响：
+
+| 因素 | 影响 | 建议配置 |
+|------|------|----------|
+| **CPU 核心数** | 决定并行处理能力 | 4核以下建议串行处理 |
+| **内存大小** | 每个分块需要加载到内存 | 8GB 以下建议减小 chunk_size |
+| **API 并发限制** | LLM Provider 通常有 RPM/TPM 限制 | 根据套餐调整 `maxConcurrent` |
+| **网络带宽** | 大文件上传耗时 | 本地文件优先，避免网络传输 |
+
+**推荐配置：**
+
+```typescript
+// 低配机器（4核8GB）
+const processor = new ChunkProcessor({
+  strategy: 'tokens',
+  maxConcurrent: 1,          // 串行处理
+  chunkSize: 10000,          // 较小的块
+});
+
+// 中配机器（8核16GB）
+const processor = new ChunkProcessor({
+  strategy: 'tokens',
+  maxConcurrent: 3,          // 3 并发
+  chunkSize: 20000,
+});
+
+// 高配机器（16核32GB+）
+const processor = new ChunkProcessor({
+  strategy: 'tokens',
+  maxConcurrent: 8,          // 8 并发
+  chunkSize: 30000,
+});
+```
+
+**API 限制对照：**
+
+| Provider | 免费套餐 | 付费套餐 | 建议并发数 |
+|----------|----------|----------|------------|
+| OpenAI | 3 RPM | 500+ RPM | 3-10 |
+| Anthropic | 5 RPM | 1000+ RPM | 5-20 |
+| MiniMax | 10 RPM | 100+ RPM | 5-15 |
+
 ### 合并策略
 
 | 策略 | 说明 |
