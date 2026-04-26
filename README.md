@@ -4,6 +4,7 @@
 ![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL%2Bpgvector-blue.svg)
+![SQLite](https://img.shields.io/badge/database-SQLite%20fallback-green.svg)
 ![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)
 
 > 单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + 飞书审批通知
@@ -57,7 +58,7 @@
 | 层级 | 技术 |
 |------|------|
 | 运行时 | Node.js 22+ (TypeScript, ESM) |
-| 数据库 | PostgreSQL + pgvector |
+| 数据库 | PostgreSQL + pgvector（生产）/ SQLite（降级） |
 | LLM | OpenAI / Anthropic / MiniMax |
 | 搜索 | SearXNG |
 | 前端 | 单文件 HTML（无框架，零依赖） |
@@ -115,10 +116,10 @@ packages/
 ├── core/           # @colobot/core - 核心逻辑 ✅
 ├── tui/            # @colobot/tui - 终端界面 ✅
 ├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程 ✅
-├── feishu/         # @colobot/feishu - 飞书集成（待开发）
-├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（待开发）
-├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（待开发）
-└── dashboard/      # @colobot/dashboard - Web 管理界面（待开发）
+├── feishu/         # @colobot/feishu - 飞书集成（src 已实现，待迁移）
+├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（src 已实现，待迁移）
+├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（src 已实现，待迁移）
+└── dashboard/      # @colobot/dashboard - Web 管理界面（src 已实现，待迁移）
 ```
 
 ### 已发布包
@@ -129,6 +130,17 @@ packages/
 | `@colobot/core` | 0.2.0 | Agent 运行时、子Agent、工具、搜索、大文件处理、统一接口 |
 | `@colobot/tui` | 0.1.0 | 终端交互界面、命令面板、聊天组件 |
 | `@colobot/sop-academic` | 0.1.0 | SOP 学术研究流程、AI 动态任务拆解 |
+
+### 已实现待迁移模块
+
+以下模块已在 `src/` 目录完整实现，待迁移到独立包：
+
+| 模块 | 位置 | 说明 |
+|------|------|------|
+| 飞书集成 | `src/services/feishu*.ts` | 交互式卡片、消息发送/更新、长轮询 |
+| Dashboard | `src/dashboard/index.html` | 完整 Web 管理界面（单文件 HTML） |
+| MiniMax 工具 | `src/agent-runtime/tools/minimax-*.ts` | TTS/语音/视频/音乐/文件 共7个工具 |
+| OpenClaw | `src/agent-runtime/tools/openclaw.ts` | SOUL.md 解析和格式转换 |
 
 ### 安装示例
 
@@ -149,26 +161,12 @@ npm install -D @colobot/types
 ### 快速启动
 
 ```bash
-# 启动 CLI（首次运行会进入交互式配置）
-npx colobot
+# 启动 CLI
+npm run cli
 
-# 交互式配置
-npx colobot init
-
-# 查看帮助
-npx colobot help
-
-# 查看版本
-npx colobot version
+# 启动 TUI 界面
+npm run tui
 ```
-
-### CLI 命令
-
-| 命令 | 说明 |
-|------|------|
-| `init` | 交互式配置 |
-| `help` | 显示帮助 |
-| `version` | 显示版本 |
 
 ### 交互命令
 
@@ -177,23 +175,20 @@ npx colobot version
 | `/help` | 显示帮助 |
 | `/exit` | 退出程序 |
 | `/config` | 显示配置 |
+| `/set <key> <value>` | 设置配置项 |
 | `/tools` | 显示工具列表 |
 
-### 配置文件
+### 配置
 
-配置保存在 `~/.colobot/config.json`：
+支持通过环境变量或 CLI 参数配置：
 
-```json
-{
-  "model": {
-    "provider": "openai",
-    "model": "gpt-4o",
-    "apiKey": "sk-xxx"
-  },
-  "search": {
-    "engine": "duckduckgo"
-  }
-}
+```bash
+# 环境变量
+export OPENAI_API_KEY=sk-xxx
+export ANTHROPIC_API_KEY=sk-xxx
+
+# CLI 参数
+npm run cli -- --provider openai --model gpt-4o
 ```
 
 ### @colobot/core 核心模块
@@ -260,219 +255,32 @@ npm run tui
 
 ---
 
-## 未来规划
+## 数据库配置
 
-### 模块化拆包（P0）
+### PostgreSQL（推荐生产环境）
 
-将 ColoBot 拆分为独立 npm 包，支持按需安装：
-
-```
-@colobot/core              # 核心：Agent、记忆、工具、LLM 抽象 ✅
-@colobot/types             # 类型定义 ✅
-@colobot/tui               # 终端界面（TUI） ✅
-@colobot/sop               # SOP 流程（可选）
-@colobot/feishu            # 飞书集成（可选）
-@colobot/dashboard         # Web 管理界面（可选）
-@colobot/skills-openclaw   # OpenClaw Skill 库兼容（可选）
-@colobot/tools-minimax     # MiniMax 工具兼容（可选）
-@colobot/server            # 完整服务（整合包）
+```bash
+docker run -d --name colobot-pg \
+  -v /path/to/pg-data:/var/lib/postgresql \
+  -e POSTGRES_PASSWORD=your_password \
+  -e POSTGRES_USER=colobot \
+  -e POSTGRES_DB=colobot \
+  -p 5432:5432 pgvector/pgvector:pg18
 ```
 
-详见 [模块化拆包方案](docs/modular-packages.md)
+### SQLite 降级模式
 
-ColoBot 支持 AI 驱动的学术研究 SOP（标准操作流程），自动拆解任务、引导执行、审核结果。
+当 PostgreSQL 不可用时，自动降级到 SQLite：
 
-### 配置管理
+```bash
+# 使用 SQLite（默认启用）
+npm run cli -- --storage sqlite
 
-SOP 配置支持**前端可视化编辑**，无需修改代码或环境变量：
-
-| 配置项 | 说明 | 编辑方式 |
-|--------|------|----------|
-| **Prompt 模板** | 任务分析、步骤引导、审核等 Prompt | Dashboard → SOP → 点击编辑 |
-| **子 Agent 配置** | 各类型子 Agent 的性格、规则、技能、工具 | Dashboard → SOP → 点击编辑 |
-| **LLM 默认配置** | 各 Provider 的默认模型和 API 端点 | Dashboard → LLM 查看 |
-
-**配置优先级**：数据库 > 环境变量 > 默认值
-
-> **简化部署**：开箱即用默认配置，通过 Dashboard 即可完成所有定制化配置。
-
-### ⚠️ 免责声明
-
-1. **AI 生成内容仅供参考**：SOP 流程中 AI 生成的文献推荐、分析结果、写作建议等均为辅助性质，用户需自行验证准确性。
-2. **学术诚信责任**：用户应对最终提交的论文内容负责，确保符合学校学术规范，避免抄袭和学术不端。
-3. **文献来源验证**：AI 推荐的文献可能存在幻觉，请务必通过正规学术数据库（知网、Web of Science 等）核实。
-4. **不保证通过**：本工具仅提供流程引导，不保证论文质量或答辩结果。
-
-### 触发方式
-
-发送包含学术研究意图的消息，例如：
-- "量子隧穿研究"
-- "我的课题是关于XXX的研究"
-- "帮我完成毕业论文"
-
-### 研究目的
-
-系统会询问您的研究目的，根据目的生成不同的步骤：
-
-| 目的 | 说明 | 典型步骤 |
-|------|------|----------|
-| **写论文** | 发表期刊/毕业论文 | 文献调研→分析→撰写→投稿 |
-| **做研究** | 科学研究、实验、分析 | 问题定义→方法设计→实验/计算→结果分析 |
-| **学习** | 学习某个领域的知识 | 基础概念→深入学习→实践应用 |
-
-### 流程指令
-
-| 指令 | 说明 |
-|------|------|
-| `确认` | 确认任务拆解，开始执行 |
-| `暂停` / `暂停sop` | 暂停 SOP 流程，保留进度 |
-| `继续` / `继续sop` | 显示任务列表，选择恢复 |
-| `新建sop` / `开始学术` | 开始新的 SOP 流程（会取消当前任务） |
-| `退出sop` / `取消任务` | 取消 SOP 流程 |
-| `重启步骤 N` | 重新执行第 N 步 |
-| `sop列表` / `我的sop` | 查看所有进行中的 SOP 任务 |
-| `修改步骤...` | 提出修改意见，重新拆解 |
-| 发送编号（如 `1`） | 从列表中选择任务继续 |
-
-### 特点
-
-- **AI 动态拆解**：根据任务内容和研究目的自动生成步骤，无硬编码
-- **研究目的区分**：写论文/做研究/学习，生成不同流程
-- **子 Agent 协作**：每步创建专用子 Agent 处理
-- **父 Agent 整理**：子 Agent 结果经父 Agent 整理汇总后呈现
-- **AI 审核**：自动检测幻觉、验证逻辑连贯性
-- **进度记忆**：每步结果保存到记忆，支持中断后继续
-- **状态持久化**：支持暂停/恢复/重启
-- **可视化配置**：Dashboard 直接编辑 Prompt 和子 Agent 配置，无需改代码
-
-### 配置导出
-
-Dashboard 支持一键导出 SOP 配置（JSON 格式），便于备份和迁移。
-
----
-
-## 核心设计
-
-### Fallback 链
-
-```
-primary model → fallback1 → fallback2 → ...
-anthropic:claude-xxx,openai:gpt-4o-mini
-支持跨 provider，自动重试 + exponential backoff
+# 指定 SQLite 文件路径
+npm run cli -- --storage sqlite --db-path ./data/colobot.db
 ```
 
-### 审批流
-
-```
-危险工具触发 → 四层漏斗检查 → 规则自动决策（auto_approve / auto_reject）
-                                    ↓
-                         所有决策写入审计日志
-                         商业文书自动附加 [AI辅助生成，仅供参考]
-```
-
-**四层漏斗（规则自动决策，无人工等待）：**
-1. **Tirith 规则** — 精确 regex/keyword 匹配，按 priority 优先级排序
-2. **Pattern 历史** — 过去 7 天同类工具调用频率，高频 → 高风险
-3. **用户行为自进化** — 用户批准/拒绝次数达到阈值，自动放行或拦截
-4. **Smart LLM 裁决** — 兜底决策（返回 auto_approve / auto_reject）
-
-### 投毒防御系统
-
-自进化系统的安全防护机制：
-
-| 信任等级 | 来源 | 处理方式 |
-|---------|------|---------|
-| **高** | 用户直接输入（审批后） | 直接使用 |
-| **中** | AI 生成内容 | 内容监管扫描后使用 |
-| **低** | 外部来源（URL/导入） | 最严格审核，需人工确认 |
-
-**防御机制：**
-- 写入时检测可疑模式（注入攻击、越狱等）
-- AI 深度分析可疑内容
-- 信任分数自动降级
-- Dashboard 安全页面查看投毒尝试
-- 支持一键回滚被污染内容
-
-### Trigger 持久化
-
-```
-每次触发后：计算 next_fire_at → 持久化到 DB
-重启时：检查 next_fire_at，如有错过立即补偿触发
-```
-
-### Dashboard Tab
-
-```
-飞书配置 | 模型设置 | Skill 仓库 | 审批管理 | 审计日志 | SubAgent | 安全中心
-```
-
----
-
-## 待开发模块
-
-以下模块计划开发中：
-
-| 包名 | 说明 | 优先级 |
-|------|------|--------|
-| `@colobot/feishu` | 飞书 Bot 集成、交互式卡片、审批回调 | P1 |
-| `@colobot/tools-minimax` | MiniMax 工具（TTS/ASR/图像/音乐/视频） | P2 |
-| `@colobot/skills-openclaw` | OpenClaw Skill 库兼容 | P3 |
-| `@colobot/dashboard` | Web 管理界面 | P3 |
-
-### @colobot/feishu 飞书集成
-
-飞书 Bot 集成方案：
-
-```typescript
-import { createFeishuBot } from '@colobot/feishu';
-
-const bot = createFeishuBot({
-  appId: 'your-app-id',
-  appSecret: 'your-app-secret',
-  verificationToken: 'your-token'
-});
-```
-
-功能：
-- 📱 交互式卡片消息
-- ⚡ 快捷审批按钮
-- 🔄 WebSocket 实时通信
-- 📋 审批状态更新
-
-### @colobot/tools-minimax MiniMax 工具
-
-MiniMax 特有工具支持：
-
-```typescript
-import { registerMiniMaxTools } from '@colobot/tools-minimax';
-
-registerMiniMaxTools({
-  apiKey: 'your-api-key',
-  groupId: 'your-group-id'
-});
-```
-
-工具：
-- 🎙️ `minimax_tts` - 文本转语音
-- 🎧 `minimax_asr` - 语音转文本
-- 🖼️ `minimax_image_gen` - 文生图
-- 🎵 `minimax_music_gen` - 音乐生成
-- 🎬 `minimax_video_gen` - 视频生成
-
-### @colobot/skills-openclaw OpenClaw 兼容
-
-OpenClaw Skill 库导入：
-
-```typescript
-import { importOpenClawLibrary } from '@colobot/skills-openclaw';
-
-const skills = await importOpenClawLibrary('./openclaw-skills/');
-```
-
-功能：
-- 📥 YAML 格式导入
-- 🔄 自动格式转换
-- 📦 批量导入
+**注意：** SQLite 模式不支持向量检索（pgvector），记忆搜索将降级为文本匹配。
 
 ---
 
@@ -517,16 +325,17 @@ const skills = await importOpenClawLibrary('./openclaw-skills/');
 
 **部署注意事项：**
 
-- **数据持久化**：PostgreSQL 数据必须挂载到宿主机目录，否则容器删除后数据会丢失。推荐配置：
-  ```bash
-  docker run -d --name colobot-pg \
-    -v /path/to/pg-data:/var/lib/postgresql \
-    -e POSTGRES_PASSWORD=your_password \
-    -e POSTGRES_USER=colobot \
-    -e POSTGRES_DB=colobot \
-    -p 5432:5432 pgvector/pgvector:pg18
-  ```
-  数据目录 `/path/to/pg-data` 包含所有数据库文件（agents、skills、triggers、knowledge_base、agent_memory 等）。
+- **数据持久化**：
+  - **PostgreSQL（推荐）**：数据必须挂载到宿主机目录，否则容器删除后数据会丢失。
+    ```bash
+    docker run -d --name colobot-pg \
+      -v /path/to/pg-data:/var/lib/postgresql \
+      -e POSTGRES_PASSWORD=your_password \
+      -e POSTGRES_USER=colobot \
+      -e POSTGRES_DB=colobot \
+      -p 5432:5432 pgvector/pgvector:pg18
+    ```
+  - **SQLite（降级）**：适合开发测试，无需额外服务。数据存储在本地文件，支持向量降级为文本搜索。
 - **父 Agent 文件访问**：父 Agent 具有完整文件系统访问权限（子 Agent 有沙箱隔离）。建议通过工具注册时的 `requireAuth` 或 `toolRegistry.checkFn` 限制可执行文件操作的 Agent 范围，避免将完整文件工具暴露给不可信的 Agent。
 - **API Key**：生产环境务必通过 `--api-keys` 或 `COLOBOT_API_KEY` 配置密钥，切勿将含真实密钥的 `.env` 提交到代码仓库。
 - **飞书回调**：生产环境务必配置 `LARK_VERIFICATION_TOKEN` 并启用飞书事件验签，防止伪造回调。
