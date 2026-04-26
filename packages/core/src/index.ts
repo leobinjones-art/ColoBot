@@ -1,135 +1,181 @@
 /**
  * @colobot/core - Agent 运行时核心
+ *
+ * 设计原则：
+ * - 只导出接口定义和高层 API
+ * - 底层实现细节不导出
+ * - 插件通过接口使用 core
  */
 
-// 插件系统
-export * from './plugins/index.js';
+// ═══════════════════════════════════════════════════════════════
+// 核心接口定义（必须导出）
+// ═══════════════════════════════════════════════════════════════
 
-// 运行时
-export { AgentRuntime, type RuntimeDeps, type LLMProvider, type LLMResponse, type LLMStreamChunk, type MemoryStore, type ToolExecutor, type AuditLogger, type ResultPusher } from './runtime/index.js';
-
-// 工具系统
-export * from './tools/index.js';
-
-// Provider 实现
-export * from './providers/index.js';
-
-// 适配器实现
-export * from './adapters/index.js';
-
-// 内存存储
-export * from './memory/index.js';
-
-// 内容安全
-export { ContentScanner, detectThreat, buildUninstallConfirmPrompt, type ScanResult, type ContentScannerConfig, type ThreatResult } from './content/scanner.js';
+// 运行时接口
 export {
-  determineTrustLevel,
-  canWrite,
-  validateContent,
-  detectPoisoning,
-  recordPoisoningAttempt,
-  type ContentSource,
-  type ContentValidationResult,
-  type PoisoningAttempt,
-} from './content/poison-defense.js';
+  AgentRuntime,
+  ColoBotRuntimeImpl,
+  type RunOptions,
+  type RunResult,
+  type RuntimeDeps,
+  type LLMProvider,
+  type LLMResponse,
+  type LLMStreamChunk,
+  type MemoryStore,
+  type ToolExecutor,
+  type ContentScanner,
+  type AuditLogger,
+  type ResultPusher,
+  type ScanResult,
+  type AuditEntry,
+  // 新接口
+  type ColoBotRuntime,
+  type RuntimeDependencies,
+  type ChatOptions,
+  type AgentConfig,
+  type AgentInfo,
+  type Skill,
+  type MemoryResult,
+  type StateFilter,
+  type ApprovalFilter,
+  type Approval,
+  type AuditFilter,
+  type AuditLog,
+} from './runtime/index.js';
 
-// 审批流程
-export * from './approval/index.js';
+// 类型定义
+export type {
+  LLMMessage,
+  LLMOptions,
+  ContentBlock,
+  ToolCall,
+  ToolResult,
+  ToolContext,
+} from '@colobot/types';
 
-// 上下文压缩
-export { compressMessages, estimateTokens, estimateMessagesTokens } from './compression.js';
+// ═══════════════════════════════════════════════════════════════
+// Provider 实现（按需使用）
+// ═══════════════════════════════════════════════════════════════
 
-// 搜索
+export { OpenAIProvider, type OpenAIConfig } from './providers/openai.js';
+export { AnthropicProvider, type AnthropicConfig } from './providers/anthropic.js';
+export { MiniMaxProvider, type MiniMaxConfig } from './providers/minimax.js';
+export { MockProvider, type MockConfig } from './providers/mock.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 适配器实现（按需使用）
+// ═══════════════════════════════════════════════════════════════
+
+export { InMemoryStore } from './adapters/memory.js';
+export { DatabaseStore, type DatabaseStoreConfig } from './adapters/database-store.js';
+export { ToolRegistry, ToolExecutorImpl } from './tools/index.js';
+export { NoOpScanner } from './adapters/scanner.js';
+export { ConsoleAudit, ConsolePusher } from './adapters/console.js';
+export { InMemoryStateStore, type StateStore } from './adapters/state.js';
+export { LocalFileSystemAdapter, type FileSystemAdapter } from './adapters/filesystem.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 工具系统（高层 API）
+// ═══════════════════════════════════════════════════════════════
+
 export {
-  search,
-  imageSearch,
-  videoSearch,
-  newsSearch,
-  multimodalSearch,
-  academicSearch,
-  configureSearch,
-  getSearchConfig,
-  type SearchOptions,
-  type SearchResult,
-  type SearchResponse,
-  type AcademicPaper,
-} from './search.js';
+  registerBuiltinTools,
+  registerAllTools,
+} from './tools/builtin.js';
 
-// 子智能体系统
-export {
-  spawnSubAgent,
-  getSubAgent,
-  listSubAgents,
-  destroySubAgent,
-  setSubAgentStatus,
-  touchSubAgent,
-  isToolAllowed,
-  getSubAgentWorkspacePath,
-  runSubAgentTask,
-  clearSubAgents,
-  setGlobalAllowedTools,
-  getGlobalAllowedTools,
-  type SubAgentConfig,
-  type SubAgent,
-  type SubAgentDeps,
-} from './subagents/index.js';
+export type {
+  ToolDefinition,
+  ToolPolicy,
+} from './tools/executor.js';
 
-// 任务拆解 - AI驱动的动态任务分解
-export {
-  analyzeRequest,
-  executeDynamicTask,
-  cleanupTaskResult,
-  DEFAULT_TOOLS,
-  type ToolDefinition,
-  type TaskAnalysis,
-  type SubTask,
-  type ExecutionResult,
-  type TaskResult,
-  type ExecutionContext,
-  type DynamicBreakdownDeps,
-} from './task-breakdown/index.js';
+// ═══════════════════════════════════════════════════════════════
+// 配置管理
+// ═══════════════════════════════════════════════════════════════
 
-// 大文件处理 - 分块、流式、合并
-export {
-  getFileInfo,
-  readChunksByBytes,
-  readChunksByLines,
-  readChunksByTokens,
-  processChunksParallel,
-  processStream,
-  processWithSlidingWindow,
-  compressWithLLM,
-  hierarchicalSummary,
-  mergeText,
-  mergeArray,
-  mergeStats,
-  mergeDedup,
-  CHUNK_TOOLS,
-  DEFAULT_CHUNK_CONFIG,
-  type ChunkConfig,
-  type Chunk,
-  type ChunkResult,
-  type FileInfo,
-  type ChunkProcessor,
-  type StreamProcessor,
-  type WindowProcessor,
-  type MergeStrategy,
-} from './chunking/index.js';
-
-// 配置管理 - 命令行配置系统
 export {
   ConfigManager,
   DEFAULT_CONFIG,
   initConfig,
   getConfigManager,
-  parseCLIArgs,
-  applyCLIOptions,
-  HELP_TEXT,
-  getModelCapabilities,
   type CoreConfig,
   type ModelConfig,
   type SearchConfig,
-  type ModelCapabilities,
-  type CLIOptions,
 } from './config/index.js';
-export type { SubAgentConfig as SubAgentConfigFromCore } from './config/index.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 插件系统（扩展能力）
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  PluginManager,
+  type Plugin,
+  type PluginContext,
+  type PluginHooks,
+} from './plugins/index.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 子智能体系统（高层 API）
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  spawnSubAgent,
+  getSubAgent,
+  listSubAgents,
+  destroySubAgent,
+  runSubAgentTask,
+  setGlobalAllowedTools,
+  getGlobalAllowedTools,
+  type SubAgent,
+  type SubAgentConfig,
+} from './subagents/index.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 搜索（高层 API）
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  search,
+  academicSearch,
+  configureSearch,
+  type SearchOptions,
+  type SearchResult,
+} from './search.js';
+
+// ═══════════════════════════════════════════════════════════════
+// Skill 系统
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  listSkills,
+  getSkillByName,
+  executeSkill,
+  type Skill,
+} from './skill-runtime/index.js';
+
+export {
+  detectPatterns,
+  evolveSkillFromConversation,
+  type SkillProposal,
+} from './skill-evolution/index.js';
+
+// ═══════════════════════════════════════════════════════════════
+// Trigger 系统
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  initTriggerEngine,
+  createTrigger,
+  stopTrigger,
+  type Trigger,
+} from './trigger-runtime/index.js';
+
+// ═══════════════════════════════════════════════════════════════
+// Agent 注册表
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  agentRegistry,
+  type Agent,
+  type AgentCreate,
+  type AgentUpdate,
+} from './agents/registry.js';

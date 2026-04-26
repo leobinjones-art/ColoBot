@@ -8,3 +8,5 @@ export { ToolExecutorImpl } from './tools.js';
 export { SimpleContentScanner, NoOpScanner, type SimpleScannerConfig } from './scanner.js';
 export { InMemoryAudit, ConsoleAudit, type InMemoryAuditConfig } from './audit.js';
 export { CallbackPusher, ConsolePusher, type PusherConfig } from './pusher.js';
+export { InMemoryStateStore, type StateStore } from './state.js';
+export { LocalFileSystemAdapter, type FileSystemAdapter } from './filesystem.js';

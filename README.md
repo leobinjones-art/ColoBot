@@ -114,12 +114,11 @@ packages/
 ├── types/          # @colobot/types - 共享类型定义
 ├── core/           # @colobot/core - 核心逻辑
 ├── tui/            # @colobot/tui - 终端界面
-├── sop/            # @colobot/sop - SOP 流程（规划中）
+├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程
 ├── feishu/         # @colobot/feishu - 飞书集成（规划中）
 ├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（规划中）
 ├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（规划中）
-├── dashboard/      # @colobot/dashboard - Web 管理界面（规划中）
-└── server/         # @colobot/server - 完整服务（规划中）
+└── dashboard/      # @colobot/dashboard - Web 管理界面（规划中）
 ```
 
 ### 已发布包
@@ -127,21 +126,21 @@ packages/
 | 包名 | 版本 | 说明 |
 |------|------|------|
 | `@colobot/types` | 0.1.0 | LLM、Agent、Tool、Memory 等类型定义 |
-| `@colobot/core` | 0.1.0 | Agent 运行时、子Agent、工具、搜索、大文件处理 |
+| `@colobot/core` | 0.2.0 | Agent 运行时、子Agent、工具、搜索、大文件处理、统一接口 |
 | `@colobot/tui` | 0.1.0 | 终端交互界面、命令面板、聊天组件 |
-| `@colobot/server` | 0.1.0 | 完整服务整合包，一键启动 |
+| `@colobot/sop-academic` | 0.1.0 | SOP 学术研究流程、AI 动态任务拆解 |
 
 ### 安装示例
 
 ```bash
-# 完整安装（推荐）
-npm install @colobot/server
-
 # 最小安装（仅核心）
 npm install @colobot/core
 
 # 终端界面
 npm install @colobot/tui
+
+# SOP 学术研究流程
+npm install @colobot/sop-academic
 
 # 类型定义（开发依赖）
 npm install -D @colobot/types
@@ -150,50 +149,51 @@ npm install -D @colobot/types
 ### 快速启动
 
 ```bash
-# 安装后直接运行（简单 CLI）
+# 启动 CLI（首次运行会进入交互式配置）
 npx colobot
 
-# TUI 界面
-npx colobot tui
-
-# 指定模型
-npx colobot --provider anthropic --model claude-sonnet-4-20250514
-
-# 设置并发数和工具白名单
-npx colobot --max-concurrent 5 --allowed-tools "read_file,web_search"
-
-# 查看版本
-npx colobot --version
+# 交互式配置
+npx colobot init
 
 # 查看帮助
-npx colobot --help
+npx colobot help
+
+# 查看版本
+npx colobot version
 ```
 
-### CLI 选项
+### CLI 命令
 
-| 选项 | 说明 |
+| 命令 | 说明 |
 |------|------|
-| `tui` | 启动 TUI 界面 |
-| `--provider` | LLM Provider (openai, anthropic) |
-| `--model` | 模型名称 |
-| `--search` | 搜索引擎 (duckduckgo, google, bing) |
-| `--api-key` | API Key |
-| `--max-concurrent` | 最大并发子 Agent 数 |
-| `--allowed-tools` | 允许的工具列表（逗号分隔） |
-| `--storage` | 存储类型 (memory, database) |
-| `--db-host` | 数据库主机 |
-| `--db-name` | 数据库名 |
-| `--version, -v` | 显示版本 |
-| `--help, -h` | 显示帮助 |
+| `init` | 交互式配置 |
+| `help` | 显示帮助 |
+| `version` | 显示版本 |
 
-### 存储模式
+### 交互命令
 
-```bash
-# 内存存储（默认，重启丢失）
-npx colobot
+| 命令 | 说明 |
+|------|------|
+| `/help` | 显示帮助 |
+| `/exit` | 退出程序 |
+| `/config` | 显示配置 |
+| `/tools` | 显示工具列表 |
 
-# 数据库存储（持久化）
-npx colobot --storage database --db-host localhost --db-name colobot
+### 配置文件
+
+配置保存在 `~/.colobot/config.json`：
+
+```json
+{
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "sk-xxx"
+  },
+  "search": {
+    "engine": "duckduckgo"
+  }
+}
 ```
 
 ### @colobot/core 核心模块

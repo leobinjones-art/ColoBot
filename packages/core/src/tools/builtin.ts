@@ -451,6 +451,29 @@ export function registerBuiltinTools(): void {
     },
     execute: async (args) => (args.message as string) || '',
   });
+
+  // 注册其他工具模块
+  // 注意：这些函数在各自的文件中定义
 }
 
+// 导出所有工具注册函数
 export { toolRegistry, tool } from './registry.js';
+export { registerSearchTools } from './web-search.js';
+export { registerWorkspaceTools } from './workspace.js';
+export { registerExecCodeTool } from './exec-code.js';
+export { registerSubagentTools } from './subagent.js';
+export { registerAgentTools } from './agent-tools.js';
+export { registerCreateSkillTool } from './create-skill.js';
+
+/**
+ * 注册所有工具
+ */
+export function registerAllTools(): void {
+  registerBuiltinTools();
+  registerSearchTools();
+  registerWorkspaceTools();
+  registerExecCodeTool();
+  registerSubagentTools();
+  registerAgentTools();
+  registerCreateSkillTool();
+}

@@ -14,7 +14,6 @@
     "build": "tsc",
     "build:packages": "npm run build -ws",
     "start": "node dist/colobot-server.js",
-    "colobot": "tsx packages/server/src/cli.ts",
     "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",
     "test:watch": "vitest",

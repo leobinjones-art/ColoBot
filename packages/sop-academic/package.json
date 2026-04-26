@@ -1,14 +1,11 @@
 {
-  "name": "@colobot/tui",
+  "name": "@colobot/sop-academic",
   "version": "0.1.0",
-  "description": "ColoBot 终端界面",
+  "description": "ColoBot SOP 学术研究流程",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": {
-    "colobot": "./dist/cli.js"
-  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -16,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && cp src/cli.js dist/cli.js",
+    "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run"
   },

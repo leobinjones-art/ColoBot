@@ -176,3 +176,71 @@ export async function recordPoisoningAttempt(
   console.log('[PoisonDefense] Attempt recorded:', id, attempt.issues);
   return id;
 }
+
+/**
+ * 写入请求
+ */
+export interface WriteRequest {
+  agentId: string;
+  contentType: 'memory' | 'skill' | 'rule' | 'profile' | 'knowledge';
+  contentKey: string;
+  content: string;
+  source: ContentSource;
+}
+
+/**
+ * 写入结果
+ */
+export interface WriteResult {
+  allowed: boolean;
+  requiresReview: boolean;
+  reason?: string;
+}
+
+/**
+ * 写入前检查
+ */
+export async function checkWritePermission(request: WriteRequest): Promise<WriteResult> {
+  const { agentId, content, source } = request;
+
+  // 检查写入权限
+  if (!canWrite(source)) {
+    return {
+      allowed: false,
+      requiresReview: true,
+      reason: '外部来源需要人工确认后才能写入',
+    };
+  }
+
+  // 验证内容
+  const validation = await validateContent(content, source);
+
+  // 如果检测到投毒
+  if (validation.issues.some(i => i.includes('投毒'))) {
+    await recordPoisoningAttempt({
+      agentId,
+      contentType: request.contentType,
+      contentKey: request.contentKey,
+      contentPreview: content.slice(0, 500),
+      source,
+      issues: validation.issues,
+      actionTaken: 'blocked',
+    });
+    return {
+      allowed: false,
+      requiresReview: true,
+      reason: '检测到投毒尝试，已阻止并记录',
+    };
+  }
+
+  // 需要人工审核
+  if (validation.requiresReview) {
+    return {
+      allowed: false,
+      requiresReview: true,
+      reason: '内容需要人工审核',
+    };
+  }
+
+  return { allowed: true, requiresReview: false };
+}

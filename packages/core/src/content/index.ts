@@ -13,3 +13,9 @@ export {
   type ContentValidationResult,
   type PoisoningAttempt,
 } from './poison-defense.js';
+export {
+  guardScanInput,
+  guardScanOutput,
+  type GuardScanResult,
+  type GuardConfig,
+} from './guard.js';
