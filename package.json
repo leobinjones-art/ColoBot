@@ -22,7 +22,7 @@
     "test:e2e:watch": "vitest e2e/"
   },
   "dependencies": {
-    "@larksuiteoapi/node-sdk": "^1.60.0",
+    "@larksuiteoapi/node-sdk": "^1.62.0",
     "dotenv": "^16.4.5",
     "llm-guard": "^0.1.8",
     "pg": "^8.13.0",
