@@ -111,14 +111,14 @@ ColoBot 采用 monorepo 架构，支持按需安装：
 
 ```
 packages/
-├── types/          # @colobot/types - 共享类型定义
-├── core/           # @colobot/core - 核心逻辑
-├── tui/            # @colobot/tui - 终端界面
-├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程
-├── feishu/         # @colobot/feishu - 飞书集成（规划中）
-├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（规划中）
-├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（规划中）
-└── dashboard/      # @colobot/dashboard - Web 管理界面（规划中）
+├── types/          # @colobot/types - 共享类型定义 ✅
+├── core/           # @colobot/core - 核心逻辑 ✅
+├── tui/            # @colobot/tui - 终端界面 ✅
+├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程 ✅
+├── feishu/         # @colobot/feishu - 飞书集成（待开发）
+├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（待开发）
+├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（待开发）
+└── dashboard/      # @colobot/dashboard - Web 管理界面（待开发）
 ```
 
 ### 已发布包
@@ -408,82 +408,48 @@ anthropic:claude-xxx,openai:gpt-4o-mini
 
 ---
 
-## 未来规划
+## 待开发模块
 
-### 模块化拆包（P0）
+以下模块计划开发中：
 
-将 ColoBot 拆分为独立 npm 包，支持按需安装：
+| 包名 | 说明 | 优先级 |
+|------|------|--------|
+| `@colobot/feishu` | 飞书 Bot 集成、交互式卡片、审批回调 | P1 |
+| `@colobot/tools-minimax` | MiniMax 工具（TTS/ASR/图像/音乐/视频） | P2 |
+| `@colobot/skills-openclaw` | OpenClaw Skill 库兼容 | P3 |
+| `@colobot/dashboard` | Web 管理界面 | P3 |
 
-```
-@colobot/core              # 核心：Agent、记忆、工具、LLM 抽象
-@colobot/tui               # 终端界面（TUI）
-@colobot/sop               # SOP 流程（可选）
-@colobot/feishu            # 飞书集成（可选）
-@colobot/dashboard         # Web 管理界面（可选）
-@colobot/skills-openclaw   # OpenClaw Skill 库兼容（可选）
-@colobot/tools-minimax     # MiniMax 工具兼容（可选）
-@colobot/server            # 完整服务（整合包）
-```
+### @colobot/feishu 飞书集成
 
-详见 [模块化拆包方案](docs/modular-packages.md)
+飞书 Bot 集成方案：
 
-### 安装示例
+```typescript
+import { createFeishuBot } from '@colobot/feishu';
 
-```bash
-# 最小安装（仅核心）
-npm install @colobot/core
-
-# 终端界面
-npm install @colobot/tui
-
-# SOP 流程
-npm install @colobot/core @colobot/sop
-
-# 飞书集成
-npm install @colobot/core @colobot/feishu
-
-# MiniMax 工具（语音、图像、音乐、视频）
-npm install @colobot/core @colobot/tools-minimax
-
-# OpenClaw Skill 兼容
-npm install @colobot/core @colobot/skills-openclaw
-
-# 完整安装
-npm install @colobot/server
-```
-
-### TUI 终端界面
-
-`@colobot/tui` 提供终端交互界面：
-
-```bash
-# 启动 TUI
-npx colobot-tui
-
-# 指定 Agent
-npx colobot-tui --agent my-agent
+const bot = createFeishuBot({
+  appId: 'your-app-id',
+  appSecret: 'your-app-secret',
+  verificationToken: 'your-token'
+});
 ```
 
 功能：
-- 💬 实时对话
-- 📋 SOP 流程（终端内执行）
-- 🔧 配置管理
-- 🔍 搜索记忆
+- 📱 交互式卡片消息
+- ⚡ 快捷审批按钮
+- 🔄 WebSocket 实时通信
+- 📋 审批状态更新
 
-详见 [TUI 设计文档](docs/tui-design.md)
+### @colobot/tools-minimax MiniMax 工具
 
-### MiniMax 工具兼容
-
-`@colobot/tools-minimax` 提供 MiniMax 特有工具支持（LLM 模型已在 core 内置）：
+MiniMax 特有工具支持：
 
 ```typescript
-import { registerMiniMaxTools } from '@colobot/tools-minimax'
+import { registerMiniMaxTools } from '@colobot/tools-minimax';
 
-// 注册 MiniMax 工具
 registerMiniMaxTools({
   apiKey: 'your-api-key',
   groupId: 'your-group-id'
-})
+});
 ```
 
 工具：
@@ -493,17 +459,14 @@ registerMiniMaxTools({
 - 🎵 `minimax_music_gen` - 音乐生成
 - 🎬 `minimax_video_gen` - 视频生成
 
-详见 [MiniMax 工具文档](docs/tools-minimax.md)
+### @colobot/skills-openclaw OpenClaw 兼容
 
-### OpenClaw Skill 兼容
-
-`@colobot/skills-openclaw` 支持 OpenClaw Skill 库导入：
+OpenClaw Skill 库导入：
 
 ```typescript
-import { importOpenClawLibrary } from '@colobot/skills-openclaw'
+import { importOpenClawLibrary } from '@colobot/skills-openclaw';
 
-// 批量导入 OpenClaw Skill
-const skills = await importOpenClawLibrary('./openclaw-skills/')
+const skills = await importOpenClawLibrary('./openclaw-skills/');
 ```
 
 功能：
@@ -511,20 +474,20 @@ const skills = await importOpenClawLibrary('./openclaw-skills/')
 - 🔄 自动格式转换
 - 📦 批量导入
 
-详见 [OpenClaw 兼容文档](docs/skills-openclaw.md)
+---
 
-### 功能规划
+## 功能规划
 
 | 优先级 | 方向 | 说明 |
 |--------|------|------|
-| P1 | **钉钉接入** | 对称飞书方案 B，实现钉钉 Bot 交互式卡片 + 审批回调 |
+| P1 | **钉钉接入** | 对称飞书方案，实现钉钉 Bot 交互式卡片 + 审批回调 |
+| P2 | **审批自进化：隐私分级返回** | 位置请求返回模糊化数据，摄像头前台可见时自动放行 |
+| P2 | **审批自进化：跨规则关联学习** | 同一应用连续放行，自动降低该应用所有权限审批阈值 |
+| P2 | **审批自进化：动态阈值试探性放行** | 批准N-1次时第N次静默放行，5分钟内无撤销则阈值+1 |
+| P2 | **审批自进化：AI 自主判断** | LLM 结合用户历史行为、当前对话上下文综合判断 |
 | P3 | **用户角色体系** | admin / developer / readonly 等角色绑定 |
 | P3 | **飞书命令式 Dashboard** | `/pending` `/approve` 等快捷命令在飞书内完成管理 |
-| P2 | **审批自进化：隐私分级返回** | 位置请求返回模糊化数据（非全拒），摄像头前台可见时自动放行 |
-| P2 | **审批自进化：跨规则关联学习** | 同一应用连续放行"网络请求+剪贴板"，自动降低该应用所有权限审批阈值 |
-| P2 | **审批自进化：动态阈值试探性放行** | 批准N-1次时第N次静默放行，5分钟内无撤销则阈值+1，有撤销则阈值翻倍 |
-| P2 | **审批自进化：AI 自主判断** | LLM 结合用户历史行为、当前对话上下文、系统健康状态综合判断，不局限于规则匹配 |
-| P3 | **审批规则：Pattern DFA 编译优化** | 高频匹配词编译为 DFA 有限状态机，避免 regex 回溯影响性能 |
+| P3 | **审批规则：Pattern DFA 编译优化** | 高频匹配词编译为 DFA 有限状态机 |
 
 ---
 
