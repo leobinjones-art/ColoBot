@@ -434,49 +434,50 @@ ColoBot 采用 monorepo 架构，支持按需安装：
 
 ```
 packages/
-├── types/          # @colobot/types - 共享类型定义 ✅
-├── core/           # @colobot/core - 核心逻辑 ✅
+├── types/          # @colobot/types - 类型定义（开发依赖）
+├── core/           # @colobot/core - 核心运行时 ✅
 ├── tui/            # @colobot/tui - 终端界面 ✅
 ├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程 ✅
-├── feishu/         # @colobot/feishu - 飞书集成（src 已实现，待迁移）
-├── tools-minimax/  # @colobot/tools-minimax - MiniMax 工具（src 已实现，待迁移）
-├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 技能（src 已实现，待迁移）
-└── dashboard/      # @colobot/dashboard - Web 管理界面（src 已实现，待迁移）
+├── tools-minimax/  # @colobot/tools-minimax - MiniMax 多模态工具（待开发）
+├── tools-python/   # @colobot/tools-python - Python 代码执行（待开发）
+├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 兼容（待开发）
+├── dashboard/      # @colobot/dashboard - Web 管理界面（待迁移）
+├── feishu/         # @colobot/feishu - 飞书集成（可选）
+└── dingtalk/       # @colobot/dingtalk - 钉钉集成（可选）
 ```
+
+### 包优先级
+
+| 优先级 | 说明 | 包 |
+|--------|------|---|
+| **P1 核心** | 运行必需 | `@colobot/core`, `@colobot/tui` |
+| **P2 扩展** | 按需安装 | `sop-academic`, `tools-minimax`, `tools-python`, `skills-openclaw` |
+| **P3 体验** | 用户界面 | `dashboard` |
+| **P4 可选** | 渠道集成 | `feishu`, `dingtalk`, `i18n`, `websocket` |
+| **dev** | 开发依赖 | `@colobot/types` |
 
 ### 已发布包
 
 | 包名 | 版本 | 说明 |
 |------|------|------|
-| `@colobot/types` | 0.1.0 | LLM、Agent、Tool、Memory 等类型定义 |
 | `@colobot/core` | 0.2.0 | Agent 运行时、子Agent、工具、搜索、大文件处理、统一接口 |
 | `@colobot/tui` | 0.1.0 | 终端交互界面、命令面板、聊天组件 |
 | `@colobot/sop-academic` | 0.1.0 | SOP 学术研究流程、AI 动态任务拆解 |
-
-### 已实现待迁移模块
-
-以下模块已在 `src/` 目录完整实现，待迁移到独立包：
-
-| 模块 | 位置 | 说明 |
-|------|------|------|
-| 飞书集成 | `src/services/feishu*.ts` | 交互式卡片、消息发送/更新、长轮询 |
-| Dashboard | `src/dashboard/index.html` | 完整 Web 管理界面（单文件 HTML） |
-| MiniMax 工具 | `src/agent-runtime/tools/minimax-*.ts` | TTS/语音/视频/音乐/文件 共7个工具 |
-| OpenClaw | `src/agent-runtime/tools/openclaw.ts` | SOUL.md 解析和格式转换 |
+| `@colobot/types` | 0.1.0 | LLM、Agent、Tool、Memory 等类型定义（开发依赖） |
 
 ### 安装示例
 
 ```bash
-# 最小安装（仅核心）
-npm install @colobot/core
+# 核心安装（最小可用）
+npm install @colobot/core @colobot/tui
 
-# 终端界面
-npm install @colobot/tui
+# 按需扩展
+npm install @colobot/sop-academic      # 学术研究
+npm install @colobot/tools-minimax     # 多模态（待发布）
+npm install @colobot/tools-python      # Python 执行（待发布）
+npm install @colobot/skills-openclaw   # OpenClaw 兼容（待发布）
 
-# SOP 学术研究流程
-npm install @colobot/sop-academic
-
-# 类型定义（开发依赖）
+# 开发依赖
 npm install -D @colobot/types
 ```
 
