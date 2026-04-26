@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@colobot/types": "*",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^12.9.0",
     "llm-guard": "^0.1.8",
     "pg": "^8.13.0"
   },
