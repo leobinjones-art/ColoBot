@@ -53,6 +53,208 @@
 
 ---
 
+## 父子 Agent 协作架构
+
+ColoBot 采用**父 Agent + 子 Agent** 协作模式，实现任务分解与隔离执行。
+
+### 架构设计
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      父 Agent (Parent)                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ 任务分析    │  │ 任务分解    │  │ 结果审核与汇总      │  │
+│  │ LLM 分析    │→ │ 创建子Agent │→ │ 验证子Agent输出     │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                                                              │
+│  权限：完整文件系统访问、所有工具、无限 TTL                   │
+└─────────────────────────────────────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ↓                ↓                ↓
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ 子 Agent 1  │    │ 子 Agent 2  │    │ 子 Agent 3  │
+│ ─────────── │    │ ─────────── │    │ ─────────── │
+│ TTL: 5min   │    │ TTL: 10min  │    │ TTL: 15min  │
+│ 工具: [A,B] │    │ 工具: [C,D] │    │ 工具: [E]   │
+│ 沙箱隔离    │    │ 沙箱隔离    │    │ 沙箱隔离    │
+└─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### 核心特性
+
+| 特性 | 说明 |
+|------|------|
+| **TTL 自动过期** | 子 Agent 设置生命周期，到期自动销毁，防止资源泄漏 |
+| **工具白名单** | 子 Agent 只能使用父 Agent 授权的工具，限制危险操作 |
+| **沙箱隔离** | 子 Agent 文件访问限制在指定目录，防止越权 |
+| **并发限制** | 控制同时运行的子 Agent 数量，避免资源耗尽 |
+| **结果审核** | 父 Agent 验证子 Agent 输出，过滤幻觉和错误 |
+
+### 使用示例
+
+```typescript
+import { SubAgentManager } from '@colobot/core';
+
+// 父 Agent 创建子 Agent
+const manager = new SubAgentManager({
+  maxConcurrent: 3,        // 最大并发数
+  defaultTTL: 60000,       // 默认 TTL 60秒
+});
+
+// 创建专用子 Agent
+const subAgent = await manager.spawn({
+  name: 'research-agent',
+  soul: '你是一个文献调研助手...',
+  tools: ['web_search', 'read_file'],  // 工具白名单
+  ttl: 300000,                        // 5分钟过期
+});
+
+// 分配任务
+const result = await manager.delegate(subAgent.id, '搜索量子隧穿相关论文');
+
+// 父 Agent 审核结果
+if (result.success) {
+  console.log('子 Agent 完成:', result.output);
+}
+
+// 自动销毁（或 TTL 过期后自动清理）
+await manager.destroy(subAgent.id);
+```
+
+### 工具白名单配置
+
+```typescript
+// 子 Agent 工具白名单
+const allowedTools = [
+  'web_search',      // 网络搜索
+  'read_file',       // 读取文件（沙箱内）
+  'list_dir',        // 列目录（沙箱内）
+];
+
+// 禁止的危险工具
+const forbiddenTools = [
+  'write_file',      // 写文件
+  'delete_file',     // 删除文件
+  'shell',           // Shell 命令
+  'http',            // HTTP 请求
+];
+```
+
+---
+
+## 大文件分块处理
+
+ColoBot 支持**智能分块处理**超大文件，自动适配 LLM context_window。
+
+### 分块策略
+
+| 策略 | 说明 | 适用场景 |
+|------|------|----------|
+| `bytes` | 按字节大小分块 | 二进制文件、大文本 |
+| `lines` | 按行数分块 | 日志文件、CSV |
+| `tokens` | 按 token 数分块 | 代码文件、Markdown |
+
+### 自动适配
+
+系统根据 LLM 的 `context_window` 自动计算最佳 chunk_size：
+
+```typescript
+import { ChunkProcessor } from '@colobot/core';
+
+const processor = new ChunkProcessor({
+  model: 'gpt-4o',           // context_window: 128000
+  strategy: 'tokens',        // 按 token 分块
+  overlap: 100,              // 重叠 token 数（保持上下文连续）
+});
+
+// 自动计算：chunk_size = context_window * 0.3 = 38400 tokens
+const chunks = await processor.chunk('./large-document.md');
+
+console.log(`分成 ${chunks.length} 个块`);
+console.log(`每块约 ${processor.chunkSize} tokens`);
+```
+
+### 合并策略
+
+| 策略 | 说明 |
+|------|------|
+| `concat` | 直接拼接所有结果 |
+| `summarize` | LLM 总结每个块，再合并摘要 |
+| `extract` | 提取关键信息，去重合并 |
+
+### 处理流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    大文件处理流程                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  1. 文件检测                                                 │
+│     └───────────────────────────────────────┐               │
+│     文件大小 > threshold? → 启用分块        │               │
+│                                              ↓               │
+│  2. 分块计算                                                 │
+│     ┌───────────────────────────────────────┐               │
+│     chunk_size = context_window * 0.3       │               │
+│     overlap = chunk_size * 0.05             │               │
+│     └───────────────────────────────────────┘               │
+│                                              ↓               │
+│  3. 分块处理                                                 │
+│     ┌─────────┐  ┌─────────┐  ┌─────────┐                  │
+│     │ Chunk 1 │  │ Chunk 2 │  │ Chunk N │  → 子 Agent 并行 │
+│     └─────────┘  └─────────┘  └─────────┘                  │
+│                                              ↓               │
+│  4. 结果合并                                                 │
+│     ┌───────────────────────────────────────┐               │
+│     根据策略：concat / summarize / extract  │               │
+│     └───────────────────────────────────────┘               │
+│                                              ↓               │
+│  5. 输出                                                     │
+│     ┌───────────────────────────────────────┐               │
+│     合并后的完整结果                        │               │
+│     └───────────────────────────────────────┘               │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 使用示例
+
+```typescript
+import { ChunkProcessor, MergeStrategy } from '@colobot/core';
+
+// 处理大型日志文件
+const processor = new ChunkProcessor({
+  strategy: 'lines',
+  chunkSize: 1000,           // 每 1000 行一块
+  overlap: 50,               // 重叠 50 行
+});
+
+const chunks = await processor.chunk('./logs/app.log');
+
+// 并行处理每个块
+const results = await Promise.all(
+  chunks.map(chunk => agent.run(chunk.content))
+);
+
+// 智能合并
+const summary = await processor.merge(results, {
+  strategy: MergeStrategy.SUMMARIZE,
+  prompt: '提取所有错误日志，按时间排序',
+});
+```
+
+### 模型适配表
+
+| 模型 | context_window | 推荐 chunk_size |
+|------|-----------------|-----------------|
+| GPT-4o | 128,000 | 38,400 tokens |
+| Claude 3.5 Sonnet | 200,000 | 60,000 tokens |
+| MiniMax abab6.5 | 245,000 | 73,500 tokens |
+| GPT-4o-mini | 128,000 | 38,400 tokens |
+
+---
+
 ## 技术栈
 
 | 层级 | 技术 |
