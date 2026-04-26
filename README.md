@@ -6,10 +6,35 @@
 ![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL%2Bpgvector-blue.svg)
 ![SQLite](https://img.shields.io/badge/database-SQLite%20fallback-green.svg)
 ![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)
+![AI Native](https://img.shields.io/badge/architecture-AI%20Native-purple.svg)
 
 > 单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + 飞书审批通知
 
-**ColoBot** 是一个开源的 AI 智能体协作平台，支持多模态输入输出、Skill 编排、自动审批流程和飞书集成。它提供了完整的 AI 智能体管理和协作解决方案。
+**ColoBot** 是一个开源的 **AI 原生** 智能体协作平台，支持多模态输入输出、Skill 编排、自动审批流程和飞书集成。它提供了完整的 AI 智能体管理和协作解决方案。
+
+---
+
+## AI 原生 vs AI+
+
+> ⚠️ **ColoBot 是 AI 原生架构，不是 AI+ 产品。**
+
+| 维度 | AI 原生 (ColoBot) | AI+ (传统产品+AI) |
+|------|-------------------|-------------------|
+| **设计理念** | 从零开始以 AI 为核心构建 | 在现有产品上附加 AI 功能 |
+| **AI 角色** | AI 是系统的基础架构 | AI 是增强功能的插件 |
+| **决策机制** | AI 自主决策、动态规划 | 预设规则 + AI 辅助建议 |
+| **扩展方式** | AI 自动学习新能力（自进化） | 需人工开发新功能模块 |
+| **工作流** | AI 动态拆解任务、创建子 Agent | 固定流程、人工配置步骤 |
+| **适应性** | 根据用户偏好自动调整 | 需用户手动配置参数 |
+| **典型例子** | Claude Code、Cursor、ColoBot | Notion AI、Word Copilot |
+
+**ColoBot 的 AI 原生特性：**
+
+- 🧠 **LLM 驱动任务拆解** — AI 分析用户意图，动态生成执行步骤，无硬编码流程
+- 🔄 **自进化系统** — Soul/用户画像/Skill 自动从对话中学习，无需人工更新
+- 🤖 **父子 Agent 协作** — 父 Agent 自主判断任务难度，生成子 Agent 配置（工具/TTL/沙箱）
+- ⚖️ **智能审批** — 四层漏斗 + AI 裁决，根据用户行为自动调整审批策略
+- 🛡️ **投毒防御** — AI 深度分析可疑内容，自动降级信任等级
 
 ---
 
