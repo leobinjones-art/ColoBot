@@ -40,7 +40,7 @@ export interface AcademicPaper {
 // ── 搜索配置 ──────────────────────────────────────────────
 
 interface SearchConfig {
-  engine: 'searxng' | 'duckduckgo' | 'google' | 'bing';
+  engine: 'searxng' | 'duckduckgo' | 'google' | 'bing' | 'baidu';
   baseUrl: string;
   apiKey?: string;
   cx?: string;
@@ -86,6 +86,8 @@ export async function search(
       return searchGoogle(queryText, maxResults);
     case 'bing':
       return searchBing(queryText, maxResults);
+    case 'baidu':
+      return searchBaidu(queryText, maxResults);
     case 'searxng':
     default:
       return searchSearXNG(queryText, options, maxResults);
@@ -303,6 +305,90 @@ async function searchBing(
     console.error('[Search] Bing Error:', e);
     return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
   }
+}
+
+/**
+ * 百度搜索 (中国可用)
+ */
+async function searchBaidu(
+  queryText: string,
+  maxResults: number
+): Promise<SearchResponse> {
+  try {
+    const url = `https://www.baidu.com/s?wd=${encodeURIComponent(queryText)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Baidu search failed: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const results = parseBaiduResults(html, maxResults);
+
+    return {
+      query: queryText,
+      results,
+      answers: [],
+      suggestions: [],
+      numberOfResults: results.length,
+    };
+  } catch (e) {
+    console.error('[Search] Baidu Error:', e);
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+  }
+}
+
+/**
+ * 解析百度搜索结果
+ */
+function parseBaiduResults(html: string, maxResults: number): SearchResult[] {
+  const results: SearchResult[] = [];
+
+  // 匹配百度搜索结果
+  const resultRegex = /<div[^>]*class="[^"]*result[^"]*"[^>]*>[\s\S]*?<h3[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+
+  let match;
+  while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
+    const url = match[1];
+    const title = match[2].replace(/<[^>]+>/g, '').trim();
+    const content = match[3].replace(/<[^>]+>/g, '').trim();
+
+    if (url && title && !url.startsWith('/')) {
+      results.push({
+        url,
+        title,
+        content: content.slice(0, 300),
+        engine: 'baidu',
+        category: 'general',
+      });
+    }
+  }
+
+  // 备用解析：更简单的模式
+  if (results.length === 0) {
+    const simpleRegex = /<a[^>]*data-click[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    while ((match = simpleRegex.exec(html)) !== null && results.length < maxResults) {
+      const url = match[1];
+      const title = match[2].replace(/<[^>]+>/g, '').trim();
+      if (url && title && url.startsWith('http')) {
+        results.push({
+          url,
+          title,
+          content: '',
+          engine: 'baidu',
+          category: 'general',
+        });
+      }
+    }
+  }
+
+  return results;
 }
 
 /**
