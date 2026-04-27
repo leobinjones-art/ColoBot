@@ -2,7 +2,7 @@
  * 测试运行时（使用 Mock LLM）
  */
 
-import { AgentRuntime, ToolRegistry, registerBuiltinTools, InMemoryStore, NoOpScanner, ConsoleAudit, ConsolePusher } from './index.js';
+import { AgentRuntime, ToolRegistry, registerAllTools, InMemoryStore, NoOpScanner, ConsoleAudit, ConsolePusher } from './index.js';
 import type { LLMProvider, LLMResponse, LLMStreamChunk } from './runtime/types.js';
 
 async function test() {
@@ -17,7 +17,7 @@ async function test() {
   };
 
   const toolRegistry = new ToolRegistry();
-  registerBuiltinTools();
+  registerAllTools();
 
   // 创建 ToolExecutor
   const toolExecutor = {

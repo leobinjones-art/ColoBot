@@ -104,8 +104,8 @@ async function deleteFile(args: Record<string, unknown>, ctx: ToolContext): Prom
 
 export function registerWorkspaceTools(): void {
   toolRegistry.register({
-    name: 'read_file',
-    description: 'Read file content from workspace',
+    name: 'workspace_read',
+    description: 'Read file content from workspace (sandboxed for subagents)',
     parameters: {
       type: 'object',
       properties: {
@@ -118,8 +118,8 @@ export function registerWorkspaceTools(): void {
   });
 
   toolRegistry.register({
-    name: 'write_file',
-    description: 'Write content to file in workspace',
+    name: 'workspace_write',
+    description: 'Write content to file in workspace (sandboxed for subagents)',
     parameters: {
       type: 'object',
       properties: {
@@ -133,8 +133,8 @@ export function registerWorkspaceTools(): void {
   });
 
   toolRegistry.register({
-    name: 'list_dir',
-    description: 'List directory contents in workspace',
+    name: 'workspace_list',
+    description: 'List directory contents in workspace (sandboxed for subagents)',
     parameters: {
       type: 'object',
       properties: {
@@ -147,8 +147,8 @@ export function registerWorkspaceTools(): void {
   });
 
   toolRegistry.register({
-    name: 'delete_file',
-    description: 'Delete file from workspace',
+    name: 'workspace_delete',
+    description: 'Delete file from workspace (sandboxed for subagents)',
     parameters: {
       type: 'object',
       properties: {

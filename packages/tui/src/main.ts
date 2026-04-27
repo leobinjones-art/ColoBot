@@ -6,7 +6,7 @@ import { TUI, printError, printSuccess, style, printTable, ask, select } from '.
 import {
   initConfig,
   setGlobalAllowedTools,
-  registerBuiltinTools,
+  registerAllTools,
   OpenAIProvider,
   AnthropicProvider,
   AgentRuntime,
@@ -163,7 +163,7 @@ async function main() {
   });
 
   // 注册内置工具
-  registerBuiltinTools();
+  registerAllTools();
 
   // 获取 API Key（优先级：配置文件 > 环境变量）
   let apiKey = config.model.apiKey ||

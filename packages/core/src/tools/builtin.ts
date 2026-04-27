@@ -14,6 +14,12 @@ import * as path from 'path';
 import type { ToolContext } from '@colobot/types';
 import { toolRegistry } from './registry.js';
 import { search, getSearchConfig } from '../search.js';
+import { registerSubagentTools } from './subagent.js';
+import { registerSearchTools } from './web-search.js';
+import { registerWorkspaceTools } from './workspace.js';
+import { registerExecCodeTool } from './exec-code.js';
+import { registerAgentTools } from './agent-tools.js';
+import { registerCreateSkillTool } from './create-skill.js';
 
 // ── 文件工具 ──────────────────────────────────────────────
 
@@ -723,5 +729,10 @@ export { registerCreateSkillTool } from './create-skill.js';
  */
 export function registerAllTools(): void {
   registerBuiltinTools();
-  // 其他工具在各自的模块中注册，通过 export 导出供外部调用
+  registerSubagentTools();
+  // registerSearchTools() - 已在 registerBuiltinTools() 中注册 web_search
+  registerWorkspaceTools();
+  registerExecCodeTool();
+  registerAgentTools();
+  registerCreateSkillTool();
 }

@@ -6,7 +6,7 @@
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentRuntime, registerBuiltinTools } from './index.js';
+import { AgentRuntime, registerAllTools } from './index.js';
 import { OpenAIProvider, AnthropicProvider } from './providers/index.js';
 import { SQLiteStore } from './adapters/sqlite-store.js';
 import { ToolExecutorImpl } from './adapters/tools.js';
@@ -277,7 +277,7 @@ async function startCli(): Promise<void> {
     ? new OpenAIProvider({ apiKey, defaultModel: config.model.model, baseUrl: config.model.baseUrl })
     : new AnthropicProvider({ apiKey, defaultModel: config.model.model });
 
-  registerBuiltinTools();
+  registerAllTools();
 
   const memory = new SQLiteStore({
     path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
