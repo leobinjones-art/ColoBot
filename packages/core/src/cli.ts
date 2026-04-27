@@ -379,18 +379,18 @@ async function main() {
 
   // 读取配置中的语言设置
   const configPath = path.join(process.env.HOME || '', '.colobot', 'config.json');
-  let lang: Lang = 'zh';
+  let lang: Lang = 'en';  // 默认英文
   try {
     if (fs.existsSync(configPath)) {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      lang = config.ui?.lang || 'zh';
+      lang = config.ui?.lang || 'en';
     }
   } catch {
     // ignore
   }
 
   if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
-    console.log(lang === 'en' ? HELP_TEXT : HELP_TEXT_ZH);
+    console.log(lang === 'zh' ? HELP_TEXT_ZH : HELP_TEXT);
     process.exit(0);
   }
 
