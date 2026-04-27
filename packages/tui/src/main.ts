@@ -15,9 +15,19 @@ import {
   NoOpScanner,
   ConsoleAudit,
   ConsolePusher,
+  ToolExecutorImpl,
 } from '@colobot/core';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// 日志文件
+const LOG_FILE = path.join(process.env.HOME || '', '.colobot', 'tui.log');
+
+function log(message: string): void {
+  const timestamp = new Date().toISOString();
+  const line = `[${timestamp}] ${message}\n`;
+  fs.appendFileSync(LOG_FILE, line);
+}
 
 // 模型选项
 const PROVIDER_OPTIONS = [
@@ -179,16 +189,10 @@ async function main() {
   }
 
   // 创建运行时
-  const toolExecutor = {
-    parse: (content: string) => [],
-    execute: async (calls: any[], ctx: any) => [],
-    format: (results: any[]) => ''
-  };
-
   const runtime = new AgentRuntime({
     llm,
     memory: new InMemoryStore(),
-    tools: toolExecutor,
+    tools: new ToolExecutorImpl(new ToolRegistry()),
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
@@ -239,19 +243,28 @@ async function main() {
 
   // 运行交互循环
   await tui.run(async (message) => {
-    const result = await runtime.run({
-      agentId: 'cli-agent',
-      sessionKey: 'cli-session',
-      userMessage: message,
-    });
+    log(`USER: ${message}`);
+    try {
+      const result = await runtime.run({
+        agentId: 'cli-agent',
+        sessionKey: 'cli-session',
+        userMessage: message,
+      });
 
-    // 处理响应
-    const response = result.response;
-    if (typeof response === 'string') {
-      return response;
+      log(`TOOL_CALLS: ${JSON.stringify(result.toolCalls)}`);
+      log(`RESPONSE: ${typeof result.response === 'string' ? result.response : JSON.stringify(result.response)}`);
+
+      // 处理响应
+      const response = result.response;
+      if (typeof response === 'string') {
+        return response;
+      }
+      // ContentBlock[] 转换为字符串
+      return response.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join('');
+    } catch (error) {
+      log(`ERROR: ${error}`);
+      throw error;
     }
-    // ContentBlock[] 转换为字符串
-    return response.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join('');
   });
 }
 

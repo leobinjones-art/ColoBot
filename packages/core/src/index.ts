@@ -69,7 +69,7 @@ export { InMemoryStore } from './adapters/memory.js';
 export { DatabaseStore, type DatabaseStoreConfig } from './adapters/database-store.js';
 export { SQLiteStore, createAutoStore, type SQLiteStoreConfig } from './adapters/sqlite-store.js';
 export { NoOpScanner } from './adapters/scanner.js';
-export { ConsoleAudit, ConsolePusher } from './adapters/index.js';
+export { ConsoleAudit, ConsolePusher, ToolExecutorImpl } from './adapters/index.js';
 export { InMemoryStateStore, type StateStore } from './adapters/state.js';
 export { LocalFileSystemAdapter, type FileSystemAdapter } from './adapters/filesystem.js';
 export { ToolRegistry, toolRegistry } from './tools/registry.js';
