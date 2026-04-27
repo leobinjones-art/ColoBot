@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentRuntime, registerBuiltinTools } from './index.js';
 import { OpenAIProvider, AnthropicProvider } from './providers/index.js';
-import { InMemoryStore } from './adapters/memory.js';
+import { SQLiteStore } from './adapters/sqlite-store.js';
 import { ToolExecutorImpl } from './adapters/tools.js';
 import { NoOpScanner } from './adapters/scanner.js';
 import { ConsoleAudit } from './adapters/audit.js';
@@ -198,9 +198,13 @@ async function startCli(): Promise<void> {
 
   registerBuiltinTools();
 
+  const memory = new SQLiteStore({
+    path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
+  });
+
   const runtime = new AgentRuntime({
     llm,
-    memory: new InMemoryStore(),
+    memory,
     tools: new ToolExecutorImpl(toolRegistry),
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),

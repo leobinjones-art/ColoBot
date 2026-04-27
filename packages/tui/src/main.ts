@@ -11,7 +11,7 @@ import {
   AnthropicProvider,
   AgentRuntime,
   ToolRegistry,
-  InMemoryStore,
+  SQLiteStore,
   NoOpScanner,
   ConsoleAudit,
   ConsolePusher,
@@ -189,9 +189,13 @@ async function main() {
   }
 
   // 创建运行时
+  const memory = new SQLiteStore({
+    path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
+  });
+
   const runtime = new AgentRuntime({
     llm,
-    memory: new InMemoryStore(),
+    memory,
     tools: new ToolExecutorImpl(new ToolRegistry()),
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
