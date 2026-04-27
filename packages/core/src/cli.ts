@@ -19,6 +19,29 @@ import { configureSearch } from './search.js';
 import { toolRegistry } from './tools/registry.js';
 
 const HELP_TEXT = `
+ColoBot - Multi-modal AI Assistant
+
+Usage:
+  colobot [command]
+
+Commands:
+  init        Interactive configuration
+  tui         Terminal UI interface
+  help        Show help
+  version     Show version
+
+Interactive commands:
+  /config     Show configuration
+  /set        Update configuration
+  /tools      List tools
+  /help       Show help
+  /exit       Exit program
+
+Config file:
+  ~/.colobot/config.json
+`;
+
+const HELP_TEXT_ZH = `
 ColoBot - 多模态 AI 助手
 
 用法:
@@ -41,6 +64,54 @@ ColoBot - 多模态 AI 助手
   ~/.colobot/config.json
 `;
 
+// 多语言文本
+const i18n = {
+  zh: {
+    welcome: '\n欢迎使用 ColoBot！首次运行需要配置。\n',
+    selectProvider: '选择 LLM 提供商:\n',
+    pleaseSelect: '请选择: ',
+    invalidSelect: '无效选择',
+    custom: '自定义',
+    apiUrl: 'API 地址 (如 https://api.example.com/v1): ',
+    apiKey: 'API 密钥: ',
+    apiKeyEmpty: 'API 密钥不能为空',
+    modelName: '模型名称: ',
+    modelNameEmpty: '模型名称不能为空',
+    selectModel: '\n选择模型:\n',
+    selectSearchEngine: '\n选择搜索引擎:\n',
+    selectSearchDefault: '请选择 (默认 duckduckgo): ',
+    configSaved: '\n配置已保存！运行 colobot 启动。\n',
+    providerOptions: [
+      { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
+      { name: 'Anthropic', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-7'] },
+      { name: '自定义', models: [] },
+    ],
+  },
+  en: {
+    welcome: '\nWelcome to ColoBot! First run requires configuration.\n',
+    selectProvider: 'Select LLM provider:\n',
+    pleaseSelect: 'Select: ',
+    invalidSelect: 'Invalid selection',
+    custom: 'Custom',
+    apiUrl: 'API URL (e.g. https://api.example.com/v1): ',
+    apiKey: 'API Key: ',
+    apiKeyEmpty: 'API Key cannot be empty',
+    modelName: 'Model name: ',
+    modelNameEmpty: 'Model name cannot be empty',
+    selectModel: '\nSelect model:\n',
+    selectSearchEngine: '\nSelect search engine:\n',
+    selectSearchDefault: 'Select (default: duckduckgo): ',
+    configSaved: '\nConfiguration saved! Run colobot to start.\n',
+    providerOptions: [
+      { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
+      { name: 'Anthropic', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-7'] },
+      { name: 'Custom', models: [] },
+    ],
+  },
+};
+
+type Lang = 'zh' | 'en';
+
 const PROVIDER_OPTIONS = [
   { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
   { name: 'Anthropic', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-7'] },
@@ -51,61 +122,70 @@ const PROVIDER_OPTIONS = [
  * 交互式配置
  */
 async function interactiveInit(): Promise<void> {
-  console.log('\n欢迎使用 ColoBot！首次运行需要配置。\n');
+  // 0. 选择语言
+  console.log('\nSelect language / 选择语言:\n');
+  console.log('  1. 中文');
+  console.log('  2. English\n');
+
+  const langIdx = await askInput('Select / 选择: ');
+  const lang: Lang = langIdx === '2' ? 'en' : 'zh';
+  const t = i18n[lang];
+
+  console.log(t.welcome);
 
   // 1. 选择 Provider
-  console.log('选择 LLM 提供商:\n');
-  PROVIDER_OPTIONS.forEach((p, i) => console.log(`  ${i + 1}. ${p.name}`));
+  console.log(t.selectProvider);
+  t.providerOptions.forEach((p, i) => console.log(`  ${i + 1}. ${p.name}`));
   console.log('');
 
-  const providerIdx = await askInput('请选择: ');
+  const providerIdx = await askInput(t.pleaseSelect);
   const idx = parseInt(providerIdx, 10) - 1;
-  if (idx < 0 || idx >= PROVIDER_OPTIONS.length) {
-    console.log('无效选择');
+  if (idx < 0 || idx >= t.providerOptions.length) {
+    console.log(t.invalidSelect);
     process.exit(1);
   }
 
-  const selected = PROVIDER_OPTIONS[idx];
-  const provider = selected.name.toLowerCase() === '自定义' ? 'custom' : selected.name.toLowerCase();
+  const selected = t.providerOptions[idx];
+  const provider = selected.name.toLowerCase() === t.custom.toLowerCase() ? 'custom' : selected.name.toLowerCase();
 
   // 2. 自定义则输入 baseUrl
   let baseUrl: string | undefined;
   if (provider === 'custom') {
-    baseUrl = await askInput('API 地址 (如 https://api.example.com/v1): ');
+    baseUrl = await askInput(t.apiUrl);
   }
 
   // 3. 输入 API Key
-  const apiKey = await askInput('API 密钥: ');
+  const apiKey = await askInput(t.apiKey);
   if (!apiKey) {
-    console.log('API 密钥不能为空');
+    console.log(t.apiKeyEmpty);
     process.exit(1);
   }
 
   // 4. 选择/输入模型
   let model: string;
   if (provider === 'custom' || selected.models.length === 0) {
-    model = await askInput('模型名称: ');
+    model = await askInput(t.modelName);
     if (!model) {
-      console.log('模型名称不能为空');
+      console.log(t.modelNameEmpty);
       process.exit(1);
     }
   } else {
-    console.log('\n选择模型:\n');
+    console.log(t.selectModel);
     selected.models.forEach((m, i) => console.log(`  ${i + 1}. ${m}`));
     console.log('');
 
-    const modelIdx = await askInput('请选择: ');
+    const modelIdx = await askInput(t.pleaseSelect);
     const midx = parseInt(modelIdx, 10) - 1;
     model = midx >= 0 && midx < selected.models.length ? selected.models[midx] : selected.models[0];
   }
 
   // 5. 选择搜索引擎
-  console.log('\n选择搜索引擎:\n');
-  const searchEngines = ['duckduckgo', 'google', 'bing', 'searxng'];
+  console.log(t.selectSearchEngine);
+  const searchEngines = ['duckduckgo', 'google', 'bing', 'searxng', 'baidu'];
   searchEngines.forEach((e, i) => console.log(`  ${i + 1}. ${e}`));
   console.log('');
 
-  const searchIdx = await askInput('请选择 (默认 duckduckgo): ');
+  const searchIdx = await askInput(t.selectSearchDefault);
   const sidx = parseInt(searchIdx, 10) - 1;
   const searchEngine = sidx >= 0 && sidx < searchEngines.length ? searchEngines[sidx] : 'duckduckgo';
 
@@ -124,13 +204,14 @@ async function interactiveInit(): Promise<void> {
     },
     audit: { enabled: true, level: 'info' },
     memory: { type: 'inmemory', maxEntries: 10000 },
+    ui: { lang },
   };
 
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true });
   }
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  console.log('\n配置已保存！运行 colobot 启动。\n');
+  console.log(t.configSaved);
 }
 
 function askInput(prompt: string): Promise<string> {
@@ -296,8 +377,20 @@ async function main() {
   const args = process.argv.slice(2);
   const firstArg = args[0];
 
+  // 读取配置中的语言设置
+  const configPath = path.join(process.env.HOME || '', '.colobot', 'config.json');
+  let lang: Lang = 'zh';
+  try {
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      lang = config.ui?.lang || 'zh';
+    }
+  } catch {
+    // ignore
+  }
+
   if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
-    console.log(HELP_TEXT);
+    console.log(lang === 'en' ? HELP_TEXT : HELP_TEXT_ZH);
     process.exit(0);
   }
 
