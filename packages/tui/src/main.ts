@@ -16,6 +16,7 @@ import {
   ConsoleAudit,
   ConsolePusher,
   ToolExecutorImpl,
+  configureSearch,
 } from '@colobot/core';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -150,6 +151,16 @@ async function main() {
 
   // 设置工具白名单
   setGlobalAllowedTools(config.subAgent.allowedTools);
+
+  // 配置搜索引擎
+  configureSearch({
+    engine: config.search.engine as 'searxng' | 'duckduckgo' | 'google' | 'bing',
+    apiKey: config.search.apiKey,
+    cx: config.search.cx,
+    baseUrl: config.search.baseUrl,
+    maxResults: config.search.maxResults,
+    timeout: config.search.timeout,
+  });
 
   // 注册内置工具
   registerBuiltinTools();
