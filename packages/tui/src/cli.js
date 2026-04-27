@@ -9,10 +9,10 @@ const firstArg = args[0];
 // 快速处理 help/version，不加载任何模块
 if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
   console.log(`
-ColoBot - 多模态 AI 助手
+ColoBot TUI - 终端交互界面
 
 用法:
-  colobot [命令]
+  colobot-tui [命令]
 
 命令:
   init        交互式配置

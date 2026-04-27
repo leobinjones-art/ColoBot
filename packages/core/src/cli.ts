@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * CLI 入口 - 命令行部署
+ * ColoBot CLI 入口
  */
 
 import * as readline from 'readline';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AgentRuntime, ToolRegistry, registerBuiltinTools } from './index.js';
 import { OpenAIProvider, AnthropicProvider } from './providers/index.js';
 import { InMemoryStore } from './adapters/memory.js';
@@ -11,41 +13,165 @@ import { ToolExecutorImpl } from './adapters/tools.js';
 import { NoOpScanner } from './adapters/scanner.js';
 import { ConsoleAudit } from './adapters/audit.js';
 import { ConsolePusher } from './adapters/pusher.js';
-import {
-  initConfig,
-  parseCLIArgs,
-  applyCLIOptions,
-  HELP_TEXT,
-  type CLIOptions,
-} from './config/index.js';
+import { initConfig, parseCLIArgs, applyCLIOptions } from './config/index.js';
 import { setGlobalAllowedTools } from './subagents/index.js';
 import { configureSearch } from './search.js';
+
+const HELP_TEXT = `
+ColoBot - 多模态 AI 助手
+
+用法:
+  colobot [命令]
+
+命令:
+  init        交互式配置
+  tui         终端交互界面
+  help        显示帮助
+  version     显示版本
+
+交互命令:
+  /config     显示配置
+  /set        更新配置
+  /tools      显示工具列表
+  /help       显示帮助
+  /exit       退出程序
+
+配置文件:
+  ~/.colobot/config.json
+`;
+
+const PROVIDER_OPTIONS = [
+  { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
+  { name: 'Anthropic', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-7'] },
+  { name: '自定义', models: [] },
+];
+
+/**
+ * 交互式配置
+ */
+async function interactiveInit(): Promise<void> {
+  console.log('\n欢迎使用 ColoBot！首次运行需要配置。\n');
+
+  // 1. 选择 Provider
+  console.log('选择 LLM 提供商:\n');
+  PROVIDER_OPTIONS.forEach((p, i) => console.log(`  ${i + 1}. ${p.name}`));
+  console.log('');
+
+  const providerIdx = await askInput('请选择: ');
+  const idx = parseInt(providerIdx, 10) - 1;
+  if (idx < 0 || idx >= PROVIDER_OPTIONS.length) {
+    console.log('无效选择');
+    process.exit(1);
+  }
+
+  const selected = PROVIDER_OPTIONS[idx];
+  const provider = selected.name.toLowerCase() === '自定义' ? 'custom' : selected.name.toLowerCase();
+
+  // 2. 自定义则输入 baseUrl
+  let baseUrl: string | undefined;
+  if (provider === 'custom') {
+    baseUrl = await askInput('API 地址 (如 https://api.example.com/v1): ');
+  }
+
+  // 3. 输入 API Key
+  const apiKey = await askInput('API 密钥: ');
+  if (!apiKey) {
+    console.log('API 密钥不能为空');
+    process.exit(1);
+  }
+
+  // 4. 选择/输入模型
+  let model: string;
+  if (provider === 'custom' || selected.models.length === 0) {
+    model = await askInput('模型名称: ');
+    if (!model) {
+      console.log('模型名称不能为空');
+      process.exit(1);
+    }
+  } else {
+    console.log('\n选择模型:\n');
+    selected.models.forEach((m, i) => console.log(`  ${i + 1}. ${m}`));
+    console.log('');
+
+    const modelIdx = await askInput('请选择: ');
+    const midx = parseInt(modelIdx, 10) - 1;
+    model = midx >= 0 && midx < selected.models.length ? selected.models[midx] : selected.models[0];
+  }
+
+  // 5. 选择搜索引擎
+  console.log('\n选择搜索引擎:\n');
+  const searchEngines = ['duckduckgo', 'google', 'bing', 'searxng'];
+  searchEngines.forEach((e, i) => console.log(`  ${i + 1}. ${e}`));
+  console.log('');
+
+  const searchIdx = await askInput('请选择 (默认 duckduckgo): ');
+  const sidx = parseInt(searchIdx, 10) - 1;
+  const searchEngine = sidx >= 0 && sidx < searchEngines.length ? searchEngines[sidx] : 'duckduckgo';
+
+  // 保存配置
+  const configDir = path.join(process.env.HOME || '', '.colobot');
+  const configPath = path.join(configDir, 'config.json');
+  const config = {
+    model: { provider, model, apiKey, baseUrl },
+    search: { engine: searchEngine, maxResults: 10, timeout: 30000 },
+    subAgent: {
+      maxConcurrent: 10,
+      defaultTtlMs: 300000,
+      defaultTimeoutMs: 300000,
+      allowedTools: ['read_file', 'write_file', 'list_dir', 'web_search', 'python', 'http'],
+      blockedTools: ['delete_file', 'execute_shell'],
+    },
+    audit: { enabled: true, level: 'info' },
+    memory: { type: 'inmemory', maxEntries: 10000 },
+  };
+
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  console.log('\n配置已保存！运行 colobot 启动。\n');
+}
+
+function askInput(prompt: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise(resolve => {
+    rl.question(prompt, answer => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * 启动 TUI
+ */
+async function startTui(): Promise<void> {
+  // 动态加载 TUI 模块
+  const { TUI } = await import('@colobot/tui');
+  const tui = new TUI();
+
+  tui.commands.register('/exit', '退出程序', () => {
+    console.log('\n再见！\n');
+    process.exit(0);
+  });
+
+  await tui.start('ColoBot TUI');
+  console.log('输入 /help 查看可用命令\n');
+  await tui.run(async (message) => message);
+}
 
 /**
  * 启动 CLI
  */
-async function main() {
-  // 解析命令行参数
-  const args = process.argv.slice(2);
-  const options = parseCLIArgs(args);
-
-  // 显示帮助
-  if (options.help) {
-    console.log(HELP_TEXT);
-    process.exit(0);
-  }
-
-  // 初始化配置管理器
-  const configManager = initConfig(options.config);
-  applyCLIOptions(configManager, options);
-
+async function startCli(): Promise<void> {
+  const configManager = initConfig();
   const config = configManager.getConfig();
 
-  // 应用配置到各模块
-  // 1. 子Agent白名单
   setGlobalAllowedTools(config.subAgent.allowedTools);
 
-  // 2. 搜索配置
   configureSearch({
     engine: config.search.engine as 'searxng' | 'duckduckgo' | 'google' | 'bing',
     apiKey: config.search.apiKey,
@@ -55,79 +181,39 @@ async function main() {
     timeout: config.search.timeout,
   });
 
-  // 获取 API Key
   const apiKey = config.model.apiKey ||
     process.env.OPENAI_API_KEY ||
     process.env.ANTHROPIC_API_KEY ||
     '';
 
   if (!apiKey) {
-    console.error('Error: No API key provided.');
-    console.error('Set LLM_API_KEY or use --api-key option.');
+    console.error('Error: No API key provided. Run `colobot init` first.');
     process.exit(1);
   }
 
-  // 创建 LLM Provider
   const llm = config.model.provider === 'openai'
-    ? new OpenAIProvider({
-      apiKey,
-      defaultModel: config.model.model,
-      baseUrl: config.model.baseUrl,
-    })
-    : new AnthropicProvider({
-      apiKey,
-      defaultModel: config.model.model,
-    });
+    ? new OpenAIProvider({ apiKey, defaultModel: config.model.model, baseUrl: config.model.baseUrl })
+    : new AnthropicProvider({ apiKey, defaultModel: config.model.model });
 
-  // 创建工具注册表
   const toolRegistry = new ToolRegistry();
   registerBuiltinTools();
 
-  // 创建运行时依赖
-  const deps = {
+  const runtime = new AgentRuntime({
     llm,
     memory: new InMemoryStore(),
     tools: new ToolExecutorImpl(toolRegistry),
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
-  };
+  });
 
-  // 创建运行时
-  const runtime = new AgentRuntime(deps);
-
-  // 显示启动信息
   console.log('╔══════════════════════════════════════╗');
-  console.log('║       ColoBot Core CLI Ready         ║');
+  console.log('║          ColoBot CLI Ready           ║');
   console.log('╚══════════════════════════════════════╝');
-  console.log('');
-  console.log('Configuration:');
-  console.log(`  Provider:    ${config.model.provider}`);
-  console.log(`  Model:       ${config.model.model}`);
-  console.log(`  Search:      ${config.search.engine}`);
-  console.log(`  Max Agents:  ${config.subAgent.maxConcurrent}`);
-  console.log(`  Allowed:     ${config.subAgent.allowedTools.slice(0, 3).join(', ')}...`);
+  console.log(`\nProvider: ${config.model.provider}`);
+  console.log(`Model: ${config.model.model}`);
+  console.log('输入 /help 查看可用命令\n');
 
-  // 显示模型能力
-  const caps = configManager.getModelCapabilities();
-  console.log('');
-  console.log('Model Capabilities:');
-  console.log(`  Context:     ${caps.contextWindow.toLocaleString()} tokens`);
-  console.log(`  Chunk Size:  ${(caps.recommendedChunkSize / 1000).toFixed(0)}KB`);
-  console.log(`  Parallel:    ${caps.recommendedParallel}`);
-
-  console.log('');
-  console.log('Commands:');
-  console.log('  /config  - Show current configuration');
-  console.log('  /set     - Update configuration');
-  console.log('  /tools   - List allowed tools');
-  console.log('  /help    - Show available commands');
-  console.log('  /exit    - Exit CLI');
-  console.log('');
-  console.log('Type your message and press Enter.');
-  console.log('');
-
-  // 交互循环
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -138,31 +224,23 @@ async function main() {
 
   rl.on('line', async (line: string) => {
     const message = line.trim();
+    if (!message) { rl.prompt(); return; }
 
-    if (!message) {
-      rl.prompt();
-      return;
-    }
-
-    // 处理命令
     if (message.startsWith('/')) {
       handleCommand(message, configManager, rl);
       return;
     }
 
-    // 处理消息
     try {
       const result = await runtime.run({
         agentId: 'cli-agent',
         sessionKey: 'cli-session',
         userMessage: message,
       });
-
       console.log(`\n${result.response}\n`);
     } catch (error) {
       console.error('Error:', error);
     }
-
     rl.prompt();
   });
 
@@ -172,190 +250,70 @@ async function main() {
   });
 }
 
-/**
- * 处理 CLI 命令
- */
-function handleCommand(
-  command: string,
-  configManager: ReturnType<typeof initConfig>,
-  rl: readline.Interface
-): void {
-  const parts = command.split(' ');
-  const cmd = parts[0];
+function handleCommand(cmd: string, configManager: ReturnType<typeof initConfig>, rl: readline.Interface): void {
+  const parts = cmd.split(' ');
+  const command = parts[0];
 
-  switch (cmd) {
+  switch (command) {
     case '/config':
       showConfig(configManager);
       break;
-
-    case '/set':
-      handleSetCommand(parts.slice(1), configManager);
-      break;
-
     case '/tools':
       showTools(configManager);
       break;
-
     case '/help':
-      showCommands();
+      console.log('\n命令: /config, /tools, /help, /exit\n');
       break;
-
     case '/exit':
     case '/quit':
       rl.close();
       return;
-
     default:
-      console.log(`Unknown command: ${cmd}`);
-      console.log('Type /help for available commands.');
+      console.log(`Unknown command: ${command}`);
   }
-
   rl.prompt();
 }
 
-/**
- * 显示当前配置
- */
 function showConfig(configManager: ReturnType<typeof initConfig>): void {
   const config = configManager.getConfig();
-  const caps = configManager.getModelCapabilities();
-
-  console.log('\nCurrent Configuration:');
-  console.log('─'.repeat(40));
-  console.log('\n[Model]');
-  console.log(`  Provider:    ${config.model.provider}`);
-  console.log(`  Model:       ${config.model.model}`);
-  console.log(`  Max Tokens:  ${config.model.maxTokens}`);
-  console.log(`  Temperature: ${config.model.temperature}`);
-
-  console.log('\n[Model Capabilities]');
-  console.log(`  Context:     ${caps.contextWindow.toLocaleString()} tokens`);
-  console.log(`  Max Output:  ${caps.maxOutput.toLocaleString()} tokens`);
-  console.log(`  Chunk Size:  ${(caps.recommendedChunkSize / 1000).toFixed(0)}KB`);
-  console.log(`  Parallel:    ${caps.recommendedParallel}`);
-
-  console.log('\n[Search]');
-  console.log(`  Engine:      ${config.search.engine}`);
-  console.log(`  Max Results: ${config.search.maxResults}`);
-  console.log(`  Timeout:     ${config.search.timeout}ms`);
-
-  console.log('\n[SubAgent]');
-  console.log(`  Max Concurrent: ${config.subAgent.maxConcurrent}`);
-  console.log(`  Default TTL:    ${config.subAgent.defaultTtlMs}ms`);
-  console.log(`  Allowed Tools:  ${config.subAgent.allowedTools.length}`);
-  console.log(`  Blocked Tools:  ${config.subAgent.blockedTools.length}`);
-
-  console.log('');
+  console.log(`\nProvider: ${config.model.provider}`);
+  console.log(`Model: ${config.model.model}`);
+  console.log(`Search: ${config.search.engine}\n`);
 }
 
-/**
- * 处理 /set 命令
- */
-function handleSetCommand(
-  args: string[],
-  configManager: ReturnType<typeof initConfig>
-): void {
-  if (args.length < 2) {
-    console.log('Usage: /set <key> <value>');
-    console.log('');
-    console.log('Keys:');
-    console.log('  model.provider      - openai, anthropic');
-    console.log('  model.model         - model name');
-    console.log('  model.temperature   - 0.0 - 1.0');
-    console.log('  search.engine       - google, bing, duckduckgo');
-    console.log('  subagent.max        - max concurrent agents');
-    console.log('');
-    console.log('Note: Chunking params are auto-calculated based on model');
-    console.log('');
-    return;
-  }
-
-  const key = args[0];
-  const value = args[1];
-
-  try {
-    switch (key) {
-      case 'model.provider':
-        configManager.setModelConfig({ provider: value as 'openai' | 'anthropic' });
-        console.log(`Provider set to: ${value}`);
-        break;
-
-      case 'model.model':
-        configManager.setModelConfig({ model: value });
-        const caps = configManager.getModelCapabilities();
-        console.log(`Model set to: ${value}`);
-        console.log(`Auto chunk size: ${(caps.recommendedChunkSize / 1000).toFixed(0)}KB`);
-        break;
-
-      case 'model.temperature':
-        configManager.setModelConfig({ temperature: parseFloat(value) });
-        console.log(`Temperature set to: ${value}`);
-        break;
-
-      case 'search.engine':
-        configManager.setSearchConfig({ engine: value as 'google' | 'bing' | 'duckduckgo' });
-        console.log(`Search engine set to: ${value}`);
-        break;
-
-      case 'subagent.max':
-        configManager.setSubAgentConfig({ maxConcurrent: parseInt(value) });
-        console.log(`Max concurrent set to: ${value}`);
-        break;
-
-      case 'allow':
-        configManager.allowTool(value);
-        console.log(`Tool allowed: ${value}`);
-        break;
-
-      case 'block':
-        configManager.blockTool(value);
-        console.log(`Tool blocked: ${value}`);
-        break;
-
-      default:
-        console.log(`Unknown key: ${key}`);
-    }
-  } catch (e) {
-    console.log(`Error: ${e}`);
-  }
-}
-
-/**
- * 显示允许的工具
- */
 function showTools(configManager: ReturnType<typeof initConfig>): void {
   const config = configManager.getConfig();
-
-  console.log('\nAllowed Tools:');
-  console.log('─'.repeat(40));
-  for (const tool of config.subAgent.allowedTools) {
-    console.log(`  ✓ ${tool}`);
-  }
-
-  if (config.subAgent.blockedTools.length > 0) {
-    console.log('\nBlocked Tools:');
-    for (const tool of config.subAgent.blockedTools) {
-      console.log(`  ✗ ${tool}`);
-    }
-  }
-
+  console.log('\n允许的工具:');
+  config.subAgent.allowedTools.forEach(t => console.log(`  ✓ ${t}`));
   console.log('');
 }
 
-/**
- * 显示可用命令
- */
-function showCommands(): void {
-  console.log('\nAvailable Commands:');
-  console.log('─'.repeat(40));
-  console.log('  /config           Show current configuration');
-  console.log('  /set <k> <v>      Update configuration');
-  console.log('  /set allow <tool> Allow a tool');
-  console.log('  /set block <tool> Block a tool');
-  console.log('  /tools            List allowed/block tools');
-  console.log('  /help             Show this help');
-  console.log('  /exit             Exit CLI');
-  console.log('');
+async function main() {
+  const args = process.argv.slice(2);
+  const firstArg = args[0];
+
+  if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
+    console.log(HELP_TEXT);
+    process.exit(0);
+  }
+
+  if (firstArg === 'version' || firstArg === '-v' || firstArg === '--version') {
+    console.log(`ColoBot v${process.env.npm_package_version || '0.1.0'}`);
+    process.exit(0);
+  }
+
+  if (firstArg === 'init') {
+    await interactiveInit();
+    process.exit(0);
+  }
+
+  if (firstArg === 'tui') {
+    await startTui();
+    process.exit(0);
+  }
+
+  // 默认启动 CLI
+  await startCli();
 }
 
 main().catch((error) => {
