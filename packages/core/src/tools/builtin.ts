@@ -470,10 +470,5 @@ export { registerCreateSkillTool } from './create-skill.js';
  */
 export function registerAllTools(): void {
   registerBuiltinTools();
-  registerSearchTools();
-  registerWorkspaceTools();
-  registerExecCodeTool();
-  registerSubagentTools();
-  registerAgentTools();
-  registerCreateSkillTool();
+  // 其他工具在各自的模块中注册，通过 export 导出供外部调用
 }
