@@ -48,6 +48,14 @@ export interface ToolExecutor {
   parse(content: string): ToolCall[];
   execute(calls: ToolCall[], context: ToolContext): Promise<ToolResult[]>;
   format(results: ToolResult[]): string;
+  getTools?(): Array<{
+    type: 'function';
+    function: {
+      name: string;
+      description: string;
+      parameters: Record<string, unknown>;
+    };
+  }>;
 }
 
 /**

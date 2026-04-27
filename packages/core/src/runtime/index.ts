@@ -121,12 +121,23 @@ export class AgentRuntime {
       const response = await this.deps.llm.chat(fullMessages, {
         temperature,
         maxTokens,
+        tools: this.deps.tools.getTools?.() || undefined,
       });
 
       const rawContent = response.content;
       messages.push({ role: 'assistant', content: rawContent });
 
-      // 解析工具调用
+      // 处理原生 tool_calls（优先）
+      if (response.toolCalls && response.toolCalls.length > 0) {
+        toolCallNames.push(...response.toolCalls.map(c => c.name));
+        const results = await this.deps.tools.execute(response.toolCalls, toolCtx);
+        const resultText = this.deps.tools.format(results);
+        messages.push({ role: 'user', content: resultText });
+        finalContent = rawContent;
+        continue;
+      }
+
+      // 解析 XML 格式工具调用（兼容）
       const rawText = typeof rawContent === 'string' ? rawContent
         : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
 

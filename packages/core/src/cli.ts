@@ -6,16 +6,17 @@
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentRuntime, ToolRegistry, registerBuiltinTools } from './index.js';
+import { AgentRuntime, registerBuiltinTools } from './index.js';
 import { OpenAIProvider, AnthropicProvider } from './providers/index.js';
 import { InMemoryStore } from './adapters/memory.js';
 import { ToolExecutorImpl } from './adapters/tools.js';
 import { NoOpScanner } from './adapters/scanner.js';
 import { ConsoleAudit } from './adapters/audit.js';
 import { ConsolePusher } from './adapters/pusher.js';
-import { initConfig, parseCLIArgs, applyCLIOptions } from './config/index.js';
+import { initConfig } from './config/index.js';
 import { setGlobalAllowedTools } from './subagents/index.js';
 import { configureSearch } from './search.js';
+import { toolRegistry } from './tools/registry.js';
 
 const HELP_TEXT = `
 ColoBot - 多模态 AI 助手
@@ -195,7 +196,6 @@ async function startCli(): Promise<void> {
     ? new OpenAIProvider({ apiKey, defaultModel: config.model.model, baseUrl: config.model.baseUrl })
     : new AnthropicProvider({ apiKey, defaultModel: config.model.model });
 
-  const toolRegistry = new ToolRegistry();
   registerBuiltinTools();
 
   const runtime = new AgentRuntime({

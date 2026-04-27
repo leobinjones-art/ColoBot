@@ -9,6 +9,10 @@ import { ToolRegistry } from '../tools/registry.js';
 export class ToolExecutorImpl implements ToolExecutor {
   constructor(private registry: ToolRegistry) {}
 
+  getTools() {
+    return this.registry.getOpenAITools();
+  }
+
   parse(content: string): ToolCall[] {
     // 解析 XML 格式的工具调用
     const toolCalls: ToolCall[] = [];
