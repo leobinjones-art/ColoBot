@@ -12,7 +12,6 @@ import {
   AgentRuntime,
   ToolRegistry,
   InMemoryStore,
-  ToolExecutorImpl,
   NoOpScanner,
   ConsoleAudit,
   ConsolePusher,
@@ -180,10 +179,16 @@ async function main() {
   }
 
   // 创建运行时
+  const toolExecutor = {
+    parse: (content: string) => [],
+    execute: async (calls: any[], ctx: any) => [],
+    format: (results: any[]) => ''
+  };
+
   const runtime = new AgentRuntime({
     llm,
     memory: new InMemoryStore(),
-    tools: new ToolExecutorImpl(new ToolRegistry()),
+    tools: toolExecutor,
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),

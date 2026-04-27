@@ -2,9 +2,10 @@
  * Skill 执行引擎 - 加载并执行 Skills
  */
 
+import type { ToolContext, LLMMessage } from '@colobot/types';
 import { query, queryOne } from '../memory/db.js';
-import { parseToolCalls, executeToolCalls, formatToolResults, type ToolContext } from '../tools/executor.js';
-import { agentChat, type LLMMessage } from '../llm/index.js';
+import { parseToolCalls, executeToolCalls, formatToolResults } from '../tools/executor.js';
+import { agentChat } from '../llm/index.js';
 
 export interface Skill {
   id: string;

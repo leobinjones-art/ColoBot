@@ -106,7 +106,7 @@ export class AgentRuntime {
     // Context Compression：超过 80% context window 时压缩
     const totalTokens = estimateMessagesTokens(messages);
     if (totalTokens > contextWindowSize * 0.8) {
-      messages = await compressMessages(messages, contextWindowSize, systemPrompt);
+      messages = await compressMessages(messages, contextWindowSize, this.deps.llm, systemPrompt);
     }
 
     const toolCallNames: string[] = [];
@@ -202,7 +202,7 @@ export class AgentRuntime {
     // Context Compression
     const totalTokens = estimateMessagesTokens(messages);
     if (totalTokens > contextWindowSize * 0.8) {
-      messages = await compressMessages(messages, contextWindowSize, systemPrompt);
+      messages = await compressMessages(messages, contextWindowSize, this.deps.llm, systemPrompt);
     }
 
     const toolCtx: ToolContext = { agentId, sessionKey, ipAddress: opts.ipAddress };

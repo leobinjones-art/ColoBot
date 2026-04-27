@@ -31,6 +31,7 @@ export interface ToolContext {
   workspace?: string;
   timeout?: number;
   ipAddress?: string;
+  userRole?: 'admin' | 'developer' | 'readonly';
 }
 
 // 工具定义（运行时）

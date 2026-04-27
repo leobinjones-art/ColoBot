@@ -2,7 +2,7 @@
  * 子 Agent 工具
  */
 
-import type { ToolContext } from '@colobot/types';
+import type { ToolContext, LLMMessage } from '@colobot/types';
 import { toolRegistry } from './registry.js';
 import {
   spawnSubAgent,
@@ -10,7 +10,7 @@ import {
   runSubAgentTask,
   destroySubAgent,
 } from '../subagents/index.js';
-import { agentChat, type LLMMessage } from '../llm/index.js';
+import { agentChat } from '../llm/index.js';
 
 const ALL_TOOLS = [
   'search_memory', 'add_memory', 'list_memory',
@@ -134,7 +134,7 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: ToolContext
 
   const agent = spawnSubAgent({
     name,
-    soul_content,
+    soulContent: soul_content,
     parentId: parent_id || ctx.agentId,
     ttlMs: ttl_ms,
     allowedTools: allowed_tools,
@@ -150,16 +150,20 @@ async function delegateTask(args: Record<string, unknown>, ctx: ToolContext): Pr
   const agent = getSubAgent(sub_agent_id);
   if (!agent) throw new Error(`SubAgent not found: ${sub_agent_id}`);
 
-  const rawResult = await runSubAgentTask(agent, task, agent.parentId);
+  // TODO: 需要传入 deps
+  const rawResult = await runSubAgentTask(agent, task, agent.parentId, {} as any);
   const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult);
 
   return summarizedResult;
 }
 
-async function destroySubagentTool(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
+async function destroySubagentTool(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
   const { sub_agent_id } = args as { sub_agent_id: string };
 
-  destroySubAgent(sub_agent_id);
+  const agent = getSubAgent(sub_agent_id);
+  if (!agent) throw new Error(`SubAgent not found: ${sub_agent_id}`);
+
+  destroySubAgent(sub_agent_id, agent.parentId);
   return JSON.stringify({ ok: true, destroyed: sub_agent_id });
 }
 

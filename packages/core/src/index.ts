@@ -34,7 +34,6 @@ export {
   type ChatOptions,
   type AgentConfig,
   type AgentInfo,
-  type Skill,
   type MemoryResult,
   type StateFilter,
   type ApprovalFilter,
@@ -68,11 +67,12 @@ export { MockProvider, type MockConfig } from './providers/mock.js';
 
 export { InMemoryStore } from './adapters/memory.js';
 export { DatabaseStore, type DatabaseStoreConfig } from './adapters/database-store.js';
-export { ToolRegistry, ToolExecutorImpl } from './tools/index.js';
+export { SQLiteStore, createAutoStore, type SQLiteStoreConfig } from './adapters/sqlite-store.js';
 export { NoOpScanner } from './adapters/scanner.js';
-export { ConsoleAudit, ConsolePusher } from './adapters/console.js';
+export { ConsoleAudit, ConsolePusher } from './adapters/index.js';
 export { InMemoryStateStore, type StateStore } from './adapters/state.js';
 export { LocalFileSystemAdapter, type FileSystemAdapter } from './adapters/filesystem.js';
+export { ToolRegistry, toolRegistry } from './tools/registry.js';
 
 // ═══════════════════════════════════════════════════════════════
 // 工具系统（高层 API）
@@ -84,7 +84,6 @@ export {
 } from './tools/builtin.js';
 
 export type {
-  ToolDefinition,
   ToolPolicy,
 } from './tools/executor.js';
 
@@ -110,7 +109,6 @@ export {
   PluginManager,
   type Plugin,
   type PluginContext,
-  type PluginHooks,
 } from './plugins/index.js';
 
 // ═══════════════════════════════════════════════════════════════
