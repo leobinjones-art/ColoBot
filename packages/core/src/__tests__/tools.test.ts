@@ -181,7 +181,7 @@ describe('Builtin Tools', () => {
 
     it('should list all tools', () => {
       const tools = toolRegistry.list();
-      expect(tools.length).toBe(12);
+      expect(tools.length).toBe(13);
     });
   });
 });

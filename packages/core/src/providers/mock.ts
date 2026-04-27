@@ -30,7 +30,7 @@ export class MockProvider implements LLMProvider {
     if (systemText.includes('Skill')) {
       content = `[Mock Skill Response] 处理消息: "${text.slice(0, 40)}..." - Skill 执行成功`;
     } else if (text.includes('介绍')) {
-      content = '我是 ColoBot，一个全模态 AI 助手。在 MOCK 模式下运行。';
+      content = '我是 ColoBot，一个多模态 AI 助手。当前运行在 Mock 模式。';
     } else if (text.includes('记住')) {
       content = '好的，我已经记住了这个信息。';
     } else {
