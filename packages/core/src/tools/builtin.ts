@@ -657,19 +657,43 @@ if semaphore.wait(timeout: .now() + 8) == .success && success {
 async function getLinuxLocation(): Promise<string | null> {
   const { execSync } = await import('child_process');
 
+  // 方法1: 尝试 geoclue-2.0 D-Bus API
   try {
-    // 尝试使用 geoclue
-    const result = execSync('busctl call --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Client org.freedesktop.GeoClue2.Client Start', {
+    // 先检查 geoclue 是否可用
+    execSync('busctl --user status org.freedesktop.GeoClue2 2>/dev/null', { timeout: 2000 });
+
+    // 获取当前位置
+    const result = execSync(`
+busctl call --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Client \
+  org.freedesktop.GeoClue2.Client Start 2>/dev/null
+sleep 3
+busctl get-property --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Client \
+  org.freedesktop.GeoClue2.Client Location 2>/dev/null
+`, {
       encoding: 'utf-8',
       timeout: 10000,
     });
 
-    // 解析 D-Bus 输出
-    // 这里简化处理，实际需要更复杂的解析
-    return null;
+    if (result.includes('o')) {
+      // 解析位置对象路径，然后获取坐标
+      // 简化处理，实际需要完整 D-Bus 调用
+    }
   } catch {
-    return null;
+    // geoclue not available
   }
+
+  // 方法2: 尝试读取 /sys/class/net/*/address + IP 定位
+  // (已在主函数中作为回退)
+
+  // 方法3: 尝试 hostname 获取位置信息（某些系统配置）
+  try {
+    const hostname = execSync('hostname', { encoding: 'utf-8' }).trim();
+    // 可以根据主机名推断位置（需要用户配置）
+  } catch {
+    // ignore
+  }
+
+  return null;
 }
 
 // 导出所有工具注册函数
