@@ -466,9 +466,16 @@ export function registerBuiltinTools(): void {
 }
 
 /**
- * 获取当前位置（通过 IP 定位）
+ * 获取当前位置（通过 IP 定位或系统 GPS）
  */
 async function get_location(_args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
+  // 优先尝试系统 GPS
+  const systemLocation = await getSystemLocation();
+  if (systemLocation) {
+    return systemLocation;
+  }
+
+  // 回退到 IP 定位
   try {
     // 使用百度 IP 定位 API（中国可用）
     const response = await fetch('https://qifu-api.baidubce.com/ip/local/geo/v1/district', {
@@ -511,6 +518,157 @@ async function get_location(_args: Record<string, unknown>, _ctx: ToolContext): 
     return 'Unable to determine location';
   } catch (error) {
     return `Location error: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+/**
+ * 获取系统 GPS 位置
+ */
+async function getSystemLocation(): Promise<string | null> {
+  const platform = process.platform;
+
+  try {
+    if (platform === 'darwin') {
+      // macOS: 使用 CoreLocation
+      return await getMacOSLocation();
+    } else if (platform === 'linux') {
+      // Linux: 使用 geoclue
+      return await getLinuxLocation();
+    }
+  } catch (error) {
+    // 系统定位失败，回退到 IP 定位
+  }
+
+  return null;
+}
+
+/**
+ * macOS CoreLocation 定位
+ */
+async function getMacOSLocation(): Promise<string | null> {
+  const { execSync } = await import('child_process');
+
+  // 方法1: 尝试 whereami 工具（需要安装：brew install whereami）
+  try {
+    const result = execSync('whereami', {
+      encoding: 'utf-8',
+      timeout: 5000,
+    });
+    const parts = result.trim().split(',');
+    if (parts.length >= 2) {
+      const lat = parseFloat(parts[0]);
+      const lon = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        return JSON.stringify({
+          lat,
+          lon,
+          source: 'GPS (whereami)',
+        }, null, 2);
+      }
+    }
+  } catch {
+    // whereami not installed
+  }
+
+  // 方法2: 尝试 CoreLocation (需要授权)
+  const swiftCode = `
+import Foundation
+import CoreLocation
+
+if !CLLocationManager.locationServicesEnabled() {
+  exit(1)
+}
+
+let manager = CLLocationManager()
+let status = manager.authorizationStatus
+
+if status == .denied || status == .restricted {
+  exit(1)
+}
+
+let semaphore = DispatchSemaphore(value: 0)
+var lat: Double = 0
+var lon: Double = 0
+var acc: Double = 0
+var success = false
+
+class Delegate: NSObject, CLLocationManagerDelegate {
+  let done: () -> Void
+  init(done: @escaping () -> Void) { self.done = done }
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    if let loc = locations.first {
+      lat = loc.coordinate.latitude
+      lon = loc.coordinate.longitude
+      acc = loc.horizontalAccuracy
+      success = true
+      manager.stopUpdatingLocation()
+      done()
+    }
+  }
+
+  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    manager.stopUpdatingLocation()
+    done()
+  }
+}
+
+let delegate = Delegate { semaphore.signal() }
+manager.delegate = delegate
+manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+manager.startUpdatingLocation()
+
+if semaphore.wait(timeout: .now() + 8) == .success && success {
+  print(String(format: "%.6f,%.6f,%.1f", lat, lon, acc))
+}
+`;
+
+  try {
+    const result = execSync(`swift -e '${swiftCode.replace(/'/g, "'\"'\"'")}'`, {
+      encoding: 'utf-8',
+      timeout: 12000,
+    });
+
+    const output = result.trim();
+    if (output && output.includes(',')) {
+      const [latStr, lonStr, accStr] = output.split(',');
+      const lat = parseFloat(latStr);
+      const lon = parseFloat(lonStr);
+      const accuracy = parseFloat(accStr);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        return JSON.stringify({
+          lat,
+          lon,
+          accuracy,
+          source: 'GPS (CoreLocation)',
+        }, null, 2);
+      }
+    }
+  } catch {
+    // CoreLocation failed
+  }
+
+  return null;
+}
+
+/**
+ * Linux geoclue 定位
+ */
+async function getLinuxLocation(): Promise<string | null> {
+  const { execSync } = await import('child_process');
+
+  try {
+    // 尝试使用 geoclue
+    const result = execSync('busctl call --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Client org.freedesktop.GeoClue2.Client Start', {
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+
+    // 解析 D-Bus 输出
+    // 这里简化处理，实际需要更复杂的解析
+    return null;
+  } catch {
+    return null;
   }
 }
 
