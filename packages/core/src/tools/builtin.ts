@@ -452,8 +452,66 @@ export function registerBuiltinTools(): void {
     execute: async (args) => (args.message as string) || '',
   });
 
-  // 注册其他工具模块
-  // 注意：这些函数在各自的文件中定义
+  // 位置工具
+  toolRegistry.register({
+    name: 'get_location',
+    description: 'Get current location by IP geolocation',
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+    execute: get_location,
+  });
+}
+
+/**
+ * 获取当前位置（通过 IP 定位）
+ */
+async function get_location(_args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
+  try {
+    // 使用百度 IP 定位 API（中国可用）
+    const response = await fetch('https://qifu-api.baidubce.com/ip/local/geo/v1/district', {
+      headers: {
+        'User-Agent': 'ColoBot/1.0',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json() as any;
+      if (data.code === 'Success' && data.data) {
+        const { province, city, district, isp } = data.data;
+        return JSON.stringify({
+          province,
+          city,
+          district,
+          isp,
+          source: 'Baidu IP',
+        }, null, 2);
+      }
+    }
+
+    // 备用：使用 ip-api.com
+    const fallback = await fetch('http://ip-api.com/json/?lang=zh-CN');
+    if (fallback.ok) {
+      const data = await fallback.json() as any;
+      if (data.status === 'success') {
+        return JSON.stringify({
+          country: data.country,
+          province: data.regionName,
+          city: data.city,
+          lat: data.lat,
+          lon: data.lon,
+          isp: data.isp,
+          source: 'IP-API',
+        }, null, 2);
+      }
+    }
+
+    return 'Unable to determine location';
+  } catch (error) {
+    return `Location error: ${error instanceof Error ? error.message : String(error)}`;
+  }
 }
 
 // 导出所有工具注册函数
