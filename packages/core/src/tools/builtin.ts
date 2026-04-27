@@ -477,28 +477,41 @@ async function get_location(_args: Record<string, unknown>, _ctx: ToolContext): 
 
   // 回退到 IP 定位
   try {
-    // 使用百度 IP 定位 API（中国可用）
-    const response = await fetch('https://qifu-api.baidubce.com/ip/local/geo/v1/district', {
-      headers: {
-        'User-Agent': 'ColoBot/1.0',
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json() as any;
-      if (data.code === 'Success' && data.data) {
-        const { province, city, district, isp } = data.data;
-        return JSON.stringify({
-          province,
-          city,
-          district,
-          isp,
-          source: 'Baidu IP',
-        }, null, 2);
+    // 方法1: pconline IP 定位（中国准确）
+    const pconline = await fetch('https://whois.pconline.com.cn/ipJson.jsp?json=true');
+    if (pconline.ok) {
+      const text = await pconline.text();
+      // 提取 JSON 部分（跳过空行）
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        if (data.cityCode) {
+          // 联网获取城市名
+          let cityName = data.cityCode;
+          try {
+            const geoRes = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${data.cityCode}.json`);
+            if (geoRes.ok) {
+              const geoData = await geoRes.json() as any;
+              if (geoData.features?.[0]?.properties?.name) {
+                cityName = geoData.features[0].properties.name;
+              }
+            }
+          } catch {
+            // 忽略错误，使用 cityCode
+          }
+          return JSON.stringify({
+            province: data.proCode,
+            city: cityName,
+            cityCode: data.cityCode,
+            ip: data.ip,
+            isp: data.addr,
+            source: 'PConline IP',
+          }, null, 2);
+        }
       }
     }
 
-    // 备用：使用 ip-api.com
+    // 方法2: 使用 ip-api.com
     const fallback = await fetch('http://ip-api.com/json/?lang=zh-CN');
     if (fallback.ok) {
       const data = await fallback.json() as any;
