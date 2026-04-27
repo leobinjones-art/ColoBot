@@ -582,6 +582,8 @@ npm run tui
 
 ### PostgreSQL（推荐生产环境）
 
+> **使用 Docker 部署 PostgreSQL + pgvector**
+
 ```bash
 docker run -d --name colobot-pg \
   -v /path/to/pg-data:/var/lib/postgresql \
@@ -589,6 +591,15 @@ docker run -d --name colobot-pg \
   -e POSTGRES_USER=colobot \
   -e POSTGRES_DB=colobot \
   -p 5432:5432 pgvector/pgvector:pg18
+```
+
+**连接配置：**
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=colobot
+DB_USER=colobot
+DB_PASSWORD=your_password
 ```
 
 ### SQLite 降级模式
