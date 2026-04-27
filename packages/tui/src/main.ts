@@ -10,7 +10,7 @@ import {
   OpenAIProvider,
   AnthropicProvider,
   AgentRuntime,
-  ToolRegistry,
+  toolRegistry,
   SQLiteStore,
   NoOpScanner,
   ConsoleAudit,
@@ -196,7 +196,7 @@ async function main() {
   const runtime = new AgentRuntime({
     llm,
     memory,
-    tools: new ToolExecutorImpl(new ToolRegistry()),
+    tools: new ToolExecutorImpl(toolRegistry),
     scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
