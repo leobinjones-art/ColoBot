@@ -445,13 +445,15 @@ packages/
 ├── types/          # @colobot/types - 类型定义（开发依赖）
 ├── core/           # @colobot/core - 核心运行时 ✅
 ├── tui/            # @colobot/tui - 终端界面 ✅
+├── sop/            # @colobot/sop - SOP 流程引擎基类（待开发）
 ├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程 ✅
 ├── tools-minimax/  # @colobot/tools-minimax - MiniMax 平台工具（待开发）
 ├── tools-python/   # @colobot/tools-python - Python 代码执行（待开发）
 ├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 兼容（待开发）
 ├── dashboard/      # @colobot/dashboard - Web 管理界面（待迁移）
-├── feishu/         # @colobot/feishu - 飞书集成（可选）
-└── dingtalk/       # @colobot/dingtalk - 钉钉集成（可选）
+├── gateway/        # @colobot/gateway - 消息网关基类（待开发）
+├── feishu/         # @colobot/feishu - 飞书集成（依赖 gateway）
+└── dingtalk/       # @colobot/dingtalk - 钉钉集成（依赖 gateway）
 ```
 
 ### 包优先级
@@ -459,9 +461,9 @@ packages/
 | 优先级 | 说明 | 包 |
 |--------|------|---|
 | **P1 核心** | 运行必需 | `@colobot/core`, `@colobot/tui` |
-| **P2 扩展** | 按需安装 | `sop-academic`, `tools-minimax`, `tools-python`, `skills-openclaw` |
+| **P2 扩展** | 按需安装 | `sop`, `sop-academic`, `tools-minimax`, `tools-python`, `skills-openclaw` |
 | **P3 体验** | 用户界面 | `dashboard` |
-| **P4 可选** | 渠道集成 | `feishu`, `dingtalk`, `i18n`, `websocket` |
+| **P4 可选** | 渠道集成 | `gateway`, `feishu`, `dingtalk`, `i18n`, `websocket` |
 | **dev** | 开发依赖 | `@colobot/types` |
 
 ### 已发布包
@@ -470,8 +472,21 @@ packages/
 |------|------|------|
 | `@colobot/core` | 0.2.0 | Agent 运行时、子Agent、工具、搜索、大文件处理、统一接口 |
 | `@colobot/tui` | 0.1.0 | 终端交互界面、命令面板、聊天组件 |
-| `@colobot/sop-academic` | 0.1.0 | SOP 学术研究流程、AI 动态任务拆解 |
+| `@colobot/sop-academic` | 0.1.0 | SOP 学术研究流程、AI 动态任务拆解（依赖 sop 基类） |
 | `@colobot/types` | 0.1.0 | LLM、Agent、Tool、Memory 等类型定义（开发依赖） |
+
+### 待开发包
+
+| 包名 | 说明 | 前置依赖 |
+|------|------|----------|
+| `@colobot/sop` | SOP 流程引擎基类 | `@colobot/core` |
+| `@colobot/tools-minimax` | MiniMax 平台工具 | `@colobot/core` |
+| `@colobot/tools-python` | Python 代码执行 | `@colobot/core` |
+| `@colobot/skills-openclaw` | OpenClaw 兼容 | `@colobot/core` |
+| `@colobot/dashboard` | Web 管理界面 | `@colobot/core` |
+| `@colobot/gateway` | 消息网关基类 | `@colobot/core` |
+| `@colobot/feishu` | 飞书集成 | `@colobot/gateway` |
+| `@colobot/dingtalk` | 钉钉集成 | `@colobot/gateway` |
 
 ### 安装示例
 
