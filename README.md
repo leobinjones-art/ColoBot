@@ -495,18 +495,80 @@ export function createMyEntry(userId: string, data: any): MyEntry {
 - [ ] 流式输出到终端
 - [ ] 提高测试覆盖率到 50%+
 - [ ] 完善错误处理和错误码
+- [ ] **SOP 开源生态**: `@colobot/sop-base` 接口 + 社区贡献机制
 
 ### v0.4.0
 
 - [ ] @colobot/gateway 包 (飞书、钉钉、邮件)
 - [ ] 语音交互
 - [ ] 多设备同步
+- [ ] 官方 SOP 扩展: `@colobot/sop-writing`, `@colobot/sop-coding`
 
 ### v0.5.0
 
 - [ ] 插件市场
+- [ ] SOP 插件市场
 - [ ] 性能监控
 - [ ] 云端部署方案
+
+---
+
+## SOP 开源生态
+
+ColoBot 支持可插拔的 SOP (Standard Operating Procedure) 流程模块，社区可自行贡献特定领域的流程扩展。
+
+### 架构
+
+```
+@colobot/sop-base          # 基础接口 + 注册器（官方）
+@colobot/sop-academic      # 学术研究流程（官方示例）
+colobot-sop-*              # 社区贡献（npm 发布）
+```
+
+### 官方 SOP 模块
+
+| 模块 | 场景 | 状态 |
+|------|------|------|
+| `@colobot/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
+| `@colobot/sop-writing` | 长文写作、报告生成 | 📋 规划中 |
+| `@colobot/sop-coding` | 项目开发、代码重构 | 📋 规划中 |
+
+### 社区贡献 SOP
+
+| 领域 | 包名 | 场景 |
+|------|------|------|
+| 法律 | `colobot-sop-legal` | 合同、协议、诉讼文书 |
+| 医疗 | `colobot-sop-medical` | 问诊记录、病历整理 |
+| 商业 | `colobot-sop-business` | 商业计划、市场分析 |
+| 教育 | `colobot-sop-education` | 课程设计、教案编写 |
+| 翻译 | `colobot-sop-translation` | 多语言文档翻译 |
+
+### 开发 SOP 模块
+
+```typescript
+import type { SopModule } from '@colobot/sop-base';
+
+export const mySop: SopModule = {
+  name: 'my-domain',
+  version: '1.0.0',
+  description: '我的领域流程',
+
+  detectIntent(message) {
+    return /关键词/i.test(message);
+  },
+
+  async analyzeTask(message, runtime) {
+    // 分析任务，返回步骤列表
+  },
+
+  stepTemplates: [
+    { name: '步骤1', description: '...' },
+    { name: '步骤2', description: '...' },
+  ],
+};
+```
+
+详细规划见 [docs/sop-ecosystem-plan.md](docs/sop-ecosystem-plan.md)。
 
 ---
 
@@ -537,11 +599,12 @@ export function createMyEntry(userId: string, data: any): MyEntry {
 
 | 指标 | 数值 |
 |------|------|
-| 总代码量 | ~18,800 行 TypeScript |
-| 源文件数 | 109 个 |
+| 总代码量 | ~20,500 行 TypeScript |
+| 源文件数 | 115 个 |
 | 包数量 | 5 个 |
 | 助理模块 | 18 个 |
 | 数据表 | 15 张 |
+| SOP 模块 | 1 个（学术研究） |
 
 ---
 
@@ -555,6 +618,16 @@ export function createMyEntry(userId: string, data: any): MyEntry {
 
 欢迎提交 Issue 和 Pull Request。
 
+### 贡献 SOP 模块
+
+1. Fork 本仓库
+2. 创建 `colobot-sop-{domain}` 包
+3. 实现 `SopModule` 接口
+4. 发布到 npm
+5. 提交 PR 到文档列表
+
+详见 [docs/sop-ecosystem-plan.md](docs/sop-ecosystem-plan.md)。
+
 ---
 
 ## 致谢
@@ -563,3 +636,5 @@ export function createMyEntry(userId: string, data: any): MyEntry {
 - [Anthropic](https://www.anthropic.com/)
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
 - [llm-guard](https://github.com/protectai/llm-guard)
+- [Tesseract.js](https://github.com/naptha/tesseract.js)
+- [@xenova/transformers](https://github.com/xenova/transformers.js)
