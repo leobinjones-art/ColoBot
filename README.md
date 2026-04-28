@@ -533,16 +533,6 @@ colobot-sop-*              # 社区贡献（npm 发布）
 | `@colobot/sop-writing` | 长文写作、报告生成 | 📋 规划中 |
 | `@colobot/sop-coding` | 项目开发、代码重构 | 📋 规划中 |
 
-### 社区贡献 SOP
-
-| 领域 | 包名 | 场景 |
-|------|------|------|
-| 法律 | `colobot-sop-legal` | 合同、协议、诉讼文书 |
-| 医疗 | `colobot-sop-medical` | 问诊记录、病历整理 |
-| 商业 | `colobot-sop-business` | 商业计划、市场分析 |
-| 教育 | `colobot-sop-education` | 课程设计、教案编写 |
-| 翻译 | `colobot-sop-translation` | 多语言文档翻译 |
-
 ### 开发 SOP 模块
 
 ```typescript
