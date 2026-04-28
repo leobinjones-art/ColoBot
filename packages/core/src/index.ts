@@ -189,3 +189,17 @@ export {
   type LoggerConfig,
   type LogLevel,
 } from './logger.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 视觉系统
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  analyzeImageLocal,
+  analyzeImage,
+  analyzeImageCached,
+  configureLocalVision,
+  clearVisionCache,
+  type VisionAnalysisResult,
+  type LocalVisionConfig,
+} from './vision/index.js';
