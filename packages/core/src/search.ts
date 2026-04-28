@@ -162,7 +162,9 @@ async function searchDuckDuckGo(
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(queryText)}`;
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ColoBot/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
       },
     });
 
@@ -172,6 +174,20 @@ async function searchDuckDuckGo(
 
     const html = await response.text();
     const results = parseDuckDuckGoResults(html, maxResults);
+
+    // 如果没有结果，尝试备用解析
+    if (results.length === 0) {
+      const fallbackResults = parseDuckDuckGoFallback(html, maxResults);
+      if (fallbackResults.length > 0) {
+        return {
+          query: queryText,
+          results: fallbackResults,
+          answers: [],
+          suggestions: [],
+          numberOfResults: fallbackResults.length,
+        };
+      }
+    }
 
     return {
       query: queryText,
@@ -184,6 +200,34 @@ async function searchDuckDuckGo(
     console.error('[Search] DuckDuckGo Error:', e);
     return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
   }
+}
+
+/**
+ * DuckDuckGo 备用解析
+ */
+function parseDuckDuckGoFallback(html: string, maxResults: number): SearchResult[] {
+  const results: SearchResult[] = [];
+  // 尝试匹配任何链接
+  const regex = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi;
+  let match;
+
+  while ((match = regex.exec(html)) !== null && results.length < maxResults) {
+    const url = match[1];
+    const title = match[2].trim();
+
+    // 跳过 duckduckgo 自身链接和空标题
+    if (url.includes('duckduckgo.com') || !title || title.length < 3) continue;
+
+    results.push({
+      url,
+      title,
+      content: '',
+      engine: 'duckduckgo',
+      category: 'general',
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -321,6 +365,7 @@ async function searchBaidu(
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Cookie': 'BAIDUID=test', // 简单的 cookie 避免验证码
       },
     });
 
@@ -330,6 +375,20 @@ async function searchBaidu(
 
     const html = await response.text();
     const results = parseBaiduResults(html, maxResults);
+
+    // 如果没有结果，尝试备用解析
+    if (results.length === 0) {
+      const fallbackResults = parseBaiduFallback(html, maxResults);
+      if (fallbackResults.length > 0) {
+        return {
+          query: queryText,
+          results: fallbackResults,
+          answers: [],
+          suggestions: [],
+          numberOfResults: fallbackResults.length,
+        };
+      }
+    }
 
     return {
       query: queryText,
@@ -342,6 +401,34 @@ async function searchBaidu(
     console.error('[Search] Baidu Error:', e);
     return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
   }
+}
+
+/**
+ * 百度备用解析
+ */
+function parseBaiduFallback(html: string, maxResults: number): SearchResult[] {
+  const results: SearchResult[] = [];
+  // 匹配任何外部链接
+  const regex = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi;
+  let match;
+
+  while ((match = regex.exec(html)) !== null && results.length < maxResults) {
+    const url = match[1];
+    const title = match[2].replace(/<[^>]+>/g, '').trim();
+
+    // 跳过百度自身链接
+    if (url.includes('baidu.com') || !title || title.length < 3) continue;
+
+    results.push({
+      url,
+      title,
+      content: '',
+      engine: 'baidu',
+      category: 'general',
+    });
+  }
+
+  return results;
 }
 
 /**
