@@ -5,7 +5,7 @@
 import * as readline from 'readline';
 
 export interface InputHandler {
-  onLine(callback: (line: string) => void): void;
+  onLine(callback: (line: string) => void | Promise<void>): void;
   onKey(callback: (key: KeyPress) => void): void;
   prompt(): void;
   close(): void;
@@ -44,7 +44,7 @@ export function createInput(options: InputOptions = {}): InputHandler {
 
   return {
     onLine(callback) {
-      rl.on('line', (line) => {
+      rl.on('line', async (line) => {
         const trimmed = line.trim();
         if (trimmed) {
           history.push(trimmed);
@@ -53,7 +53,7 @@ export function createInput(options: InputOptions = {}): InputHandler {
           }
           historyIndex = history.length;
         }
-        callback(trimmed);
+        await callback(trimmed);
       });
     },
 
