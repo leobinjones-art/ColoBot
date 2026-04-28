@@ -1,6 +1,32 @@
 /**
  * 意图识别模块
+ *
+ * 双层架构：
+ * 1. 规则快速匹配（高置信度直接返回）
+ * 2. LLM 意图识别（低置信度时调用）
  */
+
+import type { LLMMessage } from '@colobot/types';
+
+// LLM 函数类型（避免直接依赖 core）
+type LLMChatFunction = (messages: LLMMessage[], options?: { temperature?: number; maxTokens?: number }) => Promise<{ content: string }>;
+
+// LLM 实例注入
+let llmChat: LLMChatFunction | null = null;
+
+/**
+ * 设置 LLM 实例（由外部注入）
+ */
+export function setLLMChat(fn: LLMChatFunction): void {
+  llmChat = fn;
+}
+
+/**
+ * 获取 LLM 实例
+ */
+export function getLLMChat(): LLMChatFunction | null {
+  return llmChat;
+}
 
 export type IntentType =
   | 'todo.add'      // 添加待办
@@ -115,7 +141,7 @@ const SLOT_PATTERNS: Record<string, RegExp[]> = {
 };
 
 /**
- * 解析意图
+ * 解析意图（规则匹配）
  */
 export function parseIntent(text: string): Intent {
   const normalized = text.trim();
@@ -146,6 +172,90 @@ export function parseIntent(text: string): Intent {
     slots: {},
     raw: text,
   };
+}
+
+/**
+ * 解析意图（带 LLM fallback）
+ */
+export async function parseIntentWithLLM(text: string): Promise<Intent> {
+  // 1. 先尝试规则匹配
+  const ruleResult = parseIntent(text);
+
+  // 高置信度直接返回
+  if (ruleResult.confidence >= 0.85) {
+    return ruleResult;
+  }
+
+  // 2. LLM 意图识别
+  if (llmChat) {
+    try {
+      const llmResult = await parseIntentByLLM(text);
+      if (llmResult && llmResult.confidence > ruleResult.confidence) {
+        return llmResult;
+      }
+    } catch (e) {
+      console.warn('[Intent] LLM parse failed:', (e as Error).message);
+    }
+  }
+
+  // 3. 返回规则结果（即使是 unknown）
+  return ruleResult;
+}
+
+/**
+ * LLM 意图识别
+ */
+async function parseIntentByLLM(text: string): Promise<Intent | null> {
+  if (!llmChat) return null;
+
+  const prompt = `你是一个意图识别助手。分析用户输入，识别意图并提取关键信息。
+
+支持的意图类型：
+- todo.add: 添加待办事项
+- todo.list: 查看待办列表
+- todo.complete: 完成待办
+- reminder.add: 设置提醒
+- reminder.list: 查看提醒
+- note.add: 添加笔记
+- note.search: 搜索笔记
+- schedule.add: 添加日程
+- schedule.list: 查看日程
+- habit.check: 习惯打卡
+- mood.log: 记录心情
+- finance.log: 记录收支
+- unknown: 无法识别
+
+用户输入：${text}
+
+请以 JSON 格式返回：
+{
+  "type": "意图类型",
+  "confidence": 0.0-1.0,
+  "slots": { "key": "value" }
+}
+
+只返回 JSON，不要其他内容。`;
+
+  try {
+    const response = await llmChat([{ role: 'user', content: prompt }], {
+      temperature: 0.1,
+      maxTokens: 256,
+    });
+
+    const content = typeof response.content === 'string' ? response.content : '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      type: parsed.type as IntentType,
+      confidence: parsed.confidence ?? 0.5,
+      slots: parsed.slots ?? {},
+      raw: text,
+    };
+  } catch (e) {
+    return null;
+  }
 }
 
 /**

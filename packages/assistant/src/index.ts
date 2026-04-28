@@ -208,6 +208,9 @@ export {
 // 意图识别
 export {
   parseIntent,
+  parseIntentWithLLM,
+  setLLMChat,
+  getLLMChat,
   createIntentHandler,
   type IntentType,
   type Intent,

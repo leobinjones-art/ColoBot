@@ -29,6 +29,7 @@ export interface SubAgentConfig {
   fallbackModelId?: string;
   workspacePath?: string;
   taskTimeoutMs?: number;
+  maxRetries?: number;
 }
 
 export interface SubAgent {
@@ -43,6 +44,23 @@ export interface SubAgent {
   status: 'idle' | 'busy' | 'done' | 'timeout' | 'error';
   fallbackModelId?: string;
   taskTimeoutMs?: number;
+  maxRetries: number;
+}
+
+/**
+ * 子 Agent 任务句柄
+ */
+export interface SubAgentTask {
+  id: string;
+  subAgentId: string;
+  task: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'timeout' | 'cancelled';
+  result?: string;
+  error?: string;
+  startTime: number;
+  endTime?: number;
+  retries: number;
+  maxRetries: number;
 }
 
 export interface SubAgentDeps {
@@ -59,6 +77,7 @@ export interface SubAgentDeps {
 const MAX_CONCURRENT_SUBAGENTS = 10;
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_TASK_TIMEOUT_MS = 5 * 60 * 1000;
+const DEFAULT_MAX_RETRIES = 2;
 const CLEANUP_INTERVAL = 30_000;
 
 // ── 全局默认工具白名单 ──────────────────────────────────────────────
@@ -86,6 +105,7 @@ export function getGlobalAllowedTools(): string[] {
 }
 
 const subAgents = new Map<string, SubAgent>();
+const tasks = new Map<string, SubAgentTask>();
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 function countBusy(): number {
@@ -139,6 +159,7 @@ export function spawnSubAgent(config: SubAgentConfig): SubAgent {
     status: 'idle',
     fallbackModelId: config.fallbackModelId,
     taskTimeoutMs: config.taskTimeoutMs ?? DEFAULT_TASK_TIMEOUT_MS,
+    maxRetries: config.maxRetries ?? DEFAULT_MAX_RETRIES,
   };
 
   subAgents.set(id, agent);
@@ -377,8 +398,171 @@ export async function runSubAgentTask(
  */
 export function clearSubAgents(): void {
   subAgents.clear();
+  tasks.clear();
   if (cleanupTimer) {
     clearInterval(cleanupTimer);
     cleanupTimer = null;
+  }
+}
+
+// ── Task 句柄管理 ──────────────────────────────────────────────
+
+/**
+ * 创建任务句柄
+ */
+function createTask(subAgentId: string, task: string, maxRetries: number): SubAgentTask {
+  const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const taskHandle: SubAgentTask = {
+    id: taskId,
+    subAgentId,
+    task,
+    status: 'pending',
+    startTime: Date.now(),
+    retries: 0,
+    maxRetries,
+  };
+  tasks.set(taskId, taskHandle);
+  return taskHandle;
+}
+
+/**
+ * 获取任务状态
+ */
+export function getTaskStatus(taskId: string): SubAgentTask | undefined {
+  return tasks.get(taskId);
+}
+
+/**
+ * 获取子 Agent 的所有任务
+ */
+export function getSubAgentTasks(subAgentId: string): SubAgentTask[] {
+  return Array.from(tasks.values()).filter(t => t.subAgentId === subAgentId);
+}
+
+/**
+ * 取消任务
+ */
+export function cancelTask(taskId: string): boolean {
+  const task = tasks.get(taskId);
+  if (!task) return false;
+  if (task.status === 'completed') return false;
+
+  task.status = 'cancelled';
+  task.endTime = Date.now();
+  console.log(`[SubAgent] Task cancelled: ${taskId}`);
+  return true;
+}
+
+/**
+ * 等待任务完成
+ */
+export async function awaitTask(
+  taskId: string,
+  timeoutMs?: number
+): Promise<string> {
+  const task = tasks.get(taskId);
+  if (!task) throw new Error(`Task not found: ${taskId}`);
+
+  const deadline = timeoutMs ? Date.now() + timeoutMs : Infinity;
+
+  while (Date.now() < deadline) {
+    const current = tasks.get(taskId);
+    if (!current) throw new Error(`Task disappeared: ${taskId}`);
+
+    if (current.status === 'completed') {
+      return current.result ?? '';
+    }
+    if (current.status === 'failed' || current.status === 'timeout') {
+      throw new Error(current.error ?? 'Task failed');
+    }
+    if (current.status === 'cancelled') {
+      throw new Error('Task cancelled');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // 超时
+  cancelTask(taskId);
+  throw new Error(`Await timeout (${timeoutMs}ms)`);
+}
+
+/**
+ * 重试任务
+ */
+export async function retryTask(
+  taskId: string,
+  deps: SubAgentDeps
+): Promise<SubAgentTask> {
+  const task = tasks.get(taskId);
+  if (!task) throw new Error(`Task not found: ${taskId}`);
+
+  if (task.retries >= task.maxRetries) {
+    throw new Error(`Max retries (${task.maxRetries}) exceeded`);
+  }
+
+  const subAgent = subAgents.get(task.subAgentId);
+  if (!subAgent) throw new Error(`SubAgent not found: ${task.subAgentId}`);
+
+  // 重置状态
+  task.status = 'pending';
+  task.error = undefined;
+  task.result = undefined;
+  task.startTime = Date.now();
+  task.endTime = undefined;
+  task.retries++;
+
+  console.log(`[SubAgent] Retrying task ${taskId} (attempt ${task.retries + 1})`);
+
+  // 重新执行
+  return executeTaskInternal(task, subAgent, deps);
+}
+
+/**
+ * 执行任务（带重试）
+ */
+export async function executeTaskWithRetry(
+  subAgent: SubAgent,
+  task: string,
+  parentId: string,
+  deps: SubAgentDeps
+): Promise<SubAgentTask> {
+  const taskHandle = createTask(subAgent.id, task, subAgent.maxRetries);
+
+  return executeTaskInternal(taskHandle, subAgent, deps);
+}
+
+/**
+ * 内部任务执行
+ */
+async function executeTaskInternal(
+  taskHandle: SubAgentTask,
+  subAgent: SubAgent,
+  deps: SubAgentDeps
+): Promise<SubAgentTask> {
+  taskHandle.status = 'running';
+
+  try {
+    const result = await runSubAgentTask(subAgent, taskHandle.task, subAgent.parentId, deps);
+
+    taskHandle.status = 'completed';
+    taskHandle.result = result;
+    taskHandle.endTime = Date.now();
+
+    return taskHandle;
+  } catch (e) {
+    const isTimeout = String(e).includes('超时') || String(e).includes('timeout');
+
+    taskHandle.status = isTimeout ? 'timeout' : 'failed';
+    taskHandle.error = String(e);
+    taskHandle.endTime = Date.now();
+
+    // 自动重试
+    if (taskHandle.retries < taskHandle.maxRetries) {
+      console.log(`[SubAgent] Auto-retrying task ${taskHandle.id}`);
+      return retryTask(taskHandle.id, deps);
+    }
+
+    return taskHandle;
   }
 }
