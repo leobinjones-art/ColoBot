@@ -1,773 +1,565 @@
 # ColoBot
 
-![License](https://img.shields.io/badge/license-AGPL%203.0-blue.svg)
-![Node.js](https://img.shields.io/badge/node-%3E%3D22.0.0-green.svg)
-![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)
-![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL%2Bpgvector-blue.svg)
-![SQLite](https://img.shields.io/badge/database-SQLite%20fallback-green.svg)
-![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)
-![AI Native](https://img.shields.io/badge/architecture-AI%20Native-purple.svg)
-
-> 单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + 飞书审批通知
-
-**ColoBot** 是一个开源的 **AI 原生** 智能体协作平台，支持多模态输入输出、Skill 编排、自动审批流程和飞书集成。它提供了完整的 AI 智能体管理和协作解决方案。
-
----
-
-> ⚠️ **开发状态：当前版本处于活跃开发中，部分功能可能不稳定。**
->
-> - `@colobot/core` 编译存在问题，正在修复
-> - 生产环境请谨慎使用
-> - 欢迎 Issue 和 PR
-
----
-
-## AI 原生 vs AI+
-
-> ⚠️ **ColoBot 是 AI 原生架构，不是 AI+ 产品。**
-
-| 维度 | AI 原生 (ColoBot) | AI+ (传统产品+AI) |
-|------|-------------------|-------------------|
-| **设计理念** | 从零开始以 AI 为核心构建 | 在现有产品上附加 AI 功能 |
-| **AI 角色** | AI 是系统的基础架构 | AI 是增强功能的插件 |
-| **决策机制** | AI 自主决策、动态规划 | 预设规则 + AI 辅助建议 |
-| **扩展方式** | AI 自动学习新能力（自进化） | 需人工开发新功能模块 |
-| **工作流** | AI 动态拆解任务、创建子 Agent | 固定流程、人工配置步骤 |
-| **适应性** | 根据用户偏好自动调整 | 需用户手动配置参数 |
-| **典型例子** | Claude Code、Cursor、ColoBot | Notion AI、Word Copilot |
-
-**ColoBot 的 AI 原生特性：**
-
-- 🧠 **LLM 驱动任务拆解** — AI 分析用户意图，动态生成执行步骤，无硬编码流程
-- 🔄 **自进化系统** — Soul/用户画像/Skill 自动从对话中学习，无需人工更新
-- 🤖 **父子 Agent 协作** — 父 Agent 自主判断任务难度，生成子 Agent 配置（工具/TTL/沙箱）
-- ⚖️ **智能审批** — 四层漏斗 + AI 裁决，根据用户行为自动调整审批策略
-- 🛡️ **投毒防御** — AI 深度分析可疑内容，自动降级信任等级
-
----
-
-## ✨ 特性概览
-
 <div align="center">
 
-| 智能体管理 | Skill 编排 | 审批流程 | 集成支持 |
-|-----------|------------|----------|----------|
-| 🧠 父子智能体协作 | 📝 Markdown Skill 定义 | ⚖️ 四层审批漏斗 | 📱 飞书交互式卡片 |
-| 🔄 上下文压缩 | 🚀 Trigger 引擎 | 📊 规则自进化 | 🔍 SearXNG 搜索 |
-| 💾 向量记忆检索 | 🔧 工具白名单 | 📋 审计日志 | 🌐 WebSocket 实时通信 |
+**单智能体 + 子智能体协作平台**
+
+多模态 AI × Skill 编排 × 个人助理
+
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/Node-18+-green.svg)](https://nodejs.org/)
 
 </div>
 
 ---
 
-## 核心功能
+## 📖 目录
 
-| 模块 | 功能 | 状态 |
-|------|------|------|
-| **智能体** | 父Agent（全模态：文本/图片/音频/视频） | ✅ |
-| | 子智能体（TTL 自动过期，工具白名单） | ✅ |
-| | 消息路由 / 会话管理 | ✅ |
-| **Trigger + Skill** | Trigger 引擎（cron/interval/webhook/condition） | ✅ |
-| | Markdown Skill 定义 + 触发词激活 | ✅ |
-| | Skill 自进化（提案→审批→应用） | ✅ |
-| **AI 自进化** | Soul 自进化（对话中学习新能力） | ✅ |
-| | 用户画像自进化（从对话中学习用户偏好） | ✅ |
-| | SOP 流程自进化（用户偏好记忆 + 流程优化） | ✅ |
-| **投毒防御** | 信任等级系统 + 内容验证 | ✅ |
-| | 自动降级 + 回滚机制 | ✅ |
-| **搜索** | SearXNG 多模态搜索 | ✅ |
-| **记忆** | 向量语义检索 + 文本混合检索 | ✅ |
-| **审批** | 规则自动审批（四层漏斗 + 自进化 + 审计） | ✅ |
-| **飞书接入** | 交互式卡片 + 快捷审批按钮 | ✅ |
-| **审计** | 操作审计日志 + API 查询 | ✅ |
-| **Dashboard** | 飞书配置 / 模型 / Skill / 审批 / 审计 / 安全 | ✅ |
-| **Fallback** | 链式 fallback + 跨 provider + 重试 | ✅ |
-| **钉钉接入** | 规划中 | 📋 |
+- [简介](#简介)
+- [功能特性](#功能特性)
+- [架构设计](#架构设计)
+- [快速开始](#快速开始)
+- [使用指南](#使用指南)
+- [API 文档](#api-文档)
+- [开发指南](#开发指南)
+- [路线图](#路线图)
 
 ---
 
-## 父子 Agent 协作架构
+## 简介
 
-ColoBot 采用**父 Agent + 子 Agent** 协作模式，实现任务分解与隔离执行。
+ColoBot 是一个基于 TypeScript 的 AI Agent 框架，专注于**个人助理**场景。支持多模态交互、子 Agent 协作、工具调用，并内置完整的个人信息管理功能。
 
-### 架构设计
+### 核心特点
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      父 Agent (Parent)                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │ 任务分析    │  │ 任务分解    │  │ 结果审核与汇总      │  │
-│  │ LLM 分析    │→ │ 创建子Agent │→ │ 验证子Agent输出     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-│                                                              │
-│  权限：完整文件系统访问、所有工具、无限 TTL                   │
-└─────────────────────────────────────────────────────────────┘
-                           │
-          ┌────────────────┼────────────────┐
-          ↓                ↓                ↓
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ 子 Agent 1  │    │ 子 Agent 2  │    │ 子 Agent 3  │
-│ ─────────── │    │ ─────────── │    │ ─────────── │
-│ TTL: 5min   │    │ TTL: 10min  │    │ TTL: 15min  │
-│ 工具: [A,B] │    │ 工具: [C,D] │    │ 工具: [E]   │
-│ 沙箱隔离    │    │ 沙箱隔离    │    │ 沙箱隔离    │
-└─────────────┘    └─────────────┘    └─────────────┘
-```
+- 🤖 **多 LLM 支持**: OpenAI、Anthropic、MiniMax、自定义 API
+- 🧠 **子 Agent 协作**: 任务分解、并行执行、工具白名单
+- 🖼️ **多模态**: 文本、图片、音频
+- 📋 **个人助理**: 待办、提醒、日程、笔记、习惯追踪等 18 个模块
+- 🔧 **工具系统**: 内置 20+ 工具，支持自定义扩展
+- 💾 **记忆系统**: SQLite/PostgreSQL 持久化，向量搜索
 
-### 核心特性
+---
 
-| 特性 | 说明 |
+## 功能特性
+
+### 🤖 Agent 核心
+
+| 功能 | 说明 |
 |------|------|
-| **TTL 自动过期** | 子 Agent 设置生命周期，到期自动销毁，防止资源泄漏 |
-| **工具白名单** | 子 Agent 只能使用父 Agent 授权的工具，限制危险操作 |
-| **沙箱隔离** | 子 Agent 文件访问限制在指定目录，防止越权 |
-| **并发限制** | 控制同时运行的子 Agent 数量，避免资源耗尽 |
-| **结果审核** | 父 Agent 验证子 Agent 输出，过滤幻觉和错误 |
+| 多 Provider | OpenAI / Anthropic / MiniMax / Mock |
+| Fallback | 链式降级，自动切换模型 |
+| 流式输出 | 支持 SSE 流式响应 |
+| 上下文压缩 | 超过窗口自动压缩历史 |
+| 子 Agent | 创建、委托、销毁子 Agent |
+| 工具白名单 | 子 Agent 受限权限控制 |
 
-### 并发限制配置
+### 📋 个人助理 (@colobot/assistant)
 
-> ⚠️ **重要提示**：子 Agent 并发数受以下因素影响：
-
-| 因素 | 影响 | 说明 |
-|------|------|------|
-| **内存占用** | 每个子 Agent 独立运行时 | 约 50-100MB/Agent |
-| **API 调用** | 每个 Agent 独立 LLM 会话 | 受 Provider RPM 限制 |
-| **文件句柄** | 文件操作占用系统资源 | 系统默认限制 1024 |
-| **CPU 调度** | 并发任务上下文切换 | 过多会降低效率 |
-
-**推荐配置：**
-
-| 机器配置 | 最大并发数 | 说明 |
-|----------|------------|------|
-| 低配（4核8GB） | 2-3 | 避免内存溢出 |
-| 中配（8核16GB） | 5-8 | 平衡性能与资源 |
-| 高配（16核32GB+） | 10-15 | 充分利用硬件 |
-
-**配置示例：**
-
-```typescript
-// 保守配置（稳定优先）
-const manager = new SubAgentManager({
-  maxConcurrent: 2,          // 最多 2 个子 Agent
-  defaultTTL: 120000,        // 2 分钟超时
-  maxTotalAgents: 10,        // 总数限制（包括已完成的）
-});
-
-// 激进配置（性能优先）
-const manager = new SubAgentManager({
-  maxConcurrent: 10,         // 最多 10 个子 Agent
-  defaultTTL: 300000,        // 5 分钟超时
-  maxTotalAgents: 50,        // 总数限制
-});
-
-// 超出限制时的行为
-manager.on('limit_reached', (type, info) => {
-  console.log(`达到 ${type} 限制:`, info);
-  // 等待队列中的任务自动排队
-});
-```
-
-**限制类型：**
-
-| 限制类型 | 参数 | 触发条件 |
-|----------|------|----------|
-| `maxConcurrent` | 同时运行数 | 达到时新任务排队等待 |
-| `maxTotalAgents` | 总创建数 | 达到时拒绝创建，需先销毁旧 Agent |
-| `defaultTTL` | 生命周期 | 超时自动销毁，释放资源 |
-
-### 使用示例
-
-```typescript
-import { SubAgentManager } from '@colobot/core';
-
-// 父 Agent 创建子 Agent
-const manager = new SubAgentManager({
-  maxConcurrent: 3,        // 最大并发数
-  defaultTTL: 60000,       // 默认 TTL 60秒
-});
-
-// 创建专用子 Agent
-const subAgent = await manager.spawn({
-  name: 'research-agent',
-  soul: '你是一个文献调研助手...',
-  tools: ['web_search', 'read_file'],  // 工具白名单
-  ttl: 300000,                        // 5分钟过期
-});
-
-// 分配任务
-const result = await manager.delegate(subAgent.id, '搜索量子隧穿相关论文');
-
-// 父 Agent 审核结果
-if (result.success) {
-  console.log('子 Agent 完成:', result.output);
-}
-
-// 自动销毁（或 TTL 过期后自动清理）
-await manager.destroy(subAgent.id);
-```
-
-### 工具白名单配置
-
-```typescript
-// 子 Agent 工具白名单
-const allowedTools = [
-  'web_search',      // 网络搜索
-  'read_file',       // 读取文件（沙箱内）
-  'list_dir',        // 列目录（沙箱内）
-];
-
-// 禁止的危险工具
-const forbiddenTools = [
-  'write_file',      // 写文件
-  'delete_file',     // 删除文件
-  'shell',           // Shell 命令
-  'http',            // HTTP 请求
-];
-```
-
----
-
-## 大文件分块处理
-
-ColoBot 支持**智能分块处理**超大文件，自动适配 LLM context_window。
-
-### 分块策略
-
-| 策略 | 说明 | 适用场景 |
-|------|------|----------|
-| `bytes` | 按字节大小分块 | 二进制文件、大文本 |
-| `lines` | 按行数分块 | 日志文件、CSV |
-| `tokens` | 按 token 数分块 | 代码文件、Markdown |
-
-### 自动适配
-
-系统根据 LLM 的 `context_window` 自动计算最佳 chunk_size：
-
-```typescript
-import { ChunkProcessor } from '@colobot/core';
-
-const processor = new ChunkProcessor({
-  model: 'gpt-4o',           // context_window: 128000
-  strategy: 'tokens',        // 按 token 分块
-  overlap: 100,              // 重叠 token 数（保持上下文连续）
-});
-
-// 自动计算：chunk_size = context_window * 0.3 = 38400 tokens
-const chunks = await processor.chunk('./large-document.md');
-
-console.log(`分成 ${chunks.length} 个块`);
-console.log(`每块约 ${processor.chunkSize} tokens`);
-```
-
-### 性能考量
-
-> ⚠️ **重要提示**：并行处理性能受以下因素影响：
-
-| 因素 | 影响 | 建议配置 |
-|------|------|----------|
-| **CPU 核心数** | 决定并行处理能力 | 4核以下建议串行处理 |
-| **内存大小** | 每个分块需要加载到内存 | 8GB 以下建议减小 chunk_size |
-| **API 并发限制** | LLM Provider 通常有 RPM/TPM 限制 | 根据套餐调整 `maxConcurrent` |
-| **网络带宽** | 大文件上传耗时 | 本地文件优先，避免网络传输 |
-
-**推荐配置：**
-
-```typescript
-// 低配机器（4核8GB）
-const processor = new ChunkProcessor({
-  strategy: 'tokens',
-  maxConcurrent: 1,          // 串行处理
-  chunkSize: 10000,          // 较小的块
-});
-
-// 中配机器（8核16GB）
-const processor = new ChunkProcessor({
-  strategy: 'tokens',
-  maxConcurrent: 3,          // 3 并发
-  chunkSize: 20000,
-});
-
-// 高配机器（16核32GB+）
-const processor = new ChunkProcessor({
-  strategy: 'tokens',
-  maxConcurrent: 8,          // 8 并发
-  chunkSize: 30000,
-});
-```
-
-**API 限制对照：**
-
-| Provider | 免费套餐 | 付费套餐 | 建议并发数 |
-|----------|----------|----------|------------|
-| OpenAI | 3 RPM | 500+ RPM | 3-10 |
-| Anthropic | 5 RPM | 1000+ RPM | 5-20 |
-| MiniMax | 10 RPM | 100+ RPM | 5-15 |
-
-### 合并策略
-
-| 策略 | 说明 |
+| 模块 | 功能 |
 |------|------|
-| `concat` | 直接拼接所有结果 |
-| `summarize` | LLM 总结每个块，再合并摘要 |
-| `extract` | 提取关键信息，去重合并 |
+| **待办清单** | 创建、优先级、截止日期、标签 |
+| **提醒通知** | 定时、重复、自然语言创建 |
+| **日程管理** | 日历、冲突检测、周/月视图 |
+| **笔记系统** | Markdown、标签、全文搜索 |
+| **习惯追踪** | 打卡、连续天数、统计 |
+| **情绪日记** | 心情记录、趋势分析 |
+| **财务管理** | 收支记录、分类统计 |
+| **健康追踪** | 运动、睡眠、体重、饮水 |
+| **学习进度** | 课程管理、进度追踪 |
+| **阅读清单** | 书籍/文章、阅读进度 |
+| **目标管理** | 目标设定、进度追踪 |
+| **灵感笔记** | 快速记录、标签分类 |
+| **人脉管理** | 联系人、互动记录 |
+| **项目管理** | 项目追踪、里程碑 |
+| **密码管理** | AES 加密、密码生成 |
+| **时间追踪** | 开始/结束、分类统计 |
+| **网页收藏** | URL、摘要、标签 |
+| **意图识别** | 自然语言理解用户意图 |
 
-### 处理流程
+### 🔧 内置工具
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    大文件处理流程                            │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  1. 文件检测                                                 │
-│     └───────────────────────────────────────┐               │
-│     文件大小 > threshold? → 启用分块        │               │
-│                                              ↓               │
-│  2. 分块计算                                                 │
-│     ┌───────────────────────────────────────┐               │
-│     chunk_size = context_window * 0.3       │               │
-│     overlap = chunk_size * 0.05             │               │
-│     └───────────────────────────────────────┘               │
-│                                              ↓               │
-│  3. 分块处理                                                 │
-│     ┌─────────┐  ┌─────────┐  ┌─────────┐                  │
-│     │ Chunk 1 │  │ Chunk 2 │  │ Chunk N │  → 子 Agent 并行 │
-│     └─────────┘  └─────────┘  └─────────┘                  │
-│                                              ↓               │
-│  4. 结果合并                                                 │
-│     ┌───────────────────────────────────────┐               │
-│     根据策略：concat / summarize / extract  │               │
-│     └───────────────────────────────────────┘               │
-│                                              ↓               │
-│  5. 输出                                                     │
-│     ┌───────────────────────────────────────┐               │
-│     合并后的完整结果                        │               │
-│     └───────────────────────────────────────┘               │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 使用示例
-
-```typescript
-import { ChunkProcessor, MergeStrategy } from '@colobot/core';
-
-// 处理大型日志文件
-const processor = new ChunkProcessor({
-  strategy: 'lines',
-  chunkSize: 1000,           // 每 1000 行一块
-  overlap: 50,               // 重叠 50 行
-});
-
-const chunks = await processor.chunk('./logs/app.log');
-
-// 并行处理每个块
-const results = await Promise.all(
-  chunks.map(chunk => agent.run(chunk.content))
-);
-
-// 智能合并
-const summary = await processor.merge(results, {
-  strategy: MergeStrategy.SUMMARIZE,
-  prompt: '提取所有错误日志，按时间排序',
-});
-```
-
-### 模型适配表
-
-| 模型 | context_window | 推荐 chunk_size |
-|------|-----------------|-----------------|
-| GPT-4o | 128,000 | 38,400 tokens |
-| Claude 3.5 Sonnet | 200,000 | 60,000 tokens |
-| MiniMax abab6.5 | 245,000 | 73,500 tokens |
-| GPT-4o-mini | 128,000 | 38,400 tokens |
-
----
-
-## 技术栈
-
-| 层级 | 技术 |
-|------|------|
-| 运行时 | Node.js 22+ (TypeScript, ESM) |
-| 数据库 | PostgreSQL + pgvector（生产）/ SQLite（降级） |
-| LLM | OpenAI / Anthropic / MiniMax |
-| 搜索 | SearXNG |
-| 前端 | 单文件 HTML（无框架，零依赖） |
-| 渠道 | 飞书 Bot（方案 B）|
-| 认证 | API Key |
-
----
-
-## 🏗️ 系统架构
-
-```mermaid
-graph TB
-    subgraph "用户界面"
-        A[Web Dashboard] --> B[HTTP API]
-        C[飞书 Bot] --> B
-        D[WebSocket] --> B
-    end
-
-    subgraph "核心引擎"
-        B --> E[Agent 运行时]
-        E --> F[LLM 抽象层]
-        F --> G[OpenAI]
-        F --> H[Anthropic]
-        F --> I[MiniMax]
-        E --> J[审批引擎]
-        E --> K[Skill 引擎]
-        E --> L[记忆系统]
-    end
-
-    subgraph "数据存储"
-        L --> M[PostgreSQL]
-        L --> N[pgvector]
-        O[审计日志] --> M
-        P[知识库] --> M
-    end
-
-    subgraph "外部服务"
-        Q[SearXNG] --> R[搜索]
-        S[飞书 API] --> T[通知]
-    end
-
-    E --> Q
-    E --> S
+read_file      - 读取文件
+write_file     - 写入文件
+list_dir       - 列出目录
+web_search     - 网络搜索
+image_search   - 图片搜索
+academic_search - 学术搜索
+python         - 执行 Python 代码
+http           - HTTP 请求
+add_memory     - 添加记忆
+search_memory  - 搜索记忆
+spawn_subagent - 创建子 Agent
+delegate_task  - 委托任务
+...
 ```
 
 ---
 
-## 📦 Monorepo 结构
+## 架构设计
 
-ColoBot 采用 monorepo 架构，支持按需安装：
+### 包结构
 
 ```
-packages/
-├── types/          # @colobot/types - 类型定义（开发依赖）
-├── core/           # @colobot/core - 核心运行时 ✅
-├── tui/            # @colobot/tui - 终端界面 ✅
-├── sop/            # @colobot/sop - SOP 流程引擎基类（待开发）
-├── sop-academic/   # @colobot/sop-academic - SOP 学术研究流程 ✅
-├── tools-minimax/  # @colobot/tools-minimax - MiniMax 平台工具（待开发）
-├── tools-python/   # @colobot/tools-python - Python 代码执行（待开发）
-├── skills-openclaw/# @colobot/skills-openclaw - OpenClaw 兼容（待开发）
-├── dashboard/      # @colobot/dashboard - Web 管理界面（待迁移）
-├── gateway/        # @colobot/gateway - 消息网关基类（待开发）
-├── feishu/         # @colobot/feishu - 飞书集成（依赖 gateway）
-└── dingtalk/       # @colobot/dingtalk - 钉钉集成（依赖 gateway）
+colobot/
+├── packages/
+│   ├── types/           # 类型定义
+│   ├── core/            # 核心运行时
+│   │   ├── providers/   # LLM Provider
+│   │   ├── runtime/     # Agent 运行时
+│   │   ├── memory/      # 记忆系统
+│   │   ├── tools/       # 工具系统
+│   │   ├── subagents/   # 子 Agent
+│   │   └── config/      # 配置管理
+│   ├── assistant/       # 核心助理
+│   │   ├── task/        # 待办、提醒
+│   │   ├── schedule/    # 日程
+│   │   ├── knowledge/   # 笔记、收藏
+│   │   ├── life/        # 习惯、心情、财务、健康
+│   │   ├── growth/      # 学习、阅读、目标
+│   │   ├── social/      # 人脉
+│   │   ├── project/     # 项目
+│   │   └── tools/       # 密码、时间追踪
+│   ├── tui/             # 终端界面
+│   └── sop-academic/    # 学术 SOP
 ```
 
-### 包优先级
+### 依赖关系
 
-| 优先级 | 说明 | 包 |
-|--------|------|---|
-| **P1 核心** | 运行必需 | `@colobot/core`, `@colobot/tui` |
-| **P2 扩展** | 按需安装 | `sop`, `sop-academic`, `tools-minimax`, `tools-python`, `skills-openclaw` |
-| **P3 体验** | 用户界面 | `dashboard` |
-| **P4 可选** | 渠道集成 | `gateway`, `feishu`, `dingtalk`, `i18n`, `websocket` |
-| **dev** | 开发依赖 | `@colobot/types` |
+```
+@colobot/types
+      ↓
+@colobot/core
+      ↓
+┌─────────────────┬─────────────────┐
+│                 │                 │
+@colobot/assistant  @colobot/tui    @colobot/sop-academic
+      ↓
+@colobot/gateway (规划中)
+```
 
-### 已发布包
+### 数据流
 
-| 包名 | 版本 | 说明 |
-|------|------|------|
-| `@colobot/core` | 0.2.0 | Agent 运行时、子Agent、工具、搜索、大文件处理、统一接口 |
-| `@colobot/tui` | 0.1.0 | 终端交互界面、命令面板、聊天组件 |
-| `@colobot/sop-academic` | 0.1.0 | SOP 学术研究流程、AI 动态任务拆解（依赖 sop 基类） |
-| `@colobot/types` | 0.1.0 | LLM、Agent、Tool、Memory 等类型定义（开发依赖） |
+```
+用户输入 → 意图识别 → Agent Runtime → LLM → 工具调用 → 响应
+                ↓
+            记忆系统 ← 向量搜索
+                ↓
+            子 Agent (可选)
+```
 
-### 待开发包
+---
 
-| 包名 | 说明 | 前置依赖 |
-|------|------|----------|
-| `@colobot/sop` | SOP 流程引擎基类 | `@colobot/core` |
-| `@colobot/tools-minimax` | MiniMax 平台工具 | `@colobot/core` |
-| `@colobot/tools-python` | Python 代码执行 | `@colobot/core` |
-| `@colobot/skills-openclaw` | OpenClaw 兼容 | `@colobot/core` |
-| `@colobot/dashboard` | Web 管理界面 | `@colobot/core` |
-| `@colobot/gateway` | 消息网关基类 | `@colobot/core` |
-| `@colobot/feishu` | 飞书集成 | `@colobot/gateway` |
-| `@colobot/dingtalk` | 钉钉集成 | `@colobot/gateway` |
+## 快速开始
 
-### 安装示例
+### 安装
 
 ```bash
-# 核心安装（最小可用）
-npm install @colobot/core @colobot/tui
+# 克隆仓库
+git clone https://github.com/your-repo/colobot.git
+cd colobot
 
-# 按需扩展
-npm install @colobot/sop-academic      # 学术研究
-npm install @colobot/tools-minimax     # MiniMax 平台工具（待发布）
-npm install @colobot/tools-python      # Python 执行（待发布）
-npm install @colobot/skills-openclaw   # OpenClaw 兼容（待发布）
+# 安装依赖
+npm install
 
-# 开发依赖
-npm install -D @colobot/types
+# 构建
+npm run build:packages
 ```
-
-### 快速启动
-
-```bash
-# 启动 CLI
-npm run cli
-
-# 启动 TUI 界面
-npm run tui
-```
-
-### 交互命令
-
-| 命令 | 说明 |
-|------|------|
-| `/help` | 显示帮助 |
-| `/exit` | 退出程序 |
-| `/config` | 显示配置 |
-| `/set <key> <value>` | 设置配置项 |
-| `/tools` | 显示工具列表 |
 
 ### 配置
 
-支持通过环境变量或 CLI 参数配置：
-
 ```bash
-# 环境变量
-export OPENAI_API_KEY=sk-xxx
-export ANTHROPIC_API_KEY=sk-xxx
+# 交互式配置
+npx colobot init
 
-# CLI 参数
-npm run cli -- --provider openai --model gpt-4o
+# 或手动创建配置文件
+mkdir -p ~/.colobot
+cat > ~/.colobot/config.json << 'EOF'
+{
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "apiKey": "your-api-key"
+  },
+  "search": {
+    "engine": "duckduckgo",
+    "maxResults": 10
+  },
+  "subAgent": {
+    "maxConcurrent": 10,
+    "allowedTools": ["read_file", "write_file", "web_search"]
+  }
+}
+EOF
 ```
 
-### @colobot/core 核心模块
+### 运行
 
-| 模块 | 说明 |
-|------|------|
-| `runtime` | Agent 运行时、LLM 抽象层 |
-| `subagents` | 父子 Agent 协作、TTL 过期、工具白名单 |
-| `task-breakdown` | AI 驱动任务拆解、依赖管理、并行执行 |
-| `chunking` | 大文件分块处理、多种合并策略 |
-| `search` | 多引擎搜索（SearXNG/DuckDuckGo/Google/Bing） |
-| `tools` | 12 个内置工具、工具注册表 |
-| `config` | 配置管理、模型能力自动计算、CLI 参数解析 |
+```bash
+# CLI 模式
+npx colobot
 
-### @colobot/tui 组件
-
-| 组件 | 说明 |
-|------|------|
-| `TUI` | 主界面容器 |
-| `ChatUI` | 聊天消息展示 |
-| `CommandPalette` | 命令面板 |
-| `StatusBar` | 状态栏 |
-| `LogPanel` | 日志面板 |
+# TUI 模式
+npx colobot tui
+```
 
 ---
 
-## 🚀 快速开始
+## 使用指南
 
-### 安装依赖
+### CLI 命令
 
-```bash
-npm install
+```
+colobot [command]
+
+Commands:
+  init        交互式配置
+  tui         终端交互界面
+  help        显示帮助
+  version     显示版本
+
+交互命令:
+  /image <url|path>  添加图片
+  /images            查看待发送图片
+  /clear-images      清空图片
+  /config            显示配置
+  /tools             显示工具列表
+  /help              显示帮助
+  /exit              退出
 ```
 
-### 构建
+### 多模态输入
+
+```
+> /image https://example.com/photo.jpg
+[已添加图片 URL]
+
+> /image /path/to/local.png
+[已添加本地图片]
+
+> 这张图片里有什么？
+[AI 分析图片内容...]
+```
+
+### 编程使用
+
+```typescript
+import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@colobot/core';
+
+const runtime = new AgentRuntime({
+  llm: new OpenAIProvider({ apiKey: 'your-key', defaultModel: 'gpt-4o' }),
+  memory: new SQLiteStore({ path: '~/.colobot/chat.db' }),
+  // ...
+});
+
+const result = await runtime.run({
+  agentId: 'my-agent',
+  sessionKey: 'session-1',
+  userMessage: '你好',
+});
+
+console.log(result.response);
+```
+
+### 使用助理功能
+
+```typescript
+import {
+  createTodo,
+  createReminderFromText,
+  logMood,
+  parseIntent,
+} from '@colobot/assistant';
+
+// 创建待办
+const todo = createTodo({
+  userId: 'user1',
+  title: '完成报告',
+  priority: 'high',
+  dueDate: '2024-12-31',
+});
+
+// 自然语言创建提醒
+const reminder = createReminderFromText('user1', '提醒我明天下午3点开会');
+
+// 记录心情
+logMood('user1', 'happy', 8, '今天很顺利');
+
+// 意图识别
+const intent = parseIntent('添加待办 完成报告');
+// { type: 'todo.add', confidence: 0.9 }
+```
+
+---
+
+## API 文档
+
+### @colobot/core
+
+#### AgentRuntime
+
+```typescript
+interface RunOptions {
+  agentId: string;
+  sessionKey: string;
+  userMessage: string | ContentBlock[];
+  maxRounds?: number;
+  systemPrompt?: string;
+  soul?: { personality?: string; role?: string };
+}
+
+interface RunResult {
+  response: string | ContentBlock[];
+  toolCalls: string[];
+  finished: boolean;
+}
+
+class AgentRuntime {
+  run(options: RunOptions): Promise<RunResult>;
+  runStream(options: RunOptions): AsyncGenerator<string>;
+}
+```
+
+#### LLM Provider
+
+```typescript
+interface LLMProvider {
+  name: string;
+  chat(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResponse>;
+  chatStream(messages: LLMMessage[], options?: LLMOptions): AsyncIterable<LLMStreamChunk>;
+}
+
+// OpenAI
+new OpenAIProvider({ apiKey, defaultModel, baseUrl? });
+
+// Anthropic
+new AnthropicProvider({ apiKey, defaultModel });
+
+// MiniMax
+new MiniMaxProvider({ apiKey, defaultModel });
+```
+
+#### 子 Agent
+
+```typescript
+// 创建子 Agent
+const agent = spawnSubAgent({
+  name: 'research-agent',
+  soulContent: JSON.stringify({ role: '研究助手' }),
+  parentId: 'parent-agent-id',
+  allowedTools: ['web_search', 'read_file'],
+});
+
+// 委托任务
+const result = await runSubAgentTask(agent, task, parentId, deps);
+
+// 销毁
+destroySubAgent(agent.id, parentId);
+```
+
+### @colobot/assistant
+
+#### 待办清单
+
+```typescript
+createTodo(input: {
+  userId: string;
+  title: string;
+  priority?: 'high' | 'medium' | 'low';
+  dueDate?: string;
+  tags?: string[];
+}): Todo;
+
+listTodos(userId: string, filter?: TodoFilter): Todo[];
+completeTodo(id: string, userId: string): Todo;
+getTodayTodos(userId: string): Todo[];
+```
+
+#### 提醒
+
+```typescript
+createReminder(input: {
+  userId: string;
+  title: string;
+  remindAt: string | Date;
+  repeat?: 'none' | 'daily' | 'weekly' | 'monthly';
+}): Reminder;
+
+createReminderFromText(userId: string, text: string): Reminder;
+startReminderCheck(intervalMs?: number): void;
+```
+
+#### 时间解析
+
+```typescript
+parseTime(text: string, now?: Date): {
+  time: Date;
+  isRange: boolean;
+  endTime?: Date;
+  confidence: number;
+} | null;
+
+// 支持: 明天、后天、下周三、3小时后、下午3点、2024-12-31 10:00
+```
+
+#### 意图识别
+
+```typescript
+parseIntent(text: string): {
+  type: 'todo.add' | 'reminder.add' | 'note.add' | ... | 'unknown';
+  confidence: number;
+  slots: Record<string, string>;
+};
+```
+
+---
+
+## 开发指南
+
+### 项目结构
+
+```
+packages/
+├── types/          # 共享类型
+├── core/           # 核心包
+├── assistant/      # 助理包
+├── tui/            # TUI 包
+└── sop-academic/   # SOP 包
+```
+
+### 开发命令
 
 ```bash
 # 构建所有包
-npm run build
+npm run build:packages
 
 # 构建单个包
-npm run build --workspace=@colobot/core
-```
+npm run build --workspace=packages/core
 
-### 测试
-
-```bash
-# 单元测试
+# 测试
 npm test
 
-# E2E 测试
-npm run test:e2e
+# 测试单个包
+npm test --workspace=packages/core
+
+# 类型检查
+npx tsc --noEmit
 ```
 
-### 启动 CLI
+### 添加新工具
 
-```bash
-# Core CLI
-npm run cli
+```typescript
+// packages/core/src/tools/my-tool.ts
+import { toolRegistry } from './registry.js';
 
-# TUI CLI
-npm run tui
+export function registerMyTool(): void {
+  toolRegistry.register({
+    name: 'my_tool',
+    description: 'My custom tool',
+    parameters: {
+      type: 'object',
+      properties: {
+        input: { type: 'string', description: 'Input' },
+      },
+      required: ['input'],
+    },
+    execute: async (args, ctx) => {
+      return 'result';
+    },
+  });
+}
+```
+
+### 添加新助理模块
+
+```typescript
+// packages/assistant/src/my-module/index.ts
+import { getDb, generateId } from '../db/schema.js';
+
+export function createMyEntry(userId: string, data: any): MyEntry {
+  const db = getDb();
+  const id = generateId();
+  // ...
+}
 ```
 
 ---
 
-## 数据库配置
+## 路线图
 
-### PostgreSQL（推荐生产环境）
+### v0.3.0 (计划中)
 
-> **使用 Docker 部署 PostgreSQL + pgvector**
+- [ ] Web UI (React)
+- [ ] 流式输出到终端
+- [ ] 提高测试覆盖率到 50%+
+- [ ] 完善错误处理和错误码
 
-```bash
-docker run -d --name colobot-pg \
-  -v /path/to/pg-data:/var/lib/postgresql \
-  -e POSTGRES_PASSWORD=your_password \
-  -e POSTGRES_USER=colobot \
-  -e POSTGRES_DB=colobot \
-  -p 5432:5432 pgvector/pgvector:pg18
-```
+### v0.4.0
 
-**连接配置：**
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=colobot
-DB_USER=colobot
-DB_PASSWORD=your_password
-```
+- [ ] @colobot/gateway 包 (飞书、钉钉、邮件)
+- [ ] 语音交互
+- [ ] 多设备同步
 
-### SQLite 降级模式
+### v0.5.0
 
-当 PostgreSQL 不可用时，自动降级到 SQLite：
-
-```bash
-# 使用 SQLite（默认启用）
-npm run cli -- --storage sqlite
-
-# 指定 SQLite 文件路径
-npm run cli -- --storage sqlite --db-path ./data/colobot.db
-```
-
-**注意：** SQLite 模式不支持向量检索（pgvector），记忆搜索将降级为文本匹配。
+- [ ] 插件市场
+- [ ] 性能监控
+- [ ] 云端部署方案
 
 ---
 
-## 功能规划
+## 环境变量
 
-| 优先级 | 方向 | 说明 |
-|--------|------|------|
-| P1 | **钉钉接入** | 对称飞书方案，实现钉钉 Bot 交互式卡片 + 审批回调 |
-| P2 | **审批自进化：隐私分级返回** | 位置请求返回模糊化数据，摄像头前台可见时自动放行 |
-| P2 | **审批自进化：跨规则关联学习** | 同一应用连续放行，自动降低该应用所有权限审批阈值 |
-| P2 | **审批自进化：动态阈值试探性放行** | 批准N-1次时第N次静默放行，5分钟内无撤销则阈值+1 |
-| P2 | **审批自进化：AI 自主判断** | LLM 结合用户历史行为、当前对话上下文综合判断 |
-| P3 | **用户角色体系** | admin / developer / readonly 等角色绑定 |
-| P3 | **飞书命令式 Dashboard** | `/pending` `/approve` 等快捷命令在飞书内完成管理 |
-| P3 | **审批规则：Pattern DFA 编译优化** | 高频匹配词编译为 DFA 有限状态机 |
-
----
-
-## 原创设计
-
-以下是 ColoBot 独立设计/实现的核心特性：
-
-| 特性 | 说明 |
+| 变量 | 说明 |
 |------|------|
-| **父子 Agent 协作** | 父Agent 创建子Agent 处理子任务，TTL 自动过期，工具白名单/黑名单隔离 |
-| **Trigger next_fire_at 持久化** | 每次触发后计算并持久化下次触发时间，重启后自动补偿漏触 |
-| **多层审批漏斗** | Tirith规则(精确) → Pattern历史(7天频率) → Smart LLM裁决，三层漏斗减少误拦 |
-| **审批流双向推送** | 飞书卡片（交互式按钮）+ WebSocket（实时刷新）同时推送 |
-| **跨 Provider Fallback 链** | `provider:modelId` 格式，支持 OpenAI ↔ Anthropic ↔ MiniMax 任意切换 |
-| **DB 驱动热配置** | 飞书/SubAgent 等配置写入 `app_settings` 表，无需重启即可保存 |
-| **LLM 驱动的子Agent 配置** | 父Agent 自行判断任务难度，生成子Agent 的 soul/工具/TTL，无硬编码策略 |
-| **审批状态卡片更新** | 审批通过/拒绝后，用 `message_id` 更新原飞书卡片颜色，无需重新发消息 |
-| **流式 LLM 继续审批** | `continueRun()` 使用流式 `agentChatStream()` 继续被阻塞的 LLM 对话 |
-| **知识库** | concept/template/rule 三类知识，Agent 可直接 add/search/list，跨 Agent 共享 |
-| **Context Compression** | 历史超过 context_window * 0.8 时触发，LLM 总结旧消息保留关键信息，保留最近 6 条 |
-| **ToolRegistry check_fn** | 工具权限细粒度控制，支持 RBAC (admin/developer/readonly) + 自定义权限函数 + require_approval |
-| **投毒防御系统** | 信任等级判定 + 内容验证 + 自动降级 + 回滚机制，保护自进化系统安全 |
+| `OPENAI_API_KEY` | OpenAI API Key |
+| `ANTHROPIC_API_KEY` | Anthropic API Key |
+| `MINIMAX_API_KEY` | MiniMax API Key |
+| `COLOBOT_LOG_LEVEL` | 日志级别 (debug/info/warn/error) |
+| `COLOBOT_LOG_CONSOLE` | 是否输出到控制台 (true/false) |
+| `COLOBOT_ENCRYPTION_KEY` | 密码加密密钥 |
 
 ---
 
-## 安全说明
+## 日志文件
 
-**部署注意事项：**
-
-- **数据持久化**：
-  - **PostgreSQL（推荐）**：数据必须挂载到宿主机目录，否则容器删除后数据会丢失。
-    ```bash
-    docker run -d --name colobot-pg \
-      -v /path/to/pg-data:/var/lib/postgresql \
-      -e POSTGRES_PASSWORD=your_password \
-      -e POSTGRES_USER=colobot \
-      -e POSTGRES_DB=colobot \
-      -p 5432:5432 pgvector/pgvector:pg18
-    ```
-  - **SQLite（降级）**：适合开发测试，无需额外服务。数据存储在本地文件，支持向量降级为文本搜索。
-- **父 Agent 文件访问**：父 Agent 具有完整文件系统访问权限（子 Agent 有沙箱隔离）。建议通过工具注册时的 `requireAuth` 或 `toolRegistry.checkFn` 限制可执行文件操作的 Agent 范围，避免将完整文件工具暴露给不可信的 Agent。
-- **API Key**：生产环境务必通过 `--api-keys` 或 `COLOBOT_API_KEY` 配置密钥，切勿将含真实密钥的 `.env` 提交到代码仓库。
-- **飞书回调**：生产环境务必配置 `LARK_VERIFICATION_TOKEN` 并启用飞书事件验签，防止伪造回调。
-- **公网暴露**：如需公网访问，建议在 ColoBot 前部署 Nginx/Caddy 做 TLS 终止和额外限流。
-- **威胁卸载**：如用户多次要求删除或卸载 AI 系统，AI 会引导用户确认卸载操作，确认后自动清理程序及相关数据。
+| 文件 | 说明 |
+|------|------|
+| `~/.colobot/logs/cli.log` | CLI 日志 |
+| `~/.colobot/logs/tui.log` | TUI 日志 |
+| `~/.colobot/logs/subagent.log` | 子 Agent 日志 |
 
 ---
 
-## 致谢 / 灵感来源
+## 项目统计
 
-本项目部分设计参考了以下公开资料：
-
-| 来源 | 参考内容 |
-|------|----------|
-| [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook) | LLM 调用模式、流式处理、多模态 Content Block |
-| [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) | Tool/Skill 抽象概念 |
-| [飞书开放平台文档](https://open.feishu.cn/document/server-docs/bots/bots/bots-overview) | 飞书 Bot API、交互式卡片 |
-| pgvector + PostgreSQL | 向量存储方案 |
-| [SearXNG](https://docs.searxng.org/) | 元搜索引擎 |
-
-**原创设计声明**：以下特性为 ColoBot 团队独立设计，未参考其他项目：
-- 父子 Agent 协作机制（TTL 过期、工具白名单）
-- 四层审批漏斗 + 规则自进化
-- 投毒防御系统（信任等级 + 自动降级）
-- SOP 学术研究流程（AI 动态拆解 + 用户偏好记忆）
-- Trigger next_fire_at 持久化 + 补偿触发
-- 审批状态飞书卡片更新（无需重发消息）
-- 跨 Provider Fallback 链
+| 指标 | 数值 |
+|------|------|
+| 总代码量 | ~18,800 行 TypeScript |
+| 源文件数 | 109 个 |
+| 包数量 | 5 个 |
+| 助理模块 | 18 个 |
+| 数据表 | 15 张 |
 
 ---
 
-## 👥 社区与贡献
+## 许可证
 
-ColoBot 是一个开源项目，我们欢迎各种形式的贡献！
-
-### 贡献方式
-1. **报告问题** - 使用 [GitHub Issues](https://github.com/leobinjones-art/ColoBot/issues)
-2. **提交代码** - 阅读 [贡献指南](CONTRIBUTING.md)
-3. **改进文档** - 完善文档和示例
-4. **分享用例** - 分享你的使用案例
-
-### 行为准则
-请阅读我们的 [行为准则](CODE_OF_CONDUCT.md)，确保社区友好和包容。
-
-### 安全漏洞
-如发现安全漏洞，请查看 [安全策略](SECURITY.md) 并按照指南报告。
-
-### 获取帮助
-- 📖 [文档](docs/) - 详细技术文档
-- 💬 [讨论区](https://github.com/leobinjones-art/ColoBot/discussions) - 社区讨论
-- 🐛 [问题跟踪](https://github.com/leobinjones-art/ColoBot/issues) - 报告Bug和功能请求
+[AGPL-3.0](LICENSE)
 
 ---
 
-## 📄 License
+## 贡献
 
-GNU Affero General Public License v3.0 (AGPL-3.0)
-
-**重要说明：**
-- AGPL-3.0 要求任何通过网络使用本软件的服务（包括 SaaS）必须开源
-- 修改后的版本必须以相同协议发布
-- 保留原作者版权声明
+欢迎提交 Issue 和 Pull Request。
 
 ---
 
-## 💼 商业许可
+## 致谢
 
-如果您需要将 ColoBot 用于闭源商业产品或服务，可以获取商业许可：
-
-- **闭源使用** — 无需开源您的修改和衍生作品
-- **商业支持** — 获得技术支持和定制开发服务
-- **授权灵活** — 根据业务规模定制授权方案
-
-**联系方式：**
-- 📧 Email: leo.bin.jones@gmail.com
-- 💬 GitHub Issues: [提交商业许可需求]
-
----
+- [OpenAI](https://openai.com/)
+- [Anthropic](https://www.anthropic.com/)
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
+- [llm-guard](https://github.com/protectai/llm-guard)

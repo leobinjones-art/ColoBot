@@ -1,0 +1,54 @@
+{
+  "name": "@colobot/assistant",
+  "version": "0.1.0",
+  "description": "ColoBot 核心助理包 - 个人信息管理和智能辅助",
+  "license": "AGPL-3.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./task": {
+      "import": "./dist/task/index.js",
+      "types": "./dist/task/index.d.ts"
+    },
+    "./schedule": {
+      "import": "./dist/schedule/index.js",
+      "types": "./dist/schedule/index.d.ts"
+    },
+    "./knowledge": {
+      "import": "./dist/knowledge/index.js",
+      "types": "./dist/knowledge/index.d.ts"
+    },
+    "./life": {
+      "import": "./dist/life/index.js",
+      "types": "./dist/life/index.d.ts"
+    },
+    "./growth": {
+      "import": "./dist/growth/index.js",
+      "types": "./dist/growth/index.d.ts"
+    },
+    "./intent": {
+      "import": "./dist/intent/index.js",
+      "types": "./dist/intent/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@colobot/core": "*",
+    "@colobot/types": "*",
+    "better-sqlite3": "^11.10.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}

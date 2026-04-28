@@ -4,8 +4,21 @@
  * 子 Agent 负责执行层（受限权限、TTL、工具白名单）
  */
 
-import type { LLMMessage, ContentBlock, ToolCall, ToolResult, ToolContext } from '@colobot/types';
-import type { LLMProvider, AuditLogger, AuditEntry } from '../runtime/types.js';
+import type { LLMMessage, ContentBlock, ToolContext } from '@colobot/types';
+import type { LLMProvider, AuditLogger } from '../runtime/types.js';
+
+/** 简化的工具调用（子 Agent 内部使用） */
+export interface SimpleToolCall {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+/** 简化的工具结果（子 Agent 内部使用） */
+export interface SimpleToolResult {
+  name: string;
+  result?: unknown;
+  error?: string;
+}
 
 export interface SubAgentConfig {
   name: string;
@@ -35,9 +48,9 @@ export interface SubAgent {
 export interface SubAgentDeps {
   llm: LLMProvider;
   audit: AuditLogger;
-  parseTools: (content: string) => ToolCall[];
-  executeTools: (calls: ToolCall[], context: ToolContext) => Promise<ToolResult[]>;
-  formatResults: (results: ToolResult[]) => string;
+  parseTools: (content: string) => SimpleToolCall[];
+  executeTools: (calls: SimpleToolCall[], context: ToolContext) => Promise<SimpleToolResult[]>;
+  formatResults: (results: SimpleToolResult[]) => string;
 }
 
 // ── 并发限制 ──────────────────────────────────────────────

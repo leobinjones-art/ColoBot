@@ -17,18 +17,18 @@ import {
   ConsolePusher,
   ToolExecutorImpl,
   configureSearch,
+  createTuiLogger,
+  type Logger,
 } from '@colobot/core';
+import type { ContentBlock } from '@colobot/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// 日志文件
-const LOG_FILE = path.join(process.env.HOME || '', '.colobot', 'tui.log');
+// TUI 日志器
+let logger: Logger;
 
-function log(message: string): void {
-  const timestamp = new Date().toISOString();
-  const line = `[${timestamp}] ${message}\n`;
-  fs.appendFileSync(LOG_FILE, line);
-}
+// 待发送的图片列表
+let pendingImages: { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } }[] = [];
 
 // 模型选项
 const PROVIDER_OPTIONS = [
@@ -136,6 +136,10 @@ async function confirm(question: string, defaultYes = true): Promise<boolean> {
 }
 
 async function main() {
+  // 初始化日志器
+  logger = createTuiLogger();
+  logger.info('TUI_START');
+
   const firstArg = process.argv[2];
 
   // init 命令强制进入交互式配置
@@ -213,11 +217,14 @@ async function main() {
     pusher: new ConsolePusher(),
   });
 
+  logger.info('TUI_READY', { provider: config.model.provider, model: config.model.model });
+
   // 创建 TUI
   const tui = new TUI();
 
   // 注册命令
   tui.commands.register('/exit', '退出程序', () => {
+    logger.info('TUI_EXIT');
     console.log('\n再见！\n');
     process.exit(0);
   });
@@ -249,6 +256,62 @@ async function main() {
     console.log('');
   });
 
+  // 图片命令
+  tui.commands.register('/image', '添加图片', async (args?: string) => {
+    if (!args) {
+      console.log('\n用法: /image <url|path>');
+      console.log('示例:');
+      console.log('  /image https://example.com/image.png');
+      console.log('  /image /path/to/local/image.jpg\n');
+      return;
+    }
+    const trimmed = args.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      pendingImages.push({ type: 'image_url', image_url: { url: trimmed } });
+      console.log(`\n${style('✓', 'green')} 已添加图片 URL`);
+      console.log(`待发送 ${pendingImages.length} 张图片\n`);
+    } else {
+      try {
+        if (!fs.existsSync(trimmed)) {
+          printError(`文件不存在: ${trimmed}`);
+          return;
+        }
+        const fileBuffer = fs.readFileSync(trimmed);
+        const base64 = fileBuffer.toString('base64');
+        const ext = path.extname(trimmed).toLowerCase();
+        const mimeTypes: Record<string, string> = {
+          '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+          '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp',
+        };
+        const mimeType = mimeTypes[ext] || 'image/jpeg';
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        pendingImages.push({ type: 'image_url', image_url: { url: dataUrl } });
+        console.log(`\n${style('✓', 'green')} 已添加本地图片: ${trimmed}`);
+        console.log(`待发送 ${pendingImages.length} 张图片\n`);
+      } catch (error) {
+        printError(`读取图片失败: ${error}`);
+      }
+    }
+  });
+
+  tui.commands.register('/images', '查看待发送图片', () => {
+    if (pendingImages.length === 0) {
+      console.log('\n无待发送图片\n');
+      return;
+    }
+    console.log(`\n待发送 ${pendingImages.length} 张图片:`);
+    pendingImages.forEach((img, i) => {
+      const url = img.image_url.url;
+      console.log(`  ${i + 1}. ${url.startsWith('data:') ? '[本地图片 base64]' : url}`);
+    });
+    console.log('\n输入文字消息发送，或 /clear-images 清空\n');
+  });
+
+  tui.commands.register('/clear-images', '清空待发送图片', () => {
+    pendingImages = [];
+    console.log('\n已清空图片列表\n');
+  });
+
   // 启动 TUI
   await tui.start('ColoBot');
 
@@ -258,16 +321,29 @@ async function main() {
 
   // 运行交互循环
   await tui.run(async (message) => {
-    log(`USER: ${message}`);
+    // 构建消息内容
+    let userContent: string | ContentBlock[];
+    if (pendingImages.length > 0) {
+      userContent = [
+        ...pendingImages,
+        { type: 'text' as const, text: message },
+      ];
+      console.log(`\n[发送 ${pendingImages.length} 张图片 + 文本]\n`);
+      pendingImages = [];
+    } else {
+      userContent = message;
+    }
+
+    logger.user(message);
     try {
       const result = await runtime.run({
         agentId: 'cli-agent',
         sessionKey: 'cli-session',
-        userMessage: message,
+        userMessage: userContent,
       });
 
-      log(`TOOL_CALLS: ${JSON.stringify(result.toolCalls)}`);
-      log(`RESPONSE: ${typeof result.response === 'string' ? result.response : JSON.stringify(result.response)}`);
+      logger.toolCall('runtime', { toolCalls: result.toolCalls?.length || 0 });
+      logger.response(result.response);
 
       // 处理响应
       const response = result.response;
@@ -277,7 +353,7 @@ async function main() {
       // ContentBlock[] 转换为字符串
       return response.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join('');
     } catch (error) {
-      log(`ERROR: ${error}`);
+      logger.err(error);
       throw error;
     }
   });

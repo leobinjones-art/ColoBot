@@ -2,15 +2,27 @@
  * 子 Agent 工具
  */
 
-import type { ToolContext, LLMMessage } from '@colobot/types';
+import * as path from 'path';
+import type { ToolContext, LLMMessage, ContentBlock } from '@colobot/types';
 import { toolRegistry } from './registry.js';
+import { parseToolCalls, formatToolResults } from './executor.js';
 import {
   spawnSubAgent,
   getSubAgent,
   runSubAgentTask,
   destroySubAgent,
+  isToolAllowed,
 } from '../subagents/index.js';
-import { agentChat } from '../llm/index.js';
+import { chat } from '../llm/index.js';
+import { ConsoleAudit } from '../adapters/audit.js';
+import { Logger } from '../logger.js';
+
+// 子 Agent 日志器 - 写入单独的日志文件
+const logger = new Logger({
+  file: path.join(process.env.HOME || '', '.colobot', 'logs', 'subagent.log'),
+  prefix: 'subagent',
+  level: (process.env.COLOBOT_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
+});
 
 const ALL_TOOLS = [
   'search_memory', 'add_memory', 'list_memory',
@@ -80,7 +92,7 @@ ${rawResult.slice(0, 4000)}
 直接输出整理后的内容，不要添加"以下是整理结果"等前缀。`;
 
   try {
-    const response = await agentChat({ role: 'assistant' }, [{ role: 'user', content: prompt }], {
+    const response = await chat([{ role: 'user', content: prompt }], {
       maxTokens: 800,
       temperature: 0.3,
     });
@@ -132,6 +144,8 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: ToolContext
     fallback_model_id?: string;
   };
 
+  logger.info('SPAWN', { name, parentId: parent_id || ctx.agentId, ttl_ms, allowed_tools });
+
   const agent = spawnSubAgent({
     name,
     soulContent: soul_content,
@@ -141,6 +155,8 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: ToolContext
     fallbackModelId: fallback_model_id,
   });
 
+  logger.info('SPAWNED', { id: agent.id, name: agent.name });
+
   return JSON.stringify({ id: agent.id, name: agent.name }, null, 2);
 }
 
@@ -148,21 +164,90 @@ async function delegateTask(args: Record<string, unknown>, ctx: ToolContext): Pr
   const { sub_agent_id, task } = args as { sub_agent_id: string; task: string };
 
   const agent = getSubAgent(sub_agent_id);
-  if (!agent) throw new Error(`SubAgent not found: ${sub_agent_id}`);
+  if (!agent) {
+    logger.error('DELEGATE_NOT_FOUND', { sub_agent_id });
+    throw new Error(`SubAgent not found: ${sub_agent_id}`);
+  }
 
-  // TODO: 需要传入 deps
-  const rawResult = await runSubAgentTask(agent, task, agent.parentId, {} as any);
-  const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult);
+  logger.info('DELEGATE_START', { sub_agent_id, name: agent.name, taskLength: task.length });
 
-  return summarizedResult;
+  // 创建 LLM provider 适配器
+  const llmProvider = {
+    name: 'subagent-llm',
+    chat: async (messages: LLMMessage[], _options?: unknown) => {
+      const response = await chat(messages, {});
+      return {
+        content: response.content,
+        toolCalls: [],
+        usage: undefined,
+      };
+    },
+    chatStream: async function* (_messages: LLMMessage[], _options?: unknown) {
+      // 子 Agent 不使用流式输出
+      yield { type: 'done' as const };
+    },
+  };
+
+  // 创建审计日志
+  const audit = new ConsoleAudit();
+
+  // 执行子 Agent 任务
+  const deps = {
+    llm: llmProvider,
+    audit,
+    parseTools: (content: string) => parseToolCalls(content),
+    executeTools: async (calls: ReturnType<typeof parseToolCalls>, toolCtx: ToolContext) => {
+      const results: { name: string; result?: unknown; error?: string }[] = [];
+      for (const call of calls) {
+        if (!isToolAllowed(sub_agent_id, call.name)) {
+          logger.warn('TOOL_BLOCKED', { sub_agent_id, tool: call.name });
+          results.push({ name: call.name, error: 'Tool not allowed' });
+          continue;
+        }
+        try {
+          const tool = toolRegistry.get(call.name);
+          if (!tool) {
+            results.push({ name: call.name, error: `Tool not found: ${call.name}` });
+            continue;
+          }
+          logger.debug('TOOL_EXECUTE', { sub_agent_id, tool: call.name });
+          const result = await tool.execute({ ...call.args, sub_agent_id: sub_agent_id }, toolCtx);
+          results.push({ name: call.name, result });
+        } catch (e) {
+          logger.error('TOOL_ERROR', { sub_agent_id, tool: call.name, error: String(e) });
+          results.push({ name: call.name, error: String(e) });
+        }
+      }
+      return results;
+    },
+    formatResults: (results: { name: string; result?: unknown; error?: string }[]) => {
+      return results
+        .map(r => r.error ? `[${r.name}] ERROR: ${r.error}` : `[${r.name}] OK: ${JSON.stringify(r.result).slice(0, 500)}`)
+        .join('\n');
+    },
+  };
+
+  try {
+    const rawResult = await runSubAgentTask(agent, task, agent.parentId, deps);
+    const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult);
+    logger.info('DELEGATE_DONE', { sub_agent_id, name: agent.name, resultLength: summarizedResult.length });
+    return summarizedResult;
+  } catch (e) {
+    logger.error('DELEGATE_ERROR', { sub_agent_id, error: String(e) });
+    throw e;
+  }
 }
 
 async function destroySubagentTool(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
   const { sub_agent_id } = args as { sub_agent_id: string };
 
   const agent = getSubAgent(sub_agent_id);
-  if (!agent) throw new Error(`SubAgent not found: ${sub_agent_id}`);
+  if (!agent) {
+    logger.error('DESTROY_NOT_FOUND', { sub_agent_id });
+    throw new Error(`SubAgent not found: ${sub_agent_id}`);
+  }
 
+  logger.info('DESTROY', { sub_agent_id, name: agent.name });
   destroySubAgent(sub_agent_id, agent.parentId);
   return JSON.stringify({ ok: true, destroyed: sub_agent_id });
 }

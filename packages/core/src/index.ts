@@ -177,3 +177,15 @@ export {
   type AgentCreate,
   type AgentUpdate,
 } from './agents/registry.js';
+
+// ═══════════════════════════════════════════════════════════════
+// 日志系统
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  Logger,
+  createCliLogger,
+  createTuiLogger,
+  type LoggerConfig,
+  type LogLevel,
+} from './logger.js';

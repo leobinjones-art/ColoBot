@@ -6,7 +6,7 @@
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentRuntime, registerAllTools } from './index.js';
+import { AgentRuntime, registerAllTools, createCliLogger, type Logger } from './index.js';
 import { OpenAIProvider, AnthropicProvider } from './providers/index.js';
 import { SQLiteStore } from './adapters/sqlite-store.js';
 import { ToolExecutorImpl } from './adapters/tools.js';
@@ -17,6 +17,13 @@ import { initConfig } from './config/index.js';
 import { setGlobalAllowedTools } from './subagents/index.js';
 import { configureSearch } from './search.js';
 import { toolRegistry } from './tools/registry.js';
+import type { ContentBlock } from '@colobot/types';
+
+// CLI 日志器
+let logger: Logger;
+
+// 待发送的图片列表
+let pendingImages: { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } }[] = [];
 
 const HELP_TEXT = `
 ColoBot - Multi-modal AI Assistant
@@ -31,11 +38,14 @@ Commands:
   version     Show version
 
 Interactive commands:
-  /config     Show configuration
-  /set        Update configuration
-  /tools      List tools
-  /help       Show help
-  /exit       Exit program
+  /image <url|path>  Add image (supports multiple)
+  /images            Show pending images
+  /clear-images      Clear pending images
+  /config            Show configuration
+  /set               Update configuration
+  /tools             List tools
+  /help              Show help
+  /exit              Exit program
 
 Config file:
   ~/.colobot/config.json
@@ -54,11 +64,14 @@ ColoBot - 多模态 AI 助手
   version     显示版本
 
 交互命令:
-  /config     显示配置
-  /set        更新配置
-  /tools      显示工具列表
-  /help       显示帮助
-  /exit       退出程序
+  /image <url|path>  添加图片（支持多张）
+  /images            查看待发送图片
+  /clear-images      清空待发送图片
+  /config            显示配置
+  /set               更新配置
+  /tools             显示工具列表
+  /help              显示帮助
+  /exit              退出程序
 
 配置文件:
   ~/.colobot/config.json
@@ -249,6 +262,10 @@ async function startTui(): Promise<void> {
  * 启动 CLI
  */
 async function startCli(): Promise<void> {
+  // 初始化日志器
+  logger = createCliLogger();
+  logger.info('CLI_START');
+
   const configManager = initConfig();
   const config = configManager.getConfig();
 
@@ -298,6 +315,8 @@ async function startCli(): Promise<void> {
     pusher: new ConsolePusher(),
   });
 
+  logger.info('CLI_READY', { provider: config.model.provider, model: config.model.model });
+
   console.log('╔══════════════════════════════════════╗');
   console.log('║          ColoBot CLI Ready           ║');
   console.log('╚══════════════════════════════════════╝');
@@ -318,30 +337,53 @@ async function startCli(): Promise<void> {
     if (!message) { rl.prompt(); return; }
 
     if (message.startsWith('/')) {
-      handleCommand(message, configManager, rl);
+      await handleCommand(message, configManager, rl, runtime);
       return;
     }
 
+    // 构建消息内容
+    let userContent: string | ContentBlock[];
+    if (pendingImages.length > 0) {
+      userContent = [
+        ...pendingImages,
+        { type: 'text' as const, text: message },
+      ];
+      console.log(`[发送 ${pendingImages.length} 张图片 + 文本]`);
+      pendingImages = [];
+    } else {
+      userContent = message;
+    }
+
+    logger.user(message);
     try {
       const result = await runtime.run({
         agentId: 'cli-agent',
         sessionKey: 'cli-session',
-        userMessage: message,
+        userMessage: userContent,
       });
+      logger.toolCall('runtime', { toolCalls: result.toolCalls?.length || 0 });
+      logger.response(result.response);
       console.log(`\n${result.response}\n`);
     } catch (error) {
+      logger.err(error);
       console.error('Error:', error);
     }
     rl.prompt();
   });
 
   rl.on('close', () => {
+    logger.info('CLI_EXIT');
     console.log('\nGoodbye!');
     process.exit(0);
   });
 }
 
-function handleCommand(cmd: string, configManager: ReturnType<typeof initConfig>, rl: readline.Interface): void {
+async function handleCommand(
+  cmd: string,
+  configManager: ReturnType<typeof initConfig>,
+  rl: readline.Interface,
+  runtime: AgentRuntime
+): Promise<void> {
   const parts = cmd.split(' ');
   const command = parts[0];
 
@@ -353,16 +395,105 @@ function handleCommand(cmd: string, configManager: ReturnType<typeof initConfig>
       showTools(configManager);
       break;
     case '/help':
-      console.log('\n命令: /config, /tools, /help, /exit\n');
+      console.log('\n命令:');
+      console.log('  /image <url|path>  添加图片（支持多张）');
+      console.log('  /images            查看待发送图片');
+      console.log('  /clear-images      清空待发送图片');
+      console.log('  /config            显示配置');
+      console.log('  /tools             显示工具列表');
+      console.log('  /help              显示帮助');
+      console.log('  /exit              退出程序\n');
+      break;
+    case '/image':
+      await handleImageCommand(parts.slice(1).join(' '));
+      break;
+    case '/images':
+      showPendingImages();
+      break;
+    case '/clear-images':
+      pendingImages = [];
+      console.log('[已清空图片列表]\n');
       break;
     case '/exit':
     case '/quit':
       rl.close();
       return;
     default:
-      console.log(`Unknown command: ${command}`);
+      console.log(`未知命令: ${command}，输入 /help 查看可用命令`);
   }
   rl.prompt();
+}
+
+async function handleImageCommand(input: string): Promise<void> {
+  if (!input) {
+    console.log('用法: /image <url|path>');
+    console.log('示例:');
+    console.log('  /image https://example.com/image.png');
+    console.log('  /image /path/to/local/image.jpg\n');
+    return;
+  }
+
+  const trimmed = input.trim();
+
+  // 判断是 URL 还是本地路径
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // URL 直接使用
+    pendingImages.push({
+      type: 'image_url',
+      image_url: { url: trimmed },
+    });
+    console.log(`[已添加图片 URL: ${trimmed}]`);
+    console.log(`[当前待发送 ${pendingImages.length} 张图片]\n`);
+  } else {
+    // 本地文件，转换为 base64
+    try {
+      if (!fs.existsSync(trimmed)) {
+        console.log(`[错误: 文件不存在: ${trimmed}]\n`);
+        return;
+      }
+
+      const fileBuffer = fs.readFileSync(trimmed);
+      const base64 = fileBuffer.toString('base64');
+
+      // 检测 MIME 类型
+      const ext = path.extname(trimmed).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+      };
+      const mimeType = mimeTypes[ext] || 'image/jpeg';
+
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+      pendingImages.push({
+        type: 'image_url',
+        image_url: { url: dataUrl },
+      });
+      console.log(`[已添加本地图片: ${trimmed}]`);
+      console.log(`[当前待发送 ${pendingImages.length} 张图片]\n`);
+    } catch (error) {
+      console.log(`[读取图片失败: ${error}]\n`);
+    }
+  }
+}
+
+function showPendingImages(): void {
+  if (pendingImages.length === 0) {
+    console.log('[无待发送图片]\n');
+    return;
+  }
+  console.log(`[待发送 ${pendingImages.length} 张图片:]`);
+  pendingImages.forEach((img, i) => {
+    const url = img.image_url.url;
+    if (url.startsWith('data:')) {
+      console.log(`  ${i + 1}. [本地图片 base64]`);
+    } else {
+      console.log(`  ${i + 1}. ${url}`);
+    }
+  });
+  console.log('[输入文字消息发送，或 /clear-images 清空]\n');
 }
 
 function showConfig(configManager: ReturnType<typeof initConfig>): void {
