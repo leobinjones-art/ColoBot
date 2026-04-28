@@ -23,7 +23,7 @@ vi.mock('fs', () => ({
 // Mock child_process
 vi.mock('child_process', () => ({
   execSync: vi.fn((cmd: string, options: any) => {
-    if (cmd === 'python3') {
+    if (cmd.includes('python3')) {
       return 'python output';
     }
     return 'shell output';
@@ -108,7 +108,7 @@ describe('Builtin Tools', () => {
 
     it('should execute shell', async () => {
       const tool = toolRegistry.get('shell');
-      const result = await tool!.execute({ command: 'echo hello' }, ctx);
+      const result = await tool!.execute({ command: 'ls -la' }, ctx);
       expect(result).toBe('shell output');
     });
   });
