@@ -89,6 +89,14 @@ export class TUI {
     });
 
     input.prompt();
+
+    // 保持进程运行，等待 stdin 关闭
+    return new Promise<void>((resolve) => {
+      process.stdin.on('end', () => {
+        input.close();
+        resolve();
+      });
+    });
   }
 }
 

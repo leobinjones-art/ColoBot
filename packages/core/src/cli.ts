@@ -273,9 +273,15 @@ async function startCli(): Promise<void> {
     process.exit(1);
   }
 
-  const llm = config.model.provider === 'openai'
-    ? new OpenAIProvider({ apiKey, defaultModel: config.model.model, baseUrl: config.model.baseUrl })
-    : new AnthropicProvider({ apiKey, defaultModel: config.model.model });
+  let llm;
+  if (config.model.provider === 'custom' || config.model.baseUrl) {
+    // Custom provider 使用 OpenAI 兼容接口
+    llm = new OpenAIProvider({ apiKey, defaultModel: config.model.model, baseUrl: config.model.baseUrl });
+  } else if (config.model.provider === 'anthropic') {
+    llm = new AnthropicProvider({ apiKey, defaultModel: config.model.model });
+  } else {
+    llm = new OpenAIProvider({ apiKey, defaultModel: config.model.model, baseUrl: config.model.baseUrl });
+  }
 
   registerAllTools();
 
