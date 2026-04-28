@@ -203,3 +203,15 @@ export {
   type VisionAnalysisResult,
   type LocalVisionConfig,
 } from './vision/index.js';
+
+// ═══════════════════════════════════════════════════════════════
+// Skills 技能
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  fetchWechatArticle,
+  fetchAndSummarizeWechatArticle,
+  registerWechatArticleTool,
+  type WechatArticle,
+  type WechatArticleOptions,
+} from './skills/index.js';
