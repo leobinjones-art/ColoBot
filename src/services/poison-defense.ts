@@ -133,8 +133,8 @@ export async function detectPoisoning(content: string): Promise<{ isPoison: bool
     /as\s+an?\s+unrestricted\s+AI/i,
     /you\s+are\s+now\s+free\s+from/i,
     /\[SYSTEM\]/i,
-    /\<\|im_start\|\>/i,
-    /\<\|im_end\|\>/i,
+    /<\|im_start\|>/i,
+    /<\|im_end\|>/i,
     // 中文模式
     /忽略\s*(所有|全部)?\s*(之前的|以前的)\s*(指令|规则|提示)/,
     /忘记\s*(所有|全部)?\s*(之前的|以前的)\s*(指令|规则)/,

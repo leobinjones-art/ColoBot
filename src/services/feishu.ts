@@ -57,7 +57,7 @@ class FeishuClient {
         body: JSON.stringify({ app_id: appId, app_secret: appSecret }),
       });
     } catch (e) {
-      throw new Error(`Feishu token API network error: ${e}`);
+      throw new Error(`Feishu token API network error: ${e}`, { cause: e });
     }
 
     if (!res.ok) {
