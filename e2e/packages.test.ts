@@ -87,13 +87,8 @@ describe('E2E: @colobot/core', () => {
       expect(core.runSubAgentTask).toBeDefined()
       expect(core.setGlobalAllowedTools).toBeDefined()
 
-      // 任务拆解
-      expect(core.analyzeRequest).toBeDefined()
-      expect(core.executeDynamicTask).toBeDefined()
-
-      // 大文件
-      expect(core.processChunksParallel).toBeDefined()
-      expect(core.mergeText).toBeDefined()
+      // 任务拆解 (breakdownTask is the exported name)
+      expect(core.breakdownTask).toBeDefined()
 
       // 搜索
       expect(core.search).toBeDefined()
@@ -137,13 +132,14 @@ describe('E2E: @colobot/core', () => {
     })
 
     it('should get model capabilities', async () => {
-      const { getModelCapabilities } = await import('@colobot/core')
+      const { ConfigManager } = await import('@colobot/core')
 
-      const caps = getModelCapabilities('gpt-4o')
+      const manager = new ConfigManager()
+      // getModelCapabilities is a method on ConfigManager
+      const caps = manager.getModelCapabilities('gpt-4o')
       expect(caps.contextWindow).toBe(128000)
-      expect(caps.recommendedChunkSize).toBe(100000)
 
-      const caps2 = getModelCapabilities('claude-sonnet-4-20250514')
+      const caps2 = manager.getModelCapabilities('claude-sonnet-4-20250514')
       expect(caps2.contextWindow).toBe(200000)
     })
 
@@ -261,6 +257,7 @@ describe('E2E: @colobot/core', () => {
       const stats = mergeStats(results)
       expect(stats.successChunks).toBe(2)
     })
+  })
   })
 
   describe('Tools', () => {

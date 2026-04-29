@@ -83,6 +83,29 @@ export { registerBuiltinTools, registerAllTools } from './tools/builtin.js'
 export type { ToolPolicy } from './tools/executor.js'
 
 // ═══════════════════════════════════════════════════════════════
+// 大文件分块处理
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  readChunksByBytes,
+  readChunksByLines,
+  readChunksByTokens,
+  mergeText,
+  mergeArray,
+  mergeStats,
+  DEFAULT_CHUNK_CONFIG,
+  type ChunkConfig,
+  type Chunk,
+  type ChunkResult,
+} from './chunking/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 任务拆解
+// ═══════════════════════════════════════════════════════════════
+
+export { breakdownTask, type DynamicTask } from './task-breakdown/index.js'
+
+// ═══════════════════════════════════════════════════════════════
 // 配置管理
 // ═══════════════════════════════════════════════════════════════
 
