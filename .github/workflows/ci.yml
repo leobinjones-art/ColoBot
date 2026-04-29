@@ -38,7 +38,7 @@ jobs:
         run: npm ci
 
       - name: Initialize database
-        run: npm run db:init
+        run: PGPASSWORD=${{ secrets.CI_DB_PASSWORD || 'colobot123' }} psql -h localhost -U colobot -d colobot -f sql/schema.sql
         env:
           DATABASE_URL: postgresql://colobot:${{ secrets.CI_DB_PASSWORD || 'colobot123' }}@localhost:5432/colobot
           DATABASE_HOST: localhost
