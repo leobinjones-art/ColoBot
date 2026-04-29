@@ -134,6 +134,7 @@ export {
   getSubAgent,
   listSubAgents,
   destroySubAgent,
+  clearSubAgents,
   runSubAgentTask,
   setGlobalAllowedTools,
   getGlobalAllowedTools,
