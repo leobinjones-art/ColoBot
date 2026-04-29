@@ -5,7 +5,7 @@
  */
 
 // 数据库
-export { getDb, closeDb, generateId, type AssistantDbConfig } from './db/schema.js';
+export { getDb, closeDb, generateId, type AssistantDbConfig } from './db/schema.js'
 
 // 任务管理
 export {
@@ -44,7 +44,7 @@ export {
   parseTimeRange,
   formatTime,
   type ParsedTime,
-} from './task/index.js';
+} from './task/index.js'
 
 // 日程管理
 export {
@@ -58,7 +58,7 @@ export {
   checkConflict,
   type Event,
   type CreateEventInput,
-} from './schedule/index.js';
+} from './schedule/index.js'
 
 // 知识管理
 export {
@@ -81,7 +81,7 @@ export {
   searchBookmarks,
   type Bookmark,
   type CreateBookmarkInput,
-} from './knowledge/index.js';
+} from './knowledge/index.js'
 
 // 生活管理
 export {
@@ -122,7 +122,7 @@ export {
   getHealthEntries,
   getHealthStats,
   type HealthEntry,
-} from './life/index.js';
+} from './life/index.js'
 
 // 成长管理
 export {
@@ -157,7 +157,7 @@ export {
   searchInspirations,
   deleteInspiration,
   type Inspiration,
-} from './growth/index.js';
+} from './growth/index.js'
 
 // 社交管理
 export {
@@ -169,7 +169,7 @@ export {
   deleteContact,
   recordInteraction,
   type Contact,
-} from './social/index.js';
+} from './social/index.js'
 
 // 项目管理
 export {
@@ -180,7 +180,7 @@ export {
   deleteProject,
   type Project,
   type ProjectStatus,
-} from './project/index.js';
+} from './project/index.js'
 
 // 工具
 export {
@@ -203,7 +203,7 @@ export {
   getTimeStats,
   deleteTimeLog,
   type TimeLog,
-} from './tools/index.js';
+} from './tools/index.js'
 
 // 意图识别
 export {
@@ -215,4 +215,4 @@ export {
   type IntentType,
   type Intent,
   type IntentAction,
-} from './intent/index.js';
+} from './intent/index.js'

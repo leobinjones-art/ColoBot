@@ -9,17 +9,17 @@
  * - 数据：json_parse, csv_parse
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import type { ToolContext } from '@colobot/types';
-import { toolRegistry } from './registry.js';
-import { search, getSearchConfig } from '../search.js';
-import { registerSubagentTools } from './subagent.js';
-import { registerSearchTools } from './web-search.js';
-import { registerWorkspaceTools } from './workspace.js';
-import { registerExecCodeTool } from './exec-code.js';
-import { registerAgentTools } from './agent-tools.js';
-import { registerCreateSkillTool } from './create-skill.js';
+import * as fs from 'fs'
+import * as path from 'path'
+import type { ToolContext } from '@colobot/types'
+import { toolRegistry } from './registry.js'
+import { search, getSearchConfig } from '../search.js'
+import { registerSubagentTools } from './subagent.js'
+import { registerSearchTools } from './web-search.js'
+import { registerWorkspaceTools } from './workspace.js'
+import { registerExecCodeTool } from './exec-code.js'
+import { registerAgentTools } from './agent-tools.js'
+import { registerCreateSkillTool } from './create-skill.js'
 
 // ── 文件工具 ──────────────────────────────────────────────
 
@@ -27,16 +27,16 @@ import { registerCreateSkillTool } from './create-skill.js';
  * 读取文件
  */
 async function readFile(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
-  const filePath = args.path as string;
-  if (!filePath) throw new Error('path is required');
+  const filePath = args.path as string
+  if (!filePath) throw new Error('path is required')
 
-  const absolutePath = resolvePath(filePath, ctx);
+  const absolutePath = resolvePath(filePath, ctx)
 
   try {
-    const content = await fs.promises.readFile(absolutePath, 'utf-8');
-    return content;
+    const content = await fs.promises.readFile(absolutePath, 'utf-8')
+    return content
   } catch (e: any) {
-    throw new Error(`Failed to read file: ${e.message}`);
+    throw new Error(`Failed to read file: ${e.message}`)
   }
 }
 
@@ -44,19 +44,19 @@ async function readFile(args: Record<string, unknown>, ctx: ToolContext): Promis
  * 写入文件
  */
 async function writeFile(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
-  const filePath = args.path as string;
-  const content = args.content as string;
-  if (!filePath) throw new Error('path is required');
-  if (content === undefined) throw new Error('content is required');
+  const filePath = args.path as string
+  const content = args.content as string
+  if (!filePath) throw new Error('path is required')
+  if (content === undefined) throw new Error('content is required')
 
-  const absolutePath = resolvePath(filePath, ctx);
+  const absolutePath = resolvePath(filePath, ctx)
 
   try {
-    await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
-    await fs.promises.writeFile(absolutePath, content, 'utf-8');
-    return `File written: ${filePath}`;
+    await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true })
+    await fs.promises.writeFile(absolutePath, content, 'utf-8')
+    return `File written: ${filePath}`
   } catch (e: any) {
-    throw new Error(`Failed to write file: ${e.message}`);
+    throw new Error(`Failed to write file: ${e.message}`)
   }
 }
 
@@ -64,18 +64,18 @@ async function writeFile(args: Record<string, unknown>, ctx: ToolContext): Promi
  * 列出目录
  */
 async function listDir(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
-  const dirPath = (args.path as string) || '.';
-  const absolutePath = resolvePath(dirPath, ctx);
+  const dirPath = (args.path as string) || '.'
+  const absolutePath = resolvePath(dirPath, ctx)
 
   try {
-    const entries = await fs.promises.readdir(absolutePath, { withFileTypes: true });
-    const result = entries.map(e => ({
+    const entries = await fs.promises.readdir(absolutePath, { withFileTypes: true })
+    const result = entries.map((e) => ({
       name: e.name,
       type: e.isDirectory() ? 'dir' : 'file',
-    }));
-    return JSON.stringify(result, null, 2);
+    }))
+    return JSON.stringify(result, null, 2)
   } catch (e: any) {
-    throw new Error(`Failed to list directory: ${e.message}`);
+    throw new Error(`Failed to list directory: ${e.message}`)
   }
 }
 
@@ -83,16 +83,16 @@ async function listDir(args: Record<string, unknown>, ctx: ToolContext): Promise
  * 删除文件
  */
 async function deleteFile(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
-  const filePath = args.path as string;
-  if (!filePath) throw new Error('path is required');
+  const filePath = args.path as string
+  if (!filePath) throw new Error('path is required')
 
-  const absolutePath = resolvePath(filePath, ctx);
+  const absolutePath = resolvePath(filePath, ctx)
 
   try {
-    await fs.promises.unlink(absolutePath);
-    return `File deleted: ${filePath}`;
+    await fs.promises.unlink(absolutePath)
+    return `File deleted: ${filePath}`
   } catch (e: any) {
-    throw new Error(`Failed to delete file: ${e.message}`);
+    throw new Error(`Failed to delete file: ${e.message}`)
   }
 }
 
@@ -101,10 +101,10 @@ async function deleteFile(args: Record<string, unknown>, ctx: ToolContext): Prom
  */
 function resolvePath(filePath: string, ctx: ToolContext): string {
   if (path.isAbsolute(filePath)) {
-    return filePath;
+    return filePath
   }
-  const basePath = ctx.workspace || process.cwd();
-  return path.resolve(basePath, filePath);
+  const basePath = ctx.workspace || process.cwd()
+  return path.resolve(basePath, filePath)
 }
 
 // ── 搜索工具 ──────────────────────────────────────────────
@@ -113,23 +113,23 @@ function resolvePath(filePath: string, ctx: ToolContext): string {
  * 网络搜索
  */
 async function webSearch(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const query = args.query as string;
-  if (!query) throw new Error('query is required');
+  const query = args.query as string
+  if (!query) throw new Error('query is required')
 
-  const maxResults = (args.maxResults as number) || getSearchConfig().maxResults;
+  const maxResults = (args.maxResults as number) || getSearchConfig().maxResults
 
   try {
-    const response = await search(query, { maxResults });
+    const response = await search(query, { maxResults })
 
-    const results = response.results.map(r => ({
+    const results = response.results.map((r) => ({
       title: r.title,
       url: r.url,
       snippet: r.content.slice(0, 200),
-    }));
+    }))
 
-    return JSON.stringify(results, null, 2);
+    return JSON.stringify(results, null, 2)
   } catch (e: any) {
-    throw new Error(`Search failed: ${e.message}`);
+    throw new Error(`Search failed: ${e.message}`)
   }
 }
 
@@ -139,13 +139,13 @@ async function webSearch(args: Record<string, unknown>, _ctx: ToolContext): Prom
  * Python 沙箱配置
  */
 interface PythonSandboxConfig {
-  timeout: number;          // 执行超时（毫秒）
-  maxMemoryMB: number;      // 最大内存（MB）
-  maxOutputSize: number;    // 最大输出字节数
-  allowedModules: string[]; // 允许的模块白名单
-  blockedModules: string[]; // 禁止的模块黑名单
-  allowedPaths: string[];   // 允许访问的路径
-  networkDisabled: boolean; // 禁止网络访问
+  timeout: number // 执行超时（毫秒）
+  maxMemoryMB: number // 最大内存（MB）
+  maxOutputSize: number // 最大输出字节数
+  allowedModules: string[] // 允许的模块白名单
+  blockedModules: string[] // 禁止的模块黑名单
+  allowedPaths: string[] // 允许访问的路径
+  networkDisabled: boolean // 禁止网络访问
 }
 
 const DEFAULT_SANDBOX_CONFIG: PythonSandboxConfig = {
@@ -154,41 +154,86 @@ const DEFAULT_SANDBOX_CONFIG: PythonSandboxConfig = {
   maxOutputSize: 10 * 1024 * 1024,
   allowedModules: [
     // 标准库安全模块
-    'math', 'random', 'statistics', 'decimal', 'fractions',
-    'datetime', 'time', 'calendar',
-    'json', 'csv', 're', 'string',
-    'collections', 'itertools', 'functools', 'operator',
-    'typing', 'dataclasses', 'enum',
-    'copy', 'pprint', 'textwrap',
-    'hashlib', 'hmac', 'secrets',
-    'base64', 'binascii', 'struct',
-    'io', 'pathlib',
-    'urllib.parse', 'uuid',
+    'math',
+    'random',
+    'statistics',
+    'decimal',
+    'fractions',
+    'datetime',
+    'time',
+    'calendar',
+    'json',
+    'csv',
+    're',
+    'string',
+    'collections',
+    'itertools',
+    'functools',
+    'operator',
+    'typing',
+    'dataclasses',
+    'enum',
+    'copy',
+    'pprint',
+    'textwrap',
+    'hashlib',
+    'hmac',
+    'secrets',
+    'base64',
+    'binascii',
+    'struct',
+    'io',
+    'pathlib',
+    'urllib.parse',
+    'uuid',
   ],
   blockedModules: [
     // 危险模块
-    'os', 'sys', 'subprocess', 'socket', 'socketserver',
-    'http.server', 'http.client', 'ftplib', 'smtplib',
-    'telnetlib', 'poplib', 'imaplib', 'nntplib',
-    'multiprocessing', 'threading', 'asyncio',
-    'ctypes', 'ctypes.wintypes',
-    'shutil', 'tempfile', 'glob',
-    'pickle', 'shelve', 'marshal',
-    'importlib', 'pkgutil', 'modulefinder',
-    'builtins', '__builtins__',
-    'code', 'codeop', 'compile',
-    'exec', 'eval',
+    'os',
+    'sys',
+    'subprocess',
+    'socket',
+    'socketserver',
+    'http.server',
+    'http.client',
+    'ftplib',
+    'smtplib',
+    'telnetlib',
+    'poplib',
+    'imaplib',
+    'nntplib',
+    'multiprocessing',
+    'threading',
+    'asyncio',
+    'ctypes',
+    'ctypes.wintypes',
+    'shutil',
+    'tempfile',
+    'glob',
+    'pickle',
+    'shelve',
+    'marshal',
+    'importlib',
+    'pkgutil',
+    'modulefinder',
+    'builtins',
+    '__builtins__',
+    'code',
+    'codeop',
+    'compile',
+    'exec',
+    'eval',
   ],
   allowedPaths: [],
   networkDisabled: true,
-};
+}
 
 /**
  * 生成沙箱化的 Python 代码包装
  */
 function wrapInSandbox(code: string, config: PythonSandboxConfig): string {
-  const blockedList = config.blockedModules.map(m => `'${m}'`).join(', ');
-  const allowedList = config.allowedModules.map(m => `'${m}'`).join(', ');
+  const blockedList = config.blockedModules.map((m) => `'${m}'`).join(', ')
+  const allowedList = config.allowedModules.map((m) => `'${m}'`).join(', ')
 
   return `
 # -*- coding: utf-8 -*-
@@ -269,24 +314,24 @@ finally:
         print(''.join(_user_output), end='')
     if _user_result is not None:
         print(repr(_user_result))
-`;
+`
 }
 
 /**
  * Python 执行（沙箱隔离）
  */
 async function pythonExec(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const code = args.code as string;
-  if (!code) throw new Error('code is required');
+  const code = args.code as string
+  if (!code) throw new Error('code is required')
 
-  const { execSync } = await import('child_process');
-  const config = { ...DEFAULT_SANDBOX_CONFIG };
+  const { execSync } = await import('child_process')
+  const config = { ...DEFAULT_SANDBOX_CONFIG }
 
   // 允许通过参数覆盖部分配置
-  if (args.timeout) config.timeout = Math.min(args.timeout as number, 60000);
-  if (args.maxMemoryMB) config.maxMemoryMB = Math.min(args.maxMemoryMB as number, 512);
+  if (args.timeout) config.timeout = Math.min(args.timeout as number, 60000)
+  if (args.maxMemoryMB) config.maxMemoryMB = Math.min(args.maxMemoryMB as number, 512)
 
-  const sandboxedCode = wrapInSandbox(code, config);
+  const sandboxedCode = wrapInSandbox(code, config)
 
   try {
     // 使用 spawn 以支持更好的资源控制
@@ -301,19 +346,19 @@ async function pythonExec(args: Record<string, unknown>, _ctx: ToolContext): Pro
         PYTHONDONTWRITEBYTECODE: '1',
         PYTHONUNBUFFERED: '1',
       },
-    });
-    return result || '(no output)';
+    })
+    return result || '(no output)'
   } catch (e: any) {
     // 超时错误
     if (e.signal === 'SIGKILL') {
-      return `Error: Execution timed out (${config.timeout}ms)`;
+      return `Error: Execution timed out (${config.timeout}ms)`
     }
     // 输出过大
     if (e.code === 'ENOBUFS' || e.message?.includes('maxBuffer')) {
-      return `Error: Output exceeded maximum size (${config.maxOutputSize} bytes)`;
+      return `Error: Output exceeded maximum size (${config.maxOutputSize} bytes)`
     }
     // 其他错误
-    return e.stderr || e.stdout || `Error: ${e.message}`;
+    return e.stderr || e.stdout || `Error: ${e.message}`
   }
 }
 
@@ -322,38 +367,83 @@ async function pythonExec(args: Record<string, unknown>, _ctx: ToolContext): Pro
  */
 const ALLOWED_SHELL_COMMANDS = [
   // 文件操作
-  'ls', 'dir', 'cat', 'head', 'tail', 'wc', 'find', 'tree',
-  'mkdir', 'touch', 'rm', 'cp', 'mv', 'chmod', 'chown',
+  'ls',
+  'dir',
+  'cat',
+  'head',
+  'tail',
+  'wc',
+  'find',
+  'tree',
+  'mkdir',
+  'touch',
+  'rm',
+  'cp',
+  'mv',
+  'chmod',
+  'chown',
   // 文本处理
-  'grep', 'sed', 'awk', 'sort', 'uniq', 'cut', 'tr', 'diff',
+  'grep',
+  'sed',
+  'awk',
+  'sort',
+  'uniq',
+  'cut',
+  'tr',
+  'diff',
   // 系统
-  'echo', 'pwd', 'whoami', 'date', 'cal', 'uptime', 'df', 'du',
-  'ps', 'top', 'kill', 'pkill', 'pgrep',
-  'env', 'printenv', 'which', 'whereis', 'type',
+  'echo',
+  'pwd',
+  'whoami',
+  'date',
+  'cal',
+  'uptime',
+  'df',
+  'du',
+  'ps',
+  'top',
+  'kill',
+  'pkill',
+  'pgrep',
+  'env',
+  'printenv',
+  'which',
+  'whereis',
+  'type',
   // 网络（只读）
-  'ping', 'curl', 'wget', 'nslookup', 'dig', 'host',
+  'ping',
+  'curl',
+  'wget',
+  'nslookup',
+  'dig',
+  'host',
   // Git
-  'git', 'gh',
+  'git',
+  'gh',
   // 包管理（只读）
-  'npm', 'yarn', 'pnpm', 'pip', 'pip3',
-];
+  'npm',
+  'yarn',
+  'pnpm',
+  'pip',
+  'pip3',
+]
 
 async function shellExec(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const command = args.command as string;
-  if (!command) throw new Error('command is required');
+  const command = args.command as string
+  if (!command) throw new Error('command is required')
 
-  const { execSync } = await import('child_process');
+  const { execSync } = await import('child_process')
 
   // 提取命令名
-  const cmdName = command.trim().split(/\s+/)[0];
+  const cmdName = command.trim().split(/\s+/)[0]
 
   // 检查是否在白名单中
-  const isAllowed = ALLOWED_SHELL_COMMANDS.some(allowed =>
-    cmdName === allowed || cmdName.endsWith('/' + allowed)
-  );
+  const isAllowed = ALLOWED_SHELL_COMMANDS.some(
+    (allowed) => cmdName === allowed || cmdName.endsWith('/' + allowed),
+  )
 
   if (!isAllowed) {
-    return `Error: Command '${cmdName}' is not allowed. Allowed commands: ${ALLOWED_SHELL_COMMANDS.join(', ')}`;
+    return `Error: Command '${cmdName}' is not allowed. Allowed commands: ${ALLOWED_SHELL_COMMANDS.join(', ')}`
   }
 
   try {
@@ -362,14 +452,14 @@ async function shellExec(args: Record<string, unknown>, _ctx: ToolContext): Prom
       timeout: 30000,
       maxBuffer: 10 * 1024 * 1024,
       cwd: process.cwd(),
-    });
-    return result || '(no output)';
+    })
+    return result || '(no output)'
   } catch (e: any) {
     // 超时
     if (e.signal === 'SIGKILL') {
-      return `Error: Command timed out (30s)`;
+      return `Error: Command timed out (30s)`
     }
-    return e.stderr || e.stdout || `Error: ${e.message}`;
+    return e.stderr || e.stdout || `Error: ${e.message}`
   }
 }
 
@@ -379,36 +469,40 @@ async function shellExec(args: Record<string, unknown>, _ctx: ToolContext): Prom
  * HTTP 请求
  */
 async function httpRequest(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const url = args.url as string;
-  const method = ((args.method as string) || 'GET').toUpperCase();
-  const headers = (args.headers as Record<string, string>) || {};
-  const body = args.body as string | undefined;
+  const url = args.url as string
+  const method = ((args.method as string) || 'GET').toUpperCase()
+  const headers = (args.headers as Record<string, string>) || {}
+  const body = args.body as string | undefined
 
-  if (!url) throw new Error('url is required');
+  if (!url) throw new Error('url is required')
 
   try {
     const response = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-    });
+    })
 
-    const contentType = response.headers.get('content-type') || '';
-    let data: any;
+    const contentType = response.headers.get('content-type') || ''
+    let data: any
 
     if (contentType.includes('application/json')) {
-      data = await response.json();
+      data = await response.json()
     } else {
-      data = await response.text();
+      data = await response.text()
     }
 
-    return JSON.stringify({
-      status: response.status,
-      ok: response.ok,
-      data,
-    }, null, 2);
+    return JSON.stringify(
+      {
+        status: response.status,
+        ok: response.ok,
+        data,
+      },
+      null,
+      2,
+    )
   } catch (e: any) {
-    throw new Error(`HTTP request failed: ${e.message}`);
+    throw new Error(`HTTP request failed: ${e.message}`)
   }
 }
 
@@ -418,14 +512,14 @@ async function httpRequest(args: Record<string, unknown>, _ctx: ToolContext): Pr
  * JSON 解析
  */
 async function jsonParse(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const text = args.text as string;
-  if (!text) throw new Error('text is required');
+  const text = args.text as string
+  if (!text) throw new Error('text is required')
 
   try {
-    const data = JSON.parse(text);
-    return JSON.stringify(data, null, 2);
+    const data = JSON.parse(text)
+    return JSON.stringify(data, null, 2)
   } catch (e: any) {
-    throw new Error(`JSON parse failed: ${e.message}`);
+    throw new Error(`JSON parse failed: ${e.message}`)
   }
 }
 
@@ -433,24 +527,24 @@ async function jsonParse(args: Record<string, unknown>, _ctx: ToolContext): Prom
  * CSV 解析
  */
 async function csvParse(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const text = args.text as string;
-  const delimiter = (args.delimiter as string) || ',';
-  if (!text) throw new Error('text is required');
+  const text = args.text as string
+  const delimiter = (args.delimiter as string) || ','
+  if (!text) throw new Error('text is required')
 
-  const lines = text.trim().split('\n');
-  if (lines.length === 0) return '[]';
+  const lines = text.trim().split('\n')
+  if (lines.length === 0) return '[]'
 
-  const headers = lines[0].split(delimiter).map(h => h.trim());
-  const rows = lines.slice(1).map(line => {
-    const values = line.split(delimiter).map(v => v.trim());
-    const row: Record<string, string> = {};
+  const headers = lines[0].split(delimiter).map((h) => h.trim())
+  const rows = lines.slice(1).map((line) => {
+    const values = line.split(delimiter).map((v) => v.trim())
+    const row: Record<string, string> = {}
     headers.forEach((h, i) => {
-      row[h] = values[i] || '';
-    });
-    return row;
-  });
+      row[h] = values[i] || ''
+    })
+    return row
+  })
 
-  return JSON.stringify(rows, null, 2);
+  return JSON.stringify(rows, null, 2)
 }
 
 // ── 数学工具 ──────────────────────────────────────────────
@@ -459,25 +553,25 @@ async function csvParse(args: Record<string, unknown>, _ctx: ToolContext): Promi
  * 数学计算
  */
 async function calculate(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const expression = args.expression as string;
-  if (!expression) throw new Error('expression is required');
+  const expression = args.expression as string
+  if (!expression) throw new Error('expression is required')
 
   // 安全的数学表达式计算
   const safeEval = (expr: string): number => {
     // 只允许数字、运算符、括号、数学函数
-    const allowed = /^[\d\s+\-*/().^%Math,sin,cos,tan,sqrt,abs,log,exp,pow,floor,ceil,round,PI,E]+$/;
+    const allowed = /^[\d\s+\-*/().^%Math,sin,cos,tan,sqrt,abs,log,exp,pow,floor,ceil,round,PI,E]+$/
     if (!allowed.test(expr)) {
-      throw new Error('Invalid expression');
+      throw new Error('Invalid expression')
     }
     // 使用 Function 构造器安全执行
-    return new Function(`"use strict"; return (${expr})`)();
-  };
+    return new Function(`"use strict"; return (${expr})`)()
+  }
 
   try {
-    const result = safeEval(expression);
-    return String(result);
+    const result = safeEval(expression)
+    return String(result)
   } catch (e: any) {
-    throw new Error(`Calculation failed: ${e.message}`);
+    throw new Error(`Calculation failed: ${e.message}`)
   }
 }
 
@@ -496,7 +590,7 @@ export function registerBuiltinTools(): void {
       required: ['path'],
     },
     execute: readFile,
-  });
+  })
 
   toolRegistry.register({
     name: 'write_file',
@@ -510,7 +604,7 @@ export function registerBuiltinTools(): void {
       required: ['path', 'content'],
     },
     execute: writeFile,
-  });
+  })
 
   toolRegistry.register({
     name: 'list_dir',
@@ -523,7 +617,7 @@ export function registerBuiltinTools(): void {
       required: [],
     },
     execute: listDir,
-  });
+  })
 
   toolRegistry.register({
     name: 'delete_file',
@@ -536,7 +630,7 @@ export function registerBuiltinTools(): void {
       required: ['path'],
     },
     execute: deleteFile,
-  });
+  })
 
   // 搜索工具
   toolRegistry.register({
@@ -551,27 +645,32 @@ export function registerBuiltinTools(): void {
       required: ['query'],
     },
     execute: webSearch,
-  });
+  })
 
   // 执行工具
   toolRegistry.register({
     name: 'python',
-    description: 'Execute Python code in a sandboxed environment. Supports safe standard library modules only.',
+    description:
+      'Execute Python code in a sandboxed environment. Supports safe standard library modules only.',
     parameters: {
       type: 'object',
       properties: {
         code: { type: 'string', description: 'Python code to execute' },
-        timeout: { type: 'number', description: 'Execution timeout in ms (default: 30000, max: 60000)' },
+        timeout: {
+          type: 'number',
+          description: 'Execution timeout in ms (default: 30000, max: 60000)',
+        },
         maxMemoryMB: { type: 'number', description: 'Max memory in MB (default: 256, max: 512)' },
       },
       required: ['code'],
     },
     execute: pythonExec,
-  });
+  })
 
   toolRegistry.register({
     name: 'shell',
-    description: 'Execute shell command (restricted to allowed commands: ls, cat, grep, git, npm, etc.)',
+    description:
+      'Execute shell command (restricted to allowed commands: ls, cat, grep, git, npm, etc.)',
     parameters: {
       type: 'object',
       properties: {
@@ -580,7 +679,7 @@ export function registerBuiltinTools(): void {
       required: ['command'],
     },
     execute: shellExec,
-  });
+  })
 
   // 网络工具
   toolRegistry.register({
@@ -597,7 +696,7 @@ export function registerBuiltinTools(): void {
       required: ['url'],
     },
     execute: httpRequest,
-  });
+  })
 
   // 数据工具
   toolRegistry.register({
@@ -611,7 +710,7 @@ export function registerBuiltinTools(): void {
       required: ['text'],
     },
     execute: jsonParse,
-  });
+  })
 
   toolRegistry.register({
     name: 'csv_parse',
@@ -625,7 +724,7 @@ export function registerBuiltinTools(): void {
       required: ['text'],
     },
     execute: csvParse,
-  });
+  })
 
   // 数学工具
   toolRegistry.register({
@@ -639,7 +738,7 @@ export function registerBuiltinTools(): void {
       required: ['expression'],
     },
     execute: calculate,
-  });
+  })
 
   // 测试工具
   toolRegistry.register({
@@ -653,7 +752,7 @@ export function registerBuiltinTools(): void {
       required: ['message'],
     },
     execute: async (args) => (args.message as string) || '',
-  });
+  })
 
   // 位置工具
   toolRegistry.register({
@@ -665,7 +764,7 @@ export function registerBuiltinTools(): void {
       required: [],
     },
     execute: get_location,
-  });
+  })
 }
 
 /**
@@ -673,67 +772,77 @@ export function registerBuiltinTools(): void {
  */
 async function get_location(_args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
   // 优先尝试系统 GPS
-  const systemLocation = await getSystemLocation();
+  const systemLocation = await getSystemLocation()
   if (systemLocation) {
-    return systemLocation;
+    return systemLocation
   }
 
   // 回退到 IP 定位
   try {
     // 方法1: pconline IP 定位（中国准确）
-    const pconline = await fetch('https://whois.pconline.com.cn/ipJson.jsp?json=true');
+    const pconline = await fetch('https://whois.pconline.com.cn/ipJson.jsp?json=true')
     if (pconline.ok) {
-      const text = await pconline.text();
+      const text = await pconline.text()
       // 提取 JSON 部分（跳过空行）
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
-        const data = JSON.parse(jsonMatch[0]);
+        const data = JSON.parse(jsonMatch[0])
         if (data.cityCode) {
           // 联网获取城市名
-          let cityName = data.cityCode;
+          let cityName = data.cityCode
           try {
-            const geoRes = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${data.cityCode}.json`);
+            const geoRes = await fetch(
+              `https://geo.datav.aliyun.com/areas_v3/bound/${data.cityCode}.json`,
+            )
             if (geoRes.ok) {
-              const geoData = await geoRes.json() as any;
+              const geoData = (await geoRes.json()) as any
               if (geoData.features?.[0]?.properties?.name) {
-                cityName = geoData.features[0].properties.name;
+                cityName = geoData.features[0].properties.name
               }
             }
           } catch {
             // 忽略错误，使用 cityCode
           }
-          return JSON.stringify({
-            province: data.proCode,
-            city: cityName,
-            cityCode: data.cityCode,
-            ip: data.ip,
-            isp: data.addr,
-            source: 'PConline IP',
-          }, null, 2);
+          return JSON.stringify(
+            {
+              province: data.proCode,
+              city: cityName,
+              cityCode: data.cityCode,
+              ip: data.ip,
+              isp: data.addr,
+              source: 'PConline IP',
+            },
+            null,
+            2,
+          )
         }
       }
     }
 
     // 方法2: 使用 ip-api.com
-    const fallback = await fetch('http://ip-api.com/json/?lang=zh-CN');
+    const fallback = await fetch('http://ip-api.com/json/?lang=zh-CN')
     if (fallback.ok) {
-      const data = await fallback.json() as any;
+      const data = (await fallback.json()) as any
       if (data.status === 'success') {
-        return JSON.stringify({
-          country: data.country,
-          province: data.regionName,
-          city: data.city,
-          lat: data.lat,
-          lon: data.lon,
-          isp: data.isp,
-          source: 'IP-API',
-        }, null, 2);
+        return JSON.stringify(
+          {
+            country: data.country,
+            province: data.regionName,
+            city: data.city,
+            lat: data.lat,
+            lon: data.lon,
+            isp: data.isp,
+            source: 'IP-API',
+          },
+          null,
+          2,
+        )
       }
     }
 
-    return 'Unable to determine location';
+    return 'Unable to determine location'
   } catch (error) {
-    return `Location error: ${error instanceof Error ? error.message : String(error)}`;
+    return `Location error: ${error instanceof Error ? error.message : String(error)}`
   }
 }
 
@@ -741,45 +850,49 @@ async function get_location(_args: Record<string, unknown>, _ctx: ToolContext): 
  * 获取系统 GPS 位置
  */
 async function getSystemLocation(): Promise<string | null> {
-  const platform = process.platform;
+  const platform = process.platform
 
   try {
     if (platform === 'darwin') {
       // macOS: 使用 CoreLocation
-      return await getMacOSLocation();
+      return await getMacOSLocation()
     } else if (platform === 'linux') {
       // Linux: 使用 geoclue
-      return await getLinuxLocation();
+      return await getLinuxLocation()
     }
   } catch (error) {
     // 系统定位失败，回退到 IP 定位
   }
 
-  return null;
+  return null
 }
 
 /**
  * macOS CoreLocation 定位
  */
 async function getMacOSLocation(): Promise<string | null> {
-  const { execSync } = await import('child_process');
+  const { execSync } = await import('child_process')
 
   // 方法1: 尝试 whereami 工具（需要安装：brew install whereami）
   try {
     const result = execSync('whereami', {
       encoding: 'utf-8',
       timeout: 5000,
-    });
-    const parts = result.trim().split(',');
+    })
+    const parts = result.trim().split(',')
     if (parts.length >= 2) {
-      const lat = parseFloat(parts[0]);
-      const lon = parseFloat(parts[1]);
+      const lat = parseFloat(parts[0])
+      const lon = parseFloat(parts[1])
       if (!isNaN(lat) && !isNaN(lon)) {
-        return JSON.stringify({
-          lat,
-          lon,
-          source: 'GPS (whereami)',
-        }, null, 2);
+        return JSON.stringify(
+          {
+            lat,
+            lon,
+            source: 'GPS (whereami)',
+          },
+          null,
+          2,
+        )
       }
     }
   } catch {
@@ -837,58 +950,65 @@ manager.startUpdatingLocation()
 if semaphore.wait(timeout: .now() + 8) == .success && success {
   print(String(format: "%.6f,%.6f,%.1f", lat, lon, acc))
 }
-`;
+`
 
   try {
     const result = execSync(`swift -e '${swiftCode.replace(/'/g, "'\"'\"'")}'`, {
       encoding: 'utf-8',
       timeout: 12000,
-    });
+    })
 
-    const output = result.trim();
+    const output = result.trim()
     if (output && output.includes(',')) {
-      const [latStr, lonStr, accStr] = output.split(',');
-      const lat = parseFloat(latStr);
-      const lon = parseFloat(lonStr);
-      const accuracy = parseFloat(accStr);
+      const [latStr, lonStr, accStr] = output.split(',')
+      const lat = parseFloat(latStr)
+      const lon = parseFloat(lonStr)
+      const accuracy = parseFloat(accStr)
       if (!isNaN(lat) && !isNaN(lon)) {
-        return JSON.stringify({
-          lat,
-          lon,
-          accuracy,
-          source: 'GPS (CoreLocation)',
-        }, null, 2);
+        return JSON.stringify(
+          {
+            lat,
+            lon,
+            accuracy,
+            source: 'GPS (CoreLocation)',
+          },
+          null,
+          2,
+        )
       }
     }
   } catch {
     // CoreLocation failed
   }
 
-  return null;
+  return null
 }
 
 /**
  * Linux geoclue 定位
  */
 async function getLinuxLocation(): Promise<string | null> {
-  const { execSync } = await import('child_process');
+  const { execSync } = await import('child_process')
 
   // 方法1: 尝试 geoclue-2.0 D-Bus API
   try {
     // 先检查 geoclue 是否可用
-    execSync('busctl --user status org.freedesktop.GeoClue2 2>/dev/null', { timeout: 2000 });
+    execSync('busctl --user status org.freedesktop.GeoClue2 2>/dev/null', { timeout: 2000 })
 
     // 获取当前位置
-    const result = execSync(`
+    const result = execSync(
+      `
 busctl call --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Client \
   org.freedesktop.GeoClue2.Client Start 2>/dev/null
 sleep 3
 busctl get-property --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Client \
   org.freedesktop.GeoClue2.Client Location 2>/dev/null
-`, {
-      encoding: 'utf-8',
-      timeout: 10000,
-    });
+`,
+      {
+        encoding: 'utf-8',
+        timeout: 10000,
+      },
+    )
 
     if (result.includes('o')) {
       // 解析位置对象路径，然后获取坐标
@@ -903,33 +1023,33 @@ busctl get-property --user org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Cl
 
   // 方法3: 尝试 hostname 获取位置信息（某些系统配置）
   try {
-    const hostname = execSync('hostname', { encoding: 'utf-8' }).trim();
+    const hostname = execSync('hostname', { encoding: 'utf-8' }).trim()
     // 可以根据主机名推断位置（需要用户配置）
   } catch {
     // ignore
   }
 
-  return null;
+  return null
 }
 
 // 导出所有工具注册函数
-export { toolRegistry, tool } from './registry.js';
-export { registerSearchTools } from './web-search.js';
-export { registerWorkspaceTools } from './workspace.js';
-export { registerExecCodeTool } from './exec-code.js';
-export { registerSubagentTools } from './subagent.js';
-export { registerAgentTools } from './agent-tools.js';
-export { registerCreateSkillTool } from './create-skill.js';
+export { toolRegistry, tool } from './registry.js'
+export { registerSearchTools } from './web-search.js'
+export { registerWorkspaceTools } from './workspace.js'
+export { registerExecCodeTool } from './exec-code.js'
+export { registerSubagentTools } from './subagent.js'
+export { registerAgentTools } from './agent-tools.js'
+export { registerCreateSkillTool } from './create-skill.js'
 
 /**
  * 注册所有工具
  */
 export function registerAllTools(): void {
-  registerBuiltinTools();
-  registerSubagentTools();
+  registerBuiltinTools()
+  registerSubagentTools()
   // registerSearchTools() - 已在 registerBuiltinTools() 中注册 web_search
-  registerWorkspaceTools();
-  registerExecCodeTool();
-  registerAgentTools();
-  registerCreateSkillTool();
+  registerWorkspaceTools()
+  registerExecCodeTool()
+  registerAgentTools()
+  registerCreateSkillTool()
 }

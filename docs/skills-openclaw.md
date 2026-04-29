@@ -12,49 +12,49 @@ OpenClaw 使用 YAML 格式定义 Skill：
 name: code-review
 description: 自动代码审查
 triggers:
-  - pattern: "review"
-  - pattern: "代码审查"
-  - pattern: "检查代码"
-  
+  - pattern: 'review'
+  - pattern: '代码审查'
+  - pattern: '检查代码'
+
 tools:
   - read_file
   - search_memory
   - web_search
-  
+
 prompt: |
   你是一个代码审查助手。
-  
+
   审查规则：
   1. 检查代码风格
   2. 检查潜在 bug
   3. 检查安全问题
-  
+
   输出格式：
   - 问题列表
   - 改进建议
 
 examples:
-  - input: "review this code"
+  - input: 'review this code'
     output: |
       发现以下问题：
       1. ...
-      
+
 metadata:
-  version: "1.0.0"
-  author: "colobot"
-  tags: ["code", "review"]
+  version: '1.0.0'
+  author: 'colobot'
+  tags: ['code', 'review']
 ```
 
 ## 功能特性
 
-| 功能 | 说明 |
-|------|------|
-| 📥 导入 YAML | 从 YAML 文件导入 Skill |
-| 🔄 格式转换 | OpenClaw → ColoBot 格式 |
-| ✅ 验证 | 验证 Skill 定义完整性 |
-| 📦 批量导入 | 导入整个 Skill 库 |
-| 🔗 触发器映射 | Pattern → Trigger Words |
-| 🛠️ 工具映射 | OpenClaw 工具 → ColoBot 工具 |
+| 功能          | 说明                         |
+| ------------- | ---------------------------- |
+| 📥 导入 YAML  | 从 YAML 文件导入 Skill       |
+| 🔄 格式转换   | OpenClaw → ColoBot 格式      |
+| ✅ 验证       | 验证 Skill 定义完整性        |
+| 📦 批量导入   | 导入整个 Skill 库            |
+| 🔗 触发器映射 | Pattern → Trigger Words      |
+| 🛠️ 工具映射   | OpenClaw 工具 → ColoBot 工具 |
 
 ## 安装
 
@@ -109,28 +109,28 @@ if (result.valid) {
 
 ### OpenClaw → ColoBot
 
-| OpenClaw | ColoBot |
-|----------|---------|
-| `name` | `name` |
-| `description` | `description` |
-| `triggers[].pattern` | `trigger_words` |
-| `tools` | `allowed_tools` |
-| `prompt` | `markdown_content` |
-| `examples` | 转换为文档示例 |
-| `metadata.version` | `version` |
-| `metadata.tags` | `tags` |
+| OpenClaw             | ColoBot            |
+| -------------------- | ------------------ |
+| `name`               | `name`             |
+| `description`        | `description`      |
+| `triggers[].pattern` | `trigger_words`    |
+| `tools`              | `allowed_tools`    |
+| `prompt`             | `markdown_content` |
+| `examples`           | 转换为文档示例     |
+| `metadata.version`   | `version`          |
+| `metadata.tags`      | `tags`             |
 
 ### 工具映射表
 
-| OpenClaw 工具 | ColoBot 工具 |
-|---------------|--------------|
-| `read_file` | `read_file` |
-| `write_file` | `write_file` |
-| `search` | `web_search` |
-| `search_memory` | `search_memory` |
-| `execute` | `execute_command` |
-| `http_request` | `http_fetch` |
-| `database` | `query` |
+| OpenClaw 工具   | ColoBot 工具      |
+| --------------- | ----------------- |
+| `read_file`     | `read_file`       |
+| `write_file`    | `write_file`      |
+| `search`        | `web_search`      |
+| `search_memory` | `search_memory`   |
+| `execute`       | `execute_command` |
+| `http_request`  | `http_fetch`      |
+| `database`      | `query`           |
 
 ## API
 
@@ -138,14 +138,14 @@ if (result.valid) {
 
 ```typescript
 function importOpenClawSkill(
-  source: string | Buffer,  // YAML 文件路径或内容
-  options?: ImportOptions
+  source: string | Buffer, // YAML 文件路径或内容
+  options?: ImportOptions,
 ): Promise<ColoBotSkill>
 
 interface ImportOptions {
-  validate?: boolean        // 是否验证（默认 true）
-  toolMapping?: Record<string, string>  // 自定义工具映射
-  defaultTools?: string[]   // 默认工具列表
+  validate?: boolean // 是否验证（默认 true）
+  toolMapping?: Record<string, string> // 自定义工具映射
+  defaultTools?: string[] // 默认工具列表
 }
 ```
 
@@ -153,29 +153,27 @@ interface ImportOptions {
 
 ```typescript
 function importOpenClawLibrary(
-  directory: string,        // Skill 库目录
-  options?: LibraryOptions
+  directory: string, // Skill 库目录
+  options?: LibraryOptions,
 ): Promise<ImportResult>
 
 interface LibraryOptions {
-  recursive?: boolean       // 递归搜索（默认 true）
+  recursive?: boolean // 递归搜索（默认 true）
   validate?: boolean
-  skipInvalid?: boolean     // 跳过无效文件（默认 true）
+  skipInvalid?: boolean // 跳过无效文件（默认 true）
 }
 
 interface ImportResult {
   skills: ColoBotSkill[]
-  skipped: string[]         // 跳过的文件
-  errors: ImportError[]     // 错误列表
+  skipped: string[] // 跳过的文件
+  errors: ImportError[] // 错误列表
 }
 ```
 
 ### validateOpenClawSkill
 
 ```typescript
-function validateOpenClawSkill(
-  content: string | Buffer
-): ValidationResult
+function validateOpenClawSkill(content: string | Buffer): ValidationResult
 
 interface ValidationResult {
   valid: boolean
@@ -187,9 +185,7 @@ interface ValidationResult {
 ### convertToColoBotFormat
 
 ```typescript
-function convertToColoBotFormat(
-  openClawSkill: OpenClawSkill
-): ColoBotSkill
+function convertToColoBotFormat(openClawSkill: OpenClawSkill): ColoBotSkill
 ```
 
 ## 目录结构
@@ -292,21 +288,21 @@ interface ColoBotSkill {
 {
   "dependencies": {
     "@colobot/core": "^0.1.0",
-    "yaml": "^2.3.4",          // YAML 解析
-    "ajv": "^8.12.0"           // JSON Schema 验证
+    "yaml": "^2.3.4", // YAML 解析
+    "ajv": "^8.12.0" // JSON Schema 验证
   }
 }
 ```
 
 ## 开发计划
 
-| 阶段 | 功能 | 时间 |
-|------|------|------|
-| Phase 1 | YAML 解析 + 类型定义 | 1 天 |
-| Phase 2 | 格式转换 + 工具映射 | 1 天 |
-| Phase 3 | 验证 + 错误处理 | 1 天 |
-| Phase 4 | 批量导入 + Dashboard 集成 | 1 天 |
-| **总计** | | **4 天** |
+| 阶段     | 功能                      | 时间     |
+| -------- | ------------------------- | -------- |
+| Phase 1  | YAML 解析 + 类型定义      | 1 天     |
+| Phase 2  | 格式转换 + 工具映射       | 1 天     |
+| Phase 3  | 验证 + 错误处理           | 1 天     |
+| Phase 4  | 批量导入 + Dashboard 集成 | 1 天     |
+| **总计** |                           | **4 天** |
 
 ## 与其他包的关系
 

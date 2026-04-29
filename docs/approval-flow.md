@@ -7,12 +7,12 @@
 
 审批流用于控制 Agent 执行**危险操作**，需要管理员确认后才能继续。危险操作包括：
 
-| 操作类型 | 说明 |
-|----------|------|
-| `update` | 修改数据 |
-| `delete` | 删除数据 |
-| `exec` | 执行命令/代码 |
-| `send` | 发送消息/通知 |
+| 操作类型 | 说明          |
+| -------- | ------------- |
+| `update` | 修改数据      |
+| `delete` | 删除数据      |
+| `exec`   | 执行命令/代码 |
+| `send`   | 发送消息/通知 |
 
 ---
 
@@ -76,7 +76,7 @@ const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
   modify_config: 'update',
   send_notification: 'send',
   // ...
-};
+}
 ```
 
 ---
@@ -128,11 +128,11 @@ const DANGEROUS_TOOLS: Record<string, ApprovalActionType> = {
 
 ## 已知问题（已修复）
 
-| # | 问题 | 状态 | 修复版本 |
-|---|------|------|----------|
-| 1 | 工具执行两次 | ✅ 已修复 | v0.1.x |
-| 2 | `pending_conversations` 未清理 | ✅ 已在 continueRun 末尾清理 | v0.1.x |
-| 3 | continueRun 用非流式 LLM | ✅ 已改用 agentChatStream() | v0.1.x |
+| #   | 问题                           | 状态                         | 修复版本 |
+| --- | ------------------------------ | ---------------------------- | -------- |
+| 1   | 工具执行两次                   | ✅ 已修复                    | v0.1.x   |
+| 2   | `pending_conversations` 未清理 | ✅ 已在 continueRun 末尾清理 | v0.1.x   |
+| 3   | continueRun 用非流式 LLM       | ✅ 已改用 agentChatStream()  | v0.1.x   |
 
 ---
 
@@ -207,11 +207,11 @@ Response: ApprovalRequest
 
 可通过环境变量启用以下渠道（需同时配置相关凭据）：
 
-| 渠道 | 环境变量 | 说明 |
-|------|----------|------|
-| 飞书 | `FEISHU_WEBHOOK_URL` | 飞书机器人 Webhook URL |
-| 邮件 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_TO` | SMTP 发邮件（需 `npm i nodemailer`） |
-| Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Telegram Bot 推送 |
+| 渠道     | 环境变量                                                      | 说明                                 |
+| -------- | ------------------------------------------------------------- | ------------------------------------ |
+| 飞书     | `FEISHU_WEBHOOK_URL`                                          | 飞书机器人 Webhook URL               |
+| 邮件     | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_TO` | SMTP 发邮件（需 `npm i nodemailer`） |
+| Telegram | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`                      | Telegram Bot 推送                    |
 
 所有渠道均**无需安装额外依赖**（飞书/Telegram 使用原生 fetch），邮件需 `npm i nodemailer`。
 
@@ -227,8 +227,8 @@ Response: ApprovalRequest
 // 创建审批时指定（分钟）
 approvalFlow.create({
   // ...
-  expiresInMinutes: 30,  // 30分钟后自动过期
-});
+  expiresInMinutes: 30, // 30分钟后自动过期
+})
 ```
 
 过期后 status 变为 `expired`，可通过 `approvalFlow.expireOld()` 批量处理。
@@ -239,11 +239,11 @@ approvalFlow.create({
 
 所有审批操作都会写入审计日志：
 
-| 事件 | 说明 |
-|------|------|
-| `approval.requested` | 审批请求创建 |
-| `approval.approved` | 审批通过 |
-| `approval.rejected` | 审批拒绝 |
-| `approval.expired` | 审批过期 |
-| `tool.execute` | 工具执行（危险工具） |
-| `tool.blocked` | 工具被阻止 |
+| 事件                 | 说明                 |
+| -------------------- | -------------------- |
+| `approval.requested` | 审批请求创建         |
+| `approval.approved`  | 审批通过             |
+| `approval.rejected`  | 审批拒绝             |
+| `approval.expired`   | 审批过期             |
+| `tool.execute`       | 工具执行（危险工具） |
+| `tool.blocked`       | 工具被阻止           |

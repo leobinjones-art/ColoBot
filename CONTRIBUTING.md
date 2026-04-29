@@ -57,17 +57,18 @@ src/
 
 ## 分支规范
 
-| 前缀 | 用途 |
-|------|------|
-| `feat/` | 新功能 |
-| `fix/` | Bug 修复 |
-| `docs/` | 文档更新 |
+| 前缀        | 用途               |
+| ----------- | ------------------ |
+| `feat/`     | 新功能             |
+| `fix/`      | Bug 修复           |
+| `docs/`     | 文档更新           |
 | `refactor/` | 重构（无功能变化） |
-| `test/` | 测试相关 |
-| `chore/` | 构建/工具/依赖更新 |
-| `security/` | 安全修复 |
+| `test/`     | 测试相关           |
+| `chore/`    | 构建/工具/依赖更新 |
+| `security/` | 安全修复           |
 
 示例：
+
 ```bash
 git checkout -b feat/sop-export
 git checkout -b fix/approval-timeout
@@ -88,18 +89,19 @@ git checkout -b docs/readme-update
 
 **Type**：
 
-| Type | 描述 |
-|------|------|
-| `feat` | 新功能 |
-| `fix` | Bug 修复 |
-| `docs` | 文档 |
-| `style` | 格式（不影响代码含义） |
-| `refactor` | 重构 |
-| `test` | 测试 |
-| `chore` | 构建/工具/依赖 |
-| `security` | 安全 |
+| Type       | 描述                   |
+| ---------- | ---------------------- |
+| `feat`     | 新功能                 |
+| `fix`      | Bug 修复               |
+| `docs`     | 文档                   |
+| `style`    | 格式（不影响代码含义） |
+| `refactor` | 重构                   |
+| `test`     | 测试                   |
+| `chore`    | 构建/工具/依赖         |
+| `security` | 安全                   |
 
 **Examples**：
+
 ```bash
 feat: 添加审批规则自进化机制
 fix: 修复 dashboard 登录页面白屏问题
@@ -123,6 +125,7 @@ npm run lint
 ```
 
 **规则要点**：
+
 - 无分号
 - 单引号
 - 100 字符宽度
@@ -152,17 +155,17 @@ npm run test:e2e
 
 ## 核心模块说明
 
-| 模块 | 文件 | 职责 |
-|------|------|------|
-| Agent 运行时 | `src/agent-runtime/runtime.ts` | 消息路由 + LLM 循环 |
-| SOP 流程 | `src/agent-runtime/sop-v2.ts` | AI 动态拆解 + 步骤引导 |
-| 审批引擎 | `src/agent-runtime/approval-rules.ts` | 四层漏斗 + 自进化 |
-| 工具注册 | `src/agent-runtime/tools/executor.ts` | 工具定义 + 执行 |
-| LLM 抽象 | `src/llm/index.ts` | 多 Provider Fallback |
-| 配置管理 | `src/config/` | SOP Prompt + 子 Agent + LLM 配置 |
-| 国际化 | `src/i18n/index.ts` | 中英文语言包 |
-| 记忆 | `src/memory/` | 向量 + 文本混合检索 |
-| 飞书 | `src/services/feishu.ts` | 通知 + 卡片交互 |
+| 模块         | 文件                                  | 职责                             |
+| ------------ | ------------------------------------- | -------------------------------- |
+| Agent 运行时 | `src/agent-runtime/runtime.ts`        | 消息路由 + LLM 循环              |
+| SOP 流程     | `src/agent-runtime/sop-v2.ts`         | AI 动态拆解 + 步骤引导           |
+| 审批引擎     | `src/agent-runtime/approval-rules.ts` | 四层漏斗 + 自进化                |
+| 工具注册     | `src/agent-runtime/tools/executor.ts` | 工具定义 + 执行                  |
+| LLM 抽象     | `src/llm/index.ts`                    | 多 Provider Fallback             |
+| 配置管理     | `src/config/`                         | SOP Prompt + 子 Agent + LLM 配置 |
+| 国际化       | `src/i18n/index.ts`                   | 中英文语言包                     |
+| 记忆         | `src/memory/`                         | 向量 + 文本混合检索              |
+| 飞书         | `src/services/feishu.ts`              | 通知 + 卡片交互                  |
 
 ## 配置优先级
 
@@ -178,13 +181,13 @@ ColoBot 配置采用三级优先级：
 
 ### 可配置项
 
-| 配置项 | 环境变量 | Dashboard 编辑 |
-|--------|----------|----------------|
-| SOP Prompt 模板 | `SOP_PROMPT_*` | ✅ SOP 页面 |
-| 子 Agent 配置 | `SUB_AGENT_CONFIG_*` | ✅ SOP 页面 |
-| LLM Provider | `LLM_PROVIDER` | ✅ LLM 页面 |
-| API Keys | `*_API_KEY` | ✅ LLM 页面 |
-| 飞书配置 | `LARK_*` | ✅ 飞书页面 |
+| 配置项          | 环境变量             | Dashboard 编辑 |
+| --------------- | -------------------- | -------------- |
+| SOP Prompt 模板 | `SOP_PROMPT_*`       | ✅ SOP 页面    |
+| 子 Agent 配置   | `SUB_AGENT_CONFIG_*` | ✅ SOP 页面    |
+| LLM Provider    | `LLM_PROVIDER`       | ✅ LLM 页面    |
+| API Keys        | `*_API_KEY`          | ✅ LLM 页面    |
+| 飞书配置        | `LARK_*`             | ✅ 飞书页面    |
 
 ## 新增配置步骤
 

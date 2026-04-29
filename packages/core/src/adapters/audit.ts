@@ -2,38 +2,38 @@
  * 审计日志实现
  */
 
-import type { AuditEntry } from '../runtime/types.js';
-import type { AuditLogger } from '../runtime/types.js';
+import type { AuditEntry } from '../runtime/types.js'
+import type { AuditLogger } from '../runtime/types.js'
 
 export interface InMemoryAuditConfig {
-  maxEntries?: number;
+  maxEntries?: number
 }
 
 export class InMemoryAudit implements AuditLogger {
-  private entries: AuditEntry[] = [];
-  private maxEntries: number;
+  private entries: AuditEntry[] = []
+  private maxEntries: number
 
   constructor(config: InMemoryAuditConfig = {}) {
-    this.maxEntries = config.maxEntries || 1000;
+    this.maxEntries = config.maxEntries || 1000
   }
 
   async write(entry: AuditEntry): Promise<void> {
     this.entries.push({
       ...entry,
       action: entry.action,
-    });
+    })
 
     if (this.entries.length > this.maxEntries) {
-      this.entries.shift();
+      this.entries.shift()
     }
   }
 
   getEntries(): AuditEntry[] {
-    return [...this.entries];
+    return [...this.entries]
   }
 
   clear(): void {
-    this.entries = [];
+    this.entries = []
   }
 }
 
@@ -42,17 +42,20 @@ export class InMemoryAudit implements AuditLogger {
  */
 export class ConsoleAudit implements AuditLogger {
   async write(entry: AuditEntry): Promise<void> {
-    const timestamp = new Date().toISOString();
-    const level = entry.result === 'success' ? 'INFO' : entry.result === 'failure' ? 'ERROR' : 'WARN';
+    const timestamp = new Date().toISOString()
+    const level =
+      entry.result === 'success' ? 'INFO' : entry.result === 'failure' ? 'ERROR' : 'WARN'
 
-    console.log(`[${timestamp}] [${level}] ${entry.actorType}:${entry.actorId} ${entry.action} ${entry.targetType}:${entry.targetId} - ${entry.result}`);
+    console.log(
+      `[${timestamp}] [${level}] ${entry.actorType}:${entry.actorId} ${entry.action} ${entry.targetType}:${entry.targetId} - ${entry.result}`,
+    )
 
     if (entry.errorMessage) {
-      console.log(`  Error: ${entry.errorMessage}`);
+      console.log(`  Error: ${entry.errorMessage}`)
     }
 
     if (entry.detail) {
-      console.log(`  Detail:`, entry.detail);
+      console.log(`  Detail:`, entry.detail)
     }
   }
 }

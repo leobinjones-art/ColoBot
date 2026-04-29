@@ -36,15 +36,16 @@ ColoBot 采用**父子 Agent 架构**，实现任务分解、执行、审核的�
 
 **职责：** 全局把控，不直接执行具体操作
 
-| 职能 | 说明 |
-|------|------|
-| 任务分析 | 理解用户意图，判断需要什么工具/能力 |
-| 任务拆解 | 将复杂任务分解为可执行的子任务 |
-| 子Agent管理 | 创建、监控、销毁子 Agent |
-| 成果审核 | 检查子 Agent 输出，验证正确性 |
-| 用户展示 | 整合结果，向用户呈现最终答案 |
+| 职能        | 说明                                |
+| ----------- | ----------------------------------- |
+| 任务分析    | 理解用户意图，判断需要什么工具/能力 |
+| 任务拆解    | 将复杂任务分解为可执行的子任务      |
+| 子Agent管理 | 创建、监控、销毁子 Agent            |
+| 成果审核    | 检查子 Agent 输出，验证正确性       |
+| 用户展示    | 整合结果，向用户呈现最终答案        |
 
 **特点：**
+
 - 拥有完整工具权限
 - 可访问所有记忆和上下文
 - 负责安全决策和权限控制
@@ -53,13 +54,14 @@ ColoBot 采用**父子 Agent 架构**，实现任务分解、执行、审核的�
 
 **职责：** 执行具体任务，受限运行
 
-| 职能 | 说明 |
-|------|------|
+| 职能     | 说明                        |
+| -------- | --------------------------- |
 | 执行任务 | 完成父 Agent 分配的具体步骤 |
-| 工具调用 | 在白名单范围内调用工具 |
-| 结果返回 | 将执行结果返回给父 Agent |
+| 工具调用 | 在白名单范围内调用工具      |
+| 结果返回 | 将执行结果返回给父 Agent    |
 
 **约束：**
+
 - 工具白名单：只能使用允许的工具
 - TTL 过期：默认 5 分钟，超时自动销毁
 - 权限隔离：无法访问父 Agent 的敏感资源
@@ -159,8 +161,8 @@ const subAgent = spawnSubAgent({
   }),
   parentId: 'parent-agent-1',
   allowedTools: ['read_file', 'python'],
-  ttlMs: 300000,  // 5分钟
-});
+  ttlMs: 300000, // 5分钟
+})
 ```
 
 ### 执行任务
@@ -170,15 +172,15 @@ const result = await runSubAgentTask(
   subAgent,
   '分析销售数据的趋势',
   parentId,
-  deps  // LLM、审计、工具执行器等依赖
-);
+  deps, // LLM、审计、工具执行器等依赖
+)
 ```
 
 ### 销毁子 Agent
 
 ```typescript
 // 手动销毁
-destroySubAgent(subAgentId, parentId);
+destroySubAgent(subAgentId, parentId)
 
 // 自动清理（每30秒检查过期）
 // TTL 到期后自动销毁
@@ -205,15 +207,15 @@ destroySubAgent(subAgentId, parentId);
 
 ```typescript
 interface ExecutionContext {
-  taskId: string;
-  parentId: string;
-  results: Map<string, ExecutionResult>;
+  taskId: string
+  parentId: string
+  results: Map<string, ExecutionResult>
 
   // 获取依赖任务的输出
-  getDependencyOutput: (depName: string) => string | undefined;
+  getDependencyOutput: (depName: string) => string | undefined
 
   // 获取依赖任务的结构化数据
-  getDependencyData: (depName: string) => any | undefined;
+  getDependencyData: (depName: string) => any | undefined
 }
 ```
 
@@ -226,7 +228,7 @@ interface ExecutionContext {
 const subAgent = spawnSubAgent({
   allowedTools: ['read_file', 'python'],
   // ...
-});
+})
 
 // 尝试调用未授权工具会被拦截
 if (!isToolAllowed(subAgentId, 'delete_file')) {
@@ -236,12 +238,12 @@ if (!isToolAllowed(subAgentId, 'delete_file')) {
 
 ### 权限隔离
 
-| 资源 | 父 Agent | 子 Agent |
-|------|----------|----------|
-| 所有工具 | ✅ | ❌ 仅白名单 |
-| 敏感数据 | ✅ | ❌ 隔离 |
-| 记忆存储 | ✅ 完整 | ❌ 受限 |
-| 审计日志 | ✅ 读写 | ❌ 只读 |
+| 资源     | 父 Agent | 子 Agent    |
+| -------- | -------- | ----------- |
+| 所有工具 | ✅       | ❌ 仅白名单 |
+| 敏感数据 | ✅       | ❌ 隔离     |
+| 记忆存储 | ✅ 完整  | ❌ 受限     |
+| 审计日志 | ✅ 读写  | ❌ 只读     |
 
 ### 审计追踪
 
@@ -254,7 +256,7 @@ await audit.write({
   targetId: 'read_file',
   detail: { path: '/data/sales.csv' },
   result: 'success',
-});
+})
 ```
 
 ## 大文件处理
@@ -289,21 +291,21 @@ await audit.write({
 
 ### 分块策略
 
-| 策略 | 适用场景 |
-|------|----------|
-| 按字节 | 二进制文件、大文本 |
-| 按行 | CSV、日志文件 |
-| 按 Token | LLM 输入优化 |
+| 策略     | 适用场景             |
+| -------- | -------------------- |
+| 按字节   | 二进制文件、大文本   |
+| 按行     | CSV、日志文件        |
+| 按 Token | LLM 输入优化         |
 | 滑动窗口 | 需要保持上下文连续性 |
 
 ### 合并策略
 
-| 策略 | 用途 |
-|------|------|
+| 策略     | 用途             |
+| -------- | ---------------- |
 | 文本拼接 | 直接合并文本结果 |
-| 数组展平 | 合并列表数据 |
-| 统计汇总 | 汇总处理统计 |
-| 去重合并 | 提取任务去重 |
+| 数组展平 | 合并列表数据     |
+| 统计汇总 | 汇总处理统计     |
+| 去重合并 | 提取任务去重     |
 
 ## 典型场景
 
@@ -362,45 +364,32 @@ await audit.write({
 ### 完整流程
 
 ```typescript
-import {
-  analyzeRequest,
-  executeDynamicTask,
-  cleanupTaskResult,
-} from '@colobot/core';
+import { analyzeRequest, executeDynamicTask, cleanupTaskResult } from '@colobot/core'
 
 // 1. 分析请求
-const analysis = await analyzeRequest(
-  '分析这份销售数据',
-  llm,
-  { tools: customTools }
-);
+const analysis = await analyzeRequest('分析这份销售数据', llm, { tools: customTools })
 
 // 2. 执行任务
-const result = await executeDynamicTask(
-  '分析这份销售数据',
-  'parent-1',
+const result = await executeDynamicTask('分析这份销售数据', 'parent-1', llm, {
   llm,
-  {
-    llm,
-    audit: auditLogger,
-    parseTools,
-    executeTools,
-    formatResults,
-    maxParallel: 3,
-    onSubTaskStart: async (subTask, subAgentId, ctx) => {
-      console.log(`开始执行: ${subTask.name}`);
-    },
-    onSubTaskComplete: async (subTask, result, ctx) => {
-      console.log(`完成: ${subTask.name}`);
-    },
-  }
-);
+  audit: auditLogger,
+  parseTools,
+  executeTools,
+  formatResults,
+  maxParallel: 3,
+  onSubTaskStart: async (subTask, subAgentId, ctx) => {
+    console.log(`开始执行: ${subTask.name}`)
+  },
+  onSubTaskComplete: async (subTask, result, ctx) => {
+    console.log(`完成: ${subTask.name}`)
+  },
+})
 
 // 3. 展示结果
-console.log(result.finalOutput);
+console.log(result.finalOutput)
 
 // 4. 清理
-cleanupTaskResult(result, 'parent-1');
+cleanupTaskResult(result, 'parent-1')
 ```
 
 ### 自定义工具注入
@@ -411,14 +400,9 @@ const customTools = [
   { name: 'read_file', description: '读取文件', capabilities: ['文件', '表格'] },
   { name: 'python', description: 'Python执行', capabilities: ['分析', '计算'] },
   { name: 'chunk_read', description: '分块读取', capabilities: ['大文件', '分块'] },
-];
+]
 
-const result = await executeDynamicTask(
-  request,
-  parentId,
-  llm,
-  { ...deps, tools: customTools }
-);
+const result = await executeDynamicTask(request, parentId, llm, { ...deps, tools: customTools })
 ```
 
 ## 设计原则

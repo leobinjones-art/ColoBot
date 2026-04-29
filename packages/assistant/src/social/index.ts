@@ -2,4 +2,4 @@
  * 社交管理模块导出
  */
 
-export * from './contact.js';
+export * from './contact.js'

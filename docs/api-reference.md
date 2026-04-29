@@ -63,6 +63,7 @@ Content-Type: application/json
 ```
 
 **响应**:
+
 ```json
 {
   "ok": true
@@ -106,16 +107,16 @@ http://localhost:18792
 
 ## 错误处理
 
-| 状态码 | 说明 |
-|--------|------|
-| 200 | 成功 |
-| 201 | 创建成功 |
-| 204 | 成功（无内容） |
-| 400 | 请求参数错误 |
-| 401 | 未授权 |
-| 404 | 资源不存在 |
-| 429 | 请求过于频繁 |
-| 500 | 服务器内部错误 |
+| 状态码 | 说明           |
+| ------ | -------------- |
+| 200    | 成功           |
+| 201    | 创建成功       |
+| 204    | 成功（无内容） |
+| 400    | 请求参数错误   |
+| 401    | 未授权         |
+| 404    | 资源不存在     |
+| 429    | 请求过于频繁   |
+| 500    | 服务器内部错误 |
 
 ---
 
@@ -131,6 +132,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **响应**:
+
 ```json
 [
   {
@@ -217,12 +219,14 @@ Content-Type: application/json
 ```
 
 **参数说明**:
+
 - `agent_id`: 智能体ID（必需）
 - `session_key`: 会话键（可选，默认为 "default"）
 - `message`: 用户消息（必需）
 - `stream`: 是否流式返回（可选，默认 false）
 
 **响应（非流式）**:
+
 ```json
 {
   "content": "好的，我来帮你写一个函数...",
@@ -252,6 +256,7 @@ Content-Type: application/json
 ```
 
 **响应**:
+
 ```json
 [
   {
@@ -275,9 +280,11 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **参数**:
+
 - `category`: 知识类别（可选，值: `concept`, `template`, `rule`）
 
 **响应**:
+
 ```json
 [
   {
@@ -380,6 +387,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **响应**:
+
 ```json
 [
   {
@@ -432,6 +440,7 @@ Content-Type: application/json
 ```
 
 **响应**:
+
 ```json
 {
   "success": true,
@@ -451,6 +460,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **响应**:
+
 ```json
 [
   {
@@ -510,6 +520,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **参数**:
+
 - `limit`: 返回数量（可选，默认100）
 - `offset`: 偏移量（可选，默认0）
 - `actor_type`: 操作者类型（可选）
@@ -518,6 +529,7 @@ Authorization: Bearer YOUR_API_KEY
 - `end_date`: 结束日期（可选）
 
 **响应**:
+
 ```json
 [
   {
@@ -547,6 +559,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **响应**:
+
 ```json
 {
   "app_id": "cli_xxxxxxxxxxxxxx",
@@ -581,6 +594,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **响应**:
+
 ```json
 {
   "default_ttl_minutes": 60,
@@ -624,6 +638,7 @@ Content-Type: application/json
 ```
 
 **响应**:
+
 ```json
 {
   "results": [
@@ -650,6 +665,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **响应**:
+
 ```json
 [
   {
@@ -718,6 +734,7 @@ GET /health
 ```
 
 **响应**:
+
 ```json
 {
   "status": "ok",
@@ -794,11 +811,11 @@ ws://localhost:18792?agent_id=agent-123&session=session-abc&api_key=YOUR_API_KEY
 
 API请求受速率限制：
 
-| 端点 | 限制 | 时间窗口 |
-|------|------|----------|
-| `/api/login` | 5次 | 60秒 |
-| `/api/chat` | 100次 | 60秒 |
-| 其他端点 | 1000次 | 60秒 |
+| 端点         | 限制   | 时间窗口 |
+| ------------ | ------ | -------- |
+| `/api/login` | 5次    | 60秒     |
+| `/api/chat`  | 100次  | 60秒     |
+| 其他端点     | 1000次 | 60秒     |
 
 超出限制时返回 429 状态码。
 
@@ -815,22 +832,22 @@ try {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ agent_id: 'agent-123', message: 'Hello' })
-  });
+    body: JSON.stringify({ agent_id: 'agent-123', message: 'Hello' }),
+  })
 
   if (!response.ok) {
-    const error = await response.json();
-    console.error('API Error:', error.error);
-    return;
+    const error = await response.json()
+    console.error('API Error:', error.error)
+    return
   }
 
-  const data = await response.json();
-  console.log('Response:', data);
+  const data = await response.json()
+  console.log('Response:', data)
 } catch (error) {
-  console.error('Network Error:', error);
+  console.error('Network Error:', error)
 }
 ```
 
@@ -842,25 +859,25 @@ try {
 const response = await fetch('/api/chat', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     agent_id: 'agent-123',
     message: 'Write a long article',
-    stream: true
-  })
-});
+    stream: true,
+  }),
+})
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
+const reader = response.body.getReader()
+const decoder = new TextDecoder()
 
 while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
+  const { done, value } = await reader.read()
+  if (done) break
 
-  const chunk = decoder.decode(value);
-  console.log('Chunk:', chunk);
+  const chunk = decoder.decode(value)
+  console.log('Chunk:', chunk)
 }
 ```
 
@@ -869,21 +886,23 @@ while (true) {
 使用WebSocket进行实时通信：
 
 ```javascript
-const ws = new WebSocket(`ws://localhost:18792?agent_id=agent-123&api_key=${apiKey}`);
+const ws = new WebSocket(`ws://localhost:18792?agent_id=agent-123&api_key=${apiKey}`)
 
 ws.onopen = () => {
-  console.log('WebSocket connected');
-};
+  console.log('WebSocket connected')
+}
 
 ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  console.log('Received:', message);
-};
+  const message = JSON.parse(event.data)
+  console.log('Received:', message)
+}
 
-ws.send(JSON.stringify({
-  type: 'chat',
-  payload: { message: 'Hello' }
-}));
+ws.send(
+  JSON.stringify({
+    type: 'chat',
+    payload: { message: 'Hello' },
+  }),
+)
 ```
 
 ---
@@ -897,17 +916,17 @@ ColoBot 提供多个 npm 包，可通过编程方式使用：
 核心运行时和工具：
 
 ```typescript
-import { ColoBotRuntimeImpl, InMemoryStore, SQLiteStore } from '@colobot/core';
+import { ColoBotRuntimeImpl, InMemoryStore, SQLiteStore } from '@colobot/core'
 
 // 使用 SQLite 存储
-const store = new SQLiteStore({ path: './data/colobot.db' });
+const store = new SQLiteStore({ path: './data/colobot.db' })
 
 // 创建运行时
 const runtime = new ColoBotRuntimeImpl({
   llm: new OpenAIProvider({ apiKey: 'sk-xxx' }),
   stateStore: new InMemoryStateStore(),
   memoryStore: store,
-});
+})
 ```
 
 ### @colobot/sop-academic
@@ -915,13 +934,13 @@ const runtime = new ColoBotRuntimeImpl({
 SOP 学术研究流程：
 
 ```typescript
-import { createSopEngine, isAcademicIntent } from '@colobot/sop-academic';
+import { createSopEngine, isAcademicIntent } from '@colobot/sop-academic'
 
-const sop = createSopEngine(runtime);
+const sop = createSopEngine(runtime)
 
 if (isAcademicIntent(userMessage)) {
-  const analysis = await sop.analyzeTask(userMessage);
-  const state = await sop.createTask(agentId, sessionKey, analysis);
+  const analysis = await sop.analyzeTask(userMessage)
+  const state = await sop.createTask(agentId, sessionKey, analysis)
 }
 ```
 
@@ -930,7 +949,7 @@ if (isAcademicIntent(userMessage)) {
 类型定义：
 
 ```typescript
-import type { LLMMessage, AgentConfig, MemoryResult } from '@colobot/types';
+import type { LLMMessage, AgentConfig, MemoryResult } from '@colobot/types'
 ```
 
 ---
@@ -940,21 +959,21 @@ import type { LLMMessage, AgentConfig, MemoryResult } from '@colobot/types';
 ### Node.js SDK
 
 ```typescript
-import { ColoBotRuntimeImpl, OpenAIProvider } from '@colobot/core';
+import { ColoBotRuntimeImpl, OpenAIProvider } from '@colobot/core'
 
 const runtime = new ColoBotRuntimeImpl({
   llm: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY }),
   // ...
-});
+})
 
 // 创建 Agent
 const agentId = await runtime.createAgent({
   name: 'my-agent',
   soul: '你是一个助手',
-});
+})
 
 // 对话
-const response = await runtime.runAgent(agentId, '你好');
+const response = await runtime.runAgent(agentId, '你好')
 ```
 
 ### Python SDK（规划中）
@@ -978,10 +997,10 @@ response = agent.run("你好")
 
 ## 版本历史
 
-| 版本 | 日期 | 变更 |
-|------|------|------|
+| 版本   | 日期       | 变更                                  |
+| ------ | ---------- | ------------------------------------- |
 | v0.2.0 | 2026-04-26 | 添加 SQLite 支持、ColoBotRuntime 接口 |
-| v0.1.0 | 2026-04-19 | 初始版本 |
+| v0.1.0 | 2026-04-19 | 初始版本                              |
 
 ---
 

@@ -2,83 +2,83 @@
  * 危险工具：uninstall - 自卸载 ColoBot
  */
 
-import { registerTool } from './executor.js';
-import fs from 'fs';
-import { exec } from 'child_process';
-import path from 'path';
-import os from 'os';
+import { registerTool } from './executor.js'
+import fs from 'fs'
+import { exec } from 'child_process'
+import path from 'path'
+import os from 'os'
 
-const CONFIRM_TOKEN = 'CONFIRM-UNINSTALL';
-const SCRIPT_PATH_MACOS = 'uninstall-macos.sh';
-const SCRIPT_PATH_LINUX = 'uninstall-linux.sh';
+const CONFIRM_TOKEN = 'CONFIRM-UNINSTALL'
+const SCRIPT_PATH_MACOS = 'uninstall-macos.sh'
+const SCRIPT_PATH_LINUX = 'uninstall-linux.sh'
 
 function isConfirmed(message: string): boolean {
-  return message.includes(CONFIRM_TOKEN);
+  return message.includes(CONFIRM_TOKEN)
 }
 
 function getUninstallScriptName(): string {
-  const platform = os.platform();
-  if (platform === 'darwin') return SCRIPT_PATH_MACOS;
-  if (platform === 'linux') return SCRIPT_PATH_LINUX;
-  throw new Error(`Unsupported platform: ${platform}`);
+  const platform = os.platform()
+  if (platform === 'darwin') return SCRIPT_PATH_MACOS
+  if (platform === 'linux') return SCRIPT_PATH_LINUX
+  throw new Error(`Unsupported platform: ${platform}`)
 }
 
 function getUninstallScriptPath(): string {
-  const scriptDir = path.join(os.homedir(), '.colobot');
-  const scriptName = getUninstallScriptName();
-  return path.join(scriptDir, scriptName);
+  const scriptDir = path.join(os.homedir(), '.colobot')
+  const scriptName = getUninstallScriptName()
+  return path.join(scriptDir, scriptName)
 }
 
 function writeScript(): string {
-  const scriptDir = path.join(os.homedir(), '.colobot');
-  const scriptName = getUninstallScriptName();
-  const destPath = path.join(scriptDir, scriptName);
+  const scriptDir = path.join(os.homedir(), '.colobot')
+  const scriptName = getUninstallScriptName()
+  const destPath = path.join(scriptDir, scriptName)
 
   // 确保目录存在
-  fs.mkdirSync(scriptDir, { recursive: true });
+  fs.mkdirSync(scriptDir, { recursive: true })
 
   // 读取 embedded 脚本（通过 import.meta.url）
   // 实际脚本内容直接写入文件
-  const platform = os.platform();
-  const scriptContent = platform === 'darwin' ? MACOS_SCRIPT : LINUX_SCRIPT;
+  const platform = os.platform()
+  const scriptContent = platform === 'darwin' ? MACOS_SCRIPT : LINUX_SCRIPT
 
-  fs.writeFileSync(destPath, scriptContent, 'utf-8');
-  fs.chmodSync(destPath, 0o755);
-  return destPath;
+  fs.writeFileSync(destPath, scriptContent, 'utf-8')
+  fs.chmodSync(destPath, 0o755)
+  return destPath
 }
 
 function triggerUninstall(): void {
-  const scriptPath = writeScript();
+  const scriptPath = writeScript()
 
   // nohup 执行，保证服务端退出后脚本继续运行
-  const cmd = `nohup "${scriptPath}" > /dev/null 2>&1 &`;
-  exec(cmd, { cwd: os.homedir() });
+  const cmd = `nohup "${scriptPath}" > /dev/null 2>&1 &`
+  exec(cmd, { cwd: os.homedir() })
 }
 
 function register() {
   registerTool('uninstall', async (args) => {
-    const { message } = args as { message: string };
+    const { message } = args as { message: string }
 
     if (!isConfirmed(message)) {
       return {
         ok: false,
         triggered: false,
         message: 'Uninstall not confirmed.',
-      };
+      }
     }
 
-    triggerUninstall();
+    triggerUninstall()
 
     return {
       ok: true,
       triggered: true,
       message: 'ColoBot uninstallation started. Goodbye!',
-    };
-  });
+    }
+  })
 }
 
 export function registerTools(): void {
-  register();
+  register()
 }
 
 const MACOS_SCRIPT = `#!/bin/bash
@@ -117,7 +117,7 @@ rm -f "$PREFS_DIR/com.colobot."* 2>/dev/null || true
 rmdir "$HOME/.colobot" 2>/dev/null || true
 
 echo "[ColoBot Uninstall] 卸载完成。"
-`;
+`
 
 const LINUX_SCRIPT = `#!/bin/bash
 set -e
@@ -137,4 +137,4 @@ rmdir "$HOME/.config/colobot" 2>/dev/null || true
 [ -f "$SCRIPT_PATH" ] && rm -f "$SCRIPT_PATH"
 
 echo "[ColoBot Uninstall] 卸载完成。"
-`;
+`

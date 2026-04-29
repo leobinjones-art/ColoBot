@@ -2,4 +2,4 @@
  * Channels - 统一导出
  */
 
-export * from './ws-channel.js';
+export * from './ws-channel.js'

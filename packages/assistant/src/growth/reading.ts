@@ -2,90 +2,119 @@
  * 阅读清单模块
  */
 
-import Database from 'better-sqlite3';
-import { getDb, generateId } from '../db/schema.js';
+import Database from 'better-sqlite3'
+import { getDb, generateId } from '../db/schema.js'
 
-export type ReadingType = 'book' | 'article' | 'paper';
-export type ReadingStatus = 'pending' | 'reading' | 'done';
+export type ReadingType = 'book' | 'article' | 'paper'
+export type ReadingStatus = 'pending' | 'reading' | 'done'
 
 export interface Reading {
-  id: string;
-  userId: string;
-  title: string;
-  author?: string;
-  type: ReadingType;
-  status: ReadingStatus;
-  progress: number; // 0-100
-  note?: string;
-  createdAt: string;
+  id: string
+  userId: string
+  title: string
+  author?: string
+  type: ReadingType
+  status: ReadingStatus
+  progress: number // 0-100
+  note?: string
+  createdAt: string
 }
 
 /**
  * 添加阅读项
  */
-export function addReading(userId: string, title: string, type: ReadingType = 'book', author?: string, db?: Database.Database): Reading {
-  const database = db || getDb();
-  const id = generateId();
-  const now = new Date().toISOString();
+export function addReading(
+  userId: string,
+  title: string,
+  type: ReadingType = 'book',
+  author?: string,
+  db?: Database.Database,
+): Reading {
+  const database = db || getDb()
+  const id = generateId()
+  const now = new Date().toISOString()
 
-  database.prepare(`
+  database
+    .prepare(
+      `
     INSERT INTO assistant_readings (id, user_id, title, author, type, status, progress, created_at)
     VALUES (?, ?, ?, ?, ?, 'pending', 0, ?)
-  `).run(id, userId, title, author || null, type, now);
+  `,
+    )
+    .run(id, userId, title, author || null, type, now)
 
-  return { id, userId, title, author, type, status: 'pending', progress: 0, createdAt: now };
+  return { id, userId, title, author, type, status: 'pending', progress: 0, createdAt: now }
 }
 
 /**
  * 更新阅读进度
  */
-export function updateReadingProgress(id: string, userId: string, progress: number, note?: string, db?: Database.Database): Reading | null {
-  const database = db || getDb();
-  const reading = getReading(id, userId, database);
-  if (!reading) return null;
+export function updateReadingProgress(
+  id: string,
+  userId: string,
+  progress: number,
+  note?: string,
+  db?: Database.Database,
+): Reading | null {
+  const database = db || getDb()
+  const reading = getReading(id, userId, database)
+  if (!reading) return null
 
-  const status = progress >= 100 ? 'done' : progress > 0 ? 'reading' : 'pending';
+  const status = progress >= 100 ? 'done' : progress > 0 ? 'reading' : 'pending'
 
-  database.prepare(`
+  database
+    .prepare(
+      `
     UPDATE assistant_readings SET progress = ?, status = ?, note = ? WHERE id = ? AND user_id = ?
-  `).run(progress, status, note || reading.note, id, userId);
+  `,
+    )
+    .run(progress, status, note || reading.note, id, userId)
 
-  return getReading(id, userId, database);
+  return getReading(id, userId, database)
 }
 
 /**
  * 获取阅读项
  */
 export function getReading(id: string, userId: string, db?: Database.Database): Reading | null {
-  const database = db || getDb();
-  const row = database.prepare(`SELECT * FROM assistant_readings WHERE id = ? AND user_id = ?`).get(id, userId) as any;
-  return row ? rowToReading(row) : null;
+  const database = db || getDb()
+  const row = database
+    .prepare(`SELECT * FROM assistant_readings WHERE id = ? AND user_id = ?`)
+    .get(id, userId) as any
+  return row ? rowToReading(row) : null
 }
 
 /**
  * 列出阅读项
  */
-export function listReadings(userId: string, status?: ReadingStatus, db?: Database.Database): Reading[] {
-  const database = db || getDb();
-  let sql = `SELECT * FROM assistant_readings WHERE user_id = ?`;
-  const values: any[] = [userId];
+export function listReadings(
+  userId: string,
+  status?: ReadingStatus,
+  db?: Database.Database,
+): Reading[] {
+  const database = db || getDb()
+  let sql = `SELECT * FROM assistant_readings WHERE user_id = ?`
+  const values: any[] = [userId]
 
   if (status) {
-    sql += ` AND status = ?`;
-    values.push(status);
+    sql += ` AND status = ?`
+    values.push(status)
   }
 
-  sql += ` ORDER BY created_at DESC`;
-  const rows = database.prepare(sql).all(...values) as any[];
-  return rows.map(rowToReading);
+  sql += ` ORDER BY created_at DESC`
+  const rows = database.prepare(sql).all(...values) as any[]
+  return rows.map(rowToReading)
 }
 
 /**
  * 删除阅读项
  */
 export function deleteReading(id: string, userId: string, db?: Database.Database): boolean {
-  const database = db || getDb();
-  return database.prepare(`DELETE FROM assistant_readings WHERE id = ? AND user_id = ?`).run(id, userId).changes > 0;
+  const database = db || getDb()
+  return (
+    database.prepare(`DELETE FROM assistant_readings WHERE id = ? AND user_id = ?`).run(id, userId)
+      .changes > 0
+  )
 }
 
 function rowToReading(row: any): Reading {
@@ -99,5 +128,5 @@ function rowToReading(row: any): Reading {
     progress: row.progress,
     note: row.note || undefined,
     createdAt: row.created_at,
-  };
+  }
 }

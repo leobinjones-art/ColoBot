@@ -1,26 +1,26 @@
 /**
  * User Profile Extended 测试
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock database
 vi.mock('../memory/db.js', () => ({
   query: vi.fn(async () => []),
   queryOne: vi.fn(async () => null),
-}));
+}))
 
 // Mock vector
 vi.mock('../memory/vector.js', () => ({
   addMemory: vi.fn(async () => {}),
   searchMemory: vi.fn(async () => []),
-}));
+}))
 
-import { query, queryOne } from '../memory/db.js';
+import { query, queryOne } from '../memory/db.js'
 
 describe('User Profile Extended', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   describe('getUserProfile with full data', () => {
     it('should return complete profile', async () => {
@@ -42,22 +42,22 @@ describe('User Profile Extended', () => {
         current_projects: '["Project A"]',
         created_at: '2024-01-01',
         updated_at: '2024-01-01',
-      });
+      })
 
-      const { getUserProfile } = await import('../services/user-profile.js');
-      const profile = await getUserProfile('agent-1');
+      const { getUserProfile } = await import('../services/user-profile.js')
+      const profile = await getUserProfile('agent-1')
 
-      expect(profile).not.toBeNull();
-      expect(profile?.name).toBe('Test User');
-      expect(profile?.role).toBe('researcher');
-    });
-  });
+      expect(profile).not.toBeNull()
+      expect(profile?.name).toBe('Test User')
+      expect(profile?.role).toBe('researcher')
+    })
+  })
 
   describe('upsertUserProfile with all fields', () => {
     it('should upsert complete profile', async () => {
-      vi.mocked(query).mockResolvedValueOnce([]);
+      vi.mocked(query).mockResolvedValueOnce([])
 
-      const { upsertUserProfile } = await import('../services/user-profile.js');
+      const { upsertUserProfile } = await import('../services/user-profile.js')
       await upsertUserProfile('agent-1', {
         name: 'New User',
         role: 'student',
@@ -72,15 +72,15 @@ describe('User Profile Extended', () => {
         preferred_language: 'en',
         goals: ['Learn ML'],
         current_projects: [],
-      });
+      })
 
-      expect(query).toHaveBeenCalled();
-    });
-  });
+      expect(query).toHaveBeenCalled()
+    })
+  })
 
   describe('buildProfilePrompt with full profile', () => {
     it('should build detailed prompt', async () => {
-      const { buildProfilePrompt } = await import('../services/user-profile.js');
+      const { buildProfilePrompt } = await import('../services/user-profile.js')
       const prompt = buildProfilePrompt({
         id: 'profile-1',
         agent_id: 'agent-1',
@@ -99,9 +99,9 @@ describe('User Profile Extended', () => {
         current_projects: ['Project X'],
         created_at: '2024-01-01',
         updated_at: '2024-01-01',
-      });
+      })
 
-      expect(prompt).toContain('开发者');
-    });
-  });
-});
+      expect(prompt).toContain('开发者')
+    })
+  })
+})

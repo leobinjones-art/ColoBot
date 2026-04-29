@@ -1,37 +1,37 @@
 /**
  * 记忆工具
  */
-import { searchMemory, hybridSearch } from '../../memory/vector.js';
-import { registerTool } from './executor.js';
+import { searchMemory, hybridSearch } from '../../memory/vector.js'
+import { registerTool } from './executor.js'
 
 export function registerTools(): void {
   registerTool('search_memory', async (args) => {
-    const { agent_id, query, top_k } = args as { agent_id: string; query: string; top_k?: number };
-    return hybridSearch(agent_id, query, top_k ?? 5);
-  });
+    const { agent_id, query, top_k } = args as { agent_id: string; query: string; top_k?: number }
+    return hybridSearch(agent_id, query, top_k ?? 5)
+  })
 
   registerTool('add_memory', async (args) => {
     const { agent_id, key, value, metadata } = args as {
-      agent_id: string;
-      key: string;
-      value: string;
-      metadata?: Record<string, unknown>;
-    };
+      agent_id: string
+      key: string
+      value: string
+      metadata?: Record<string, unknown>
+    }
     // 使用安全写入（AI 生成内容 = 中信任度）
-    const { safeAddMemory } = await import('../../services/safe-write.js');
+    const { safeAddMemory } = await import('../../services/safe-write.js')
     const result = await safeAddMemory(agent_id, key, value, metadata ?? {}, {
       type: 'ai_generated',
       timestamp: new Date().toISOString(),
-    });
+    })
     if (!result.success) {
-      return { ok: false, error: result.reason };
+      return { ok: false, error: result.reason }
     }
-    return { ok: true };
-  });
+    return { ok: true }
+  })
 
   registerTool('list_memory', async (args) => {
-    const { agent_id } = args as { agent_id: string };
-    const { listMemory } = await import('../../memory/vector.js');
-    return listMemory(agent_id);
-  });
+    const { agent_id } = args as { agent_id: string }
+    const { listMemory } = await import('../../memory/vector.js')
+    return listMemory(agent_id)
+  })
 }

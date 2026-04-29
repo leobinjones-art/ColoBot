@@ -8,13 +8,13 @@
 
 ## MiniMax 特有工具
 
-| 工具 | 说明 | API |
-|------|------|-----|
-| 🎙️ 语音合成 (TTS) | 文本转语音，支持多种音色 | `minimax_tts` |
-| 🎧 语音识别 (ASR) | 语音转文本，支持多语言 | `minimax_asr` |
-| 🖼️ 文生图 | 文本生成图片 | `minimax_image_gen` |
-| 🎵 音乐生成 | 文本生成音乐 | `minimax_music_gen` |
-| 🎬 视频生成 | 文本/图片生成视频 | `minimax_video_gen` |
+| 工具              | 说明                     | API                 |
+| ----------------- | ------------------------ | ------------------- |
+| 🎙️ 语音合成 (TTS) | 文本转语音，支持多种音色 | `minimax_tts`       |
+| 🎧 语音识别 (ASR) | 语音转文本，支持多语言   | `minimax_asr`       |
+| 🖼️ 文生图         | 文本生成图片             | `minimax_image_gen` |
+| 🎵 音乐生成       | 文本生成音乐             | `minimax_music_gen` |
+| 🎬 视频生成       | 文本/图片生成视频        | `minimax_video_gen` |
 
 ## 安装
 
@@ -33,7 +33,7 @@ import { registerMiniMaxTools } from '@colobot/tools-minimax'
 // 注册所有 MiniMax 工具
 registerMiniMaxTools({
   apiKey: process.env.MINIMAX_API_KEY,
-  groupId: process.env.MINIMAX_GROUP_ID
+  groupId: process.env.MINIMAX_GROUP_ID,
 })
 ```
 
@@ -43,7 +43,7 @@ registerMiniMaxTools({
 // 在对话中使用
 const response = await agent.processMessage({
   text: '用 MiniMax 语音朗读这段话：你好世界',
-  tools: ['minimax_tts']
+  tools: ['minimax_tts'],
 })
 
 // 直接调用
@@ -51,8 +51,8 @@ import { textToSpeech } from '@colobot/tools-minimax'
 
 const audioBuffer = await textToSpeech({
   text: '你好，欢迎使用 ColoBot',
-  voiceId: 'female-tianmei',  // 音色
-  model: 'speech-01'          // 模型
+  voiceId: 'female-tianmei', // 音色
+  model: 'speech-01', // 模型
 })
 
 // 保存音频文件
@@ -67,7 +67,7 @@ import { speechToText } from '@colobot/tools-minimax'
 // 从音频文件识别
 const text = await speechToText({
   audioPath: './recording.mp3',
-  language: 'zh'
+  language: 'zh',
 })
 
 console.log('识别结果:', text)
@@ -82,7 +82,7 @@ const images = await generateImage({
   prompt: '一只可爱的猫咪在阳光下打盹',
   model: 'image-01',
   size: '1024x1024',
-  n: 1
+  n: 1,
 })
 
 // images[0].url 或 images[0].base64
@@ -95,8 +95,8 @@ import { generateMusic } from '@colobot/tools-minimax'
 
 const music = await generateMusic({
   prompt: '轻快的电子音乐，适合运动',
-  duration: 30,  // 秒
-  style: 'electronic'
+  duration: 30, // 秒
+  style: 'electronic',
 })
 
 fs.writeFileSync('music.mp3', music.buffer)
@@ -110,8 +110,8 @@ import { generateVideo } from '@colobot/tools-minimax'
 const video = await generateVideo({
   prompt: '海边日落，海浪轻轻拍打沙滩',
   model: 'video-01',
-  duration: 5,  // 秒
-  aspectRatio: '16:9'
+  duration: 5, // 秒
+  aspectRatio: '16:9',
 })
 ```
 
@@ -258,14 +258,14 @@ const video = await generateVideo({
 
 ## 支持的音色
 
-| 音色 ID | 名称 | 风格 |
-|---------|------|------|
-| `female-tianmei` | 甜美女声 | 温柔、甜美 |
-| `male-qn-qingse` | 青涩男声 | 年轻、清澈 |
-| `female-shaonv` | 少女音 | 活泼、可爱 |
-| `presenter_male` | 男主持 | 专业、稳重 |
-| `presenter_female` | 女主持 | 专业、大方 |
-| `audiobook_male_1` | 有声书男声 | 沉稳、讲故事 |
+| 音色 ID              | 名称       | 风格         |
+| -------------------- | ---------- | ------------ |
+| `female-tianmei`     | 甜美女声   | 温柔、甜美   |
+| `male-qn-qingse`     | 青涩男声   | 年轻、清澈   |
+| `female-shaonv`      | 少女音     | 活泼、可爱   |
+| `presenter_male`     | 男主持     | 专业、稳重   |
+| `presenter_female`   | 女主持     | 专业、大方   |
+| `audiobook_male_1`   | 有声书男声 | 沉稳、讲故事 |
 | `audiobook_female_1` | 有声书女声 | 温柔、讲故事 |
 
 ## API
@@ -389,7 +389,7 @@ packages/tools-minimax/
 {
   "dependencies": {
     "@colobot/core": "^0.1.0",
-    "form-data": "^4.0.0"     // 文件上传
+    "form-data": "^4.0.0" // 文件上传
   }
 }
 ```
@@ -424,23 +424,23 @@ packages/tools-minimax/
 
 ## 与其他工具对比
 
-| 功能 | OpenAI | MiniMax | 说明 |
-|------|--------|---------|------|
-| TTS | ✅ | ✅ | MiniMax 音色更丰富 |
-| ASR | ✅ | ✅ | MiniMax 中文识别更准 |
-| 文生图 | ✅ (DALL-E) | ✅ | 风格不同 |
-| 音乐生成 | ❌ | ✅ | MiniMax 独有 |
-| 视频生成 | ❌ | ✅ | MiniMax 独有 |
+| 功能     | OpenAI      | MiniMax | 说明                 |
+| -------- | ----------- | ------- | -------------------- |
+| TTS      | ✅          | ✅      | MiniMax 音色更丰富   |
+| ASR      | ✅          | ✅      | MiniMax 中文识别更准 |
+| 文生图   | ✅ (DALL-E) | ✅      | 风格不同             |
+| 音乐生成 | ❌          | ✅      | MiniMax 独有         |
+| 视频生成 | ❌          | ✅      | MiniMax 独有         |
 
 ## 开发计划
 
-| 阶段 | 功能 | 时间 |
-|------|------|------|
-| Phase 1 | TTS + ASR | 1 天 |
-| Phase 2 | 文生图 | 1 天 |
-| Phase 3 | 音乐 + 视频生成 | 1 天 |
-| Phase 4 | 工具注册 + Dashboard 集成 | 1 天 |
-| **总计** | | **4 天** |
+| 阶段     | 功能                      | 时间     |
+| -------- | ------------------------- | -------- |
+| Phase 1  | TTS + ASR                 | 1 天     |
+| Phase 2  | 文生图                    | 1 天     |
+| Phase 3  | 音乐 + 视频生成           | 1 天     |
+| Phase 4  | 工具注册 + Dashboard 集成 | 1 天     |
+| **总计** |                           | **4 天** |
 
 ## 与其他包的关系
 

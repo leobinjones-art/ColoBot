@@ -6,55 +6,58 @@
  * 2. LLM 意图识别（低置信度时调用）
  */
 
-import type { LLMMessage } from '@colobot/types';
+import type { LLMMessage } from '@colobot/types'
 
 // LLM 函数类型（避免直接依赖 core）
-type LLMChatFunction = (messages: LLMMessage[], options?: { temperature?: number; maxTokens?: number }) => Promise<{ content: string }>;
+type LLMChatFunction = (
+  messages: LLMMessage[],
+  options?: { temperature?: number; maxTokens?: number },
+) => Promise<{ content: string }>
 
 // LLM 实例注入
-let llmChat: LLMChatFunction | null = null;
+let llmChat: LLMChatFunction | null = null
 
 /**
  * 设置 LLM 实例（由外部注入）
  */
 export function setLLMChat(fn: LLMChatFunction): void {
-  llmChat = fn;
+  llmChat = fn
 }
 
 /**
  * 获取 LLM 实例
  */
 export function getLLMChat(): LLMChatFunction | null {
-  return llmChat;
+  return llmChat
 }
 
 export type IntentType =
-  | 'todo.add'      // 添加待办
-  | 'todo.list'     // 列出待办
+  | 'todo.add' // 添加待办
+  | 'todo.list' // 列出待办
   | 'todo.complete' // 完成待办
-  | 'reminder.add'  // 添加提醒
+  | 'reminder.add' // 添加提醒
   | 'reminder.list' // 列出提醒
-  | 'note.add'      // 添加笔记
-  | 'note.search'   // 搜索笔记
-  | 'schedule.add'  // 添加日程
+  | 'note.add' // 添加笔记
+  | 'note.search' // 搜索笔记
+  | 'schedule.add' // 添加日程
   | 'schedule.list' // 查看日程
-  | 'habit.check'   // 习惯打卡
-  | 'mood.log'      // 记录心情
-  | 'finance.log'   // 记录收支
-  | 'unknown';      // 未知意图
+  | 'habit.check' // 习惯打卡
+  | 'mood.log' // 记录心情
+  | 'finance.log' // 记录收支
+  | 'unknown' // 未知意图
 
 export interface Intent {
-  type: IntentType;
-  confidence: number;
-  slots: Record<string, string>;
-  raw: string;
+  type: IntentType
+  confidence: number
+  slots: Record<string, string>
+  raw: string
 }
 
 // 意图模式
 const INTENT_PATTERNS: Array<{
-  type: IntentType;
-  patterns: RegExp[];
-  slots?: string[];
+  type: IntentType
+  patterns: RegExp[]
+  slots?: string[]
 }> = [
   // 待办
   {
@@ -126,7 +129,7 @@ const INTENT_PATTERNS: Array<{
     patterns: [/记录.*收支|记账|花费|支出|收入/i],
     slots: ['type', 'amount', 'category'],
   },
-];
+]
 
 // 槽位提取模式
 const SLOT_PATTERNS: Record<string, RegExp[]> = {
@@ -138,32 +141,32 @@ const SLOT_PATTERNS: Record<string, RegExp[]> = {
   mood: [/(开心|高兴|难过|伤心|愤怒|焦虑|平静|一般)/],
   amount: [/(\d+(?:\.\d+)?)\s*(?:元|块|￥|\$)/],
   category: [/(?:分类|类别)[:：]\s*(.+)/],
-};
+}
 
 /**
  * 解析意图（规则匹配）
  */
 export function parseIntent(text: string): Intent {
-  const normalized = text.trim();
+  const normalized = text.trim()
 
   for (const { type, patterns, slots = [] } of INTENT_PATTERNS) {
     for (const pattern of patterns) {
       if (pattern.test(normalized)) {
-        const extractedSlots = extractSlots(normalized, slots);
+        const extractedSlots = extractSlots(normalized, slots)
         return {
           type,
           confidence: 0.9,
           slots: extractedSlots,
           raw: text,
-        };
+        }
       }
     }
   }
 
   // 尝试从内容推断
-  const inferred = inferFromContent(normalized);
+  const inferred = inferFromContent(normalized)
   if (inferred) {
-    return inferred;
+    return inferred
   }
 
   return {
@@ -171,7 +174,7 @@ export function parseIntent(text: string): Intent {
     confidence: 0,
     slots: {},
     raw: text,
-  };
+  }
 }
 
 /**
@@ -179,34 +182,34 @@ export function parseIntent(text: string): Intent {
  */
 export async function parseIntentWithLLM(text: string): Promise<Intent> {
   // 1. 先尝试规则匹配
-  const ruleResult = parseIntent(text);
+  const ruleResult = parseIntent(text)
 
   // 高置信度直接返回
   if (ruleResult.confidence >= 0.85) {
-    return ruleResult;
+    return ruleResult
   }
 
   // 2. LLM 意图识别
   if (llmChat) {
     try {
-      const llmResult = await parseIntentByLLM(text);
+      const llmResult = await parseIntentByLLM(text)
       if (llmResult && llmResult.confidence > ruleResult.confidence) {
-        return llmResult;
+        return llmResult
       }
     } catch (e) {
-      console.warn('[Intent] LLM parse failed:', (e as Error).message);
+      console.warn('[Intent] LLM parse failed:', (e as Error).message)
     }
   }
 
   // 3. 返回规则结果（即使是 unknown）
-  return ruleResult;
+  return ruleResult
 }
 
 /**
  * LLM 意图识别
  */
 async function parseIntentByLLM(text: string): Promise<Intent | null> {
-  if (!llmChat) return null;
+  if (!llmChat) return null
 
   const prompt = `你是一个意图识别助手。分析用户输入，识别意图并提取关键信息。
 
@@ -234,27 +237,27 @@ async function parseIntentByLLM(text: string): Promise<Intent | null> {
   "slots": { "key": "value" }
 }
 
-只返回 JSON，不要其他内容。`;
+只返回 JSON，不要其他内容。`
 
   try {
     const response = await llmChat([{ role: 'user', content: prompt }], {
       temperature: 0.1,
       maxTokens: 256,
-    });
+    })
 
-    const content = typeof response.content === 'string' ? response.content : '';
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
+    const content = typeof response.content === 'string' ? response.content : ''
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return null
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0])
     return {
       type: parsed.type as IntentType,
       confidence: parsed.confidence ?? 0.5,
       slots: parsed.slots ?? {},
       raw: text,
-    };
+    }
   } catch (e) {
-    return null;
+    return null
   }
 }
 
@@ -262,20 +265,20 @@ async function parseIntentByLLM(text: string): Promise<Intent | null> {
  * 提取槽位
  */
 function extractSlots(text: string, slotNames: string[]): Record<string, string> {
-  const slots: Record<string, string> = {};
+  const slots: Record<string, string> = {}
 
   for (const name of slotNames) {
-    const patterns = SLOT_PATTERNS[name] || [];
+    const patterns = SLOT_PATTERNS[name] || []
     for (const pattern of patterns) {
-      const match = text.match(pattern);
+      const match = text.match(pattern)
       if (match) {
-        slots[name] = match[1] || match[0];
-        break;
+        slots[name] = match[1] || match[0]
+        break
       }
     }
   }
 
-  return slots;
+  return slots
 }
 
 /**
@@ -289,7 +292,7 @@ function inferFromContent(text: string): Intent | null {
       confidence: 0.8,
       slots: { title: text.replace(/提醒我|记得|别忘了/g, '').trim() },
       raw: text,
-    };
+    }
   }
 
   // 动作关键词 -> 待办
@@ -299,38 +302,38 @@ function inferFromContent(text: string): Intent | null {
       confidence: 0.7,
       slots: { title: text },
       raw: text,
-    };
+    }
   }
 
-  return null;
+  return null
 }
 
 /**
  * 意图到动作映射
  */
 export interface IntentAction {
-  type: IntentType;
-  handler: (intent: Intent) => Promise<string>;
+  type: IntentType
+  handler: (intent: Intent) => Promise<string>
 }
 
 /**
  * 创建意图处理器
  */
 export function createIntentHandler(
-  handlers: Partial<Record<IntentType, (intent: Intent) => Promise<string>>>
+  handlers: Partial<Record<IntentType, (intent: Intent) => Promise<string>>>,
 ): (text: string) => Promise<string> {
   return async (text: string) => {
-    const intent = parseIntent(text);
-    const handler = handlers[intent.type];
+    const intent = parseIntent(text)
+    const handler = handlers[intent.type]
 
     if (handler) {
-      return handler(intent);
+      return handler(intent)
     }
 
     return `抱歉，我还不能处理这个请求。你可以尝试：
 - 添加待办：记一下明天开会
 - 查看待办：列出我的待办
 - 设置提醒：提醒我下午3点开会
-- 记录心情：今天心情不错`;
-  };
+- 记录心情：今天心情不错`
+  }
 }

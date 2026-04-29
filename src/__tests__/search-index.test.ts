@@ -1,7 +1,7 @@
 /**
  * Search Index 测试
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock searxng
 vi.mock('../search/searxng.js', () => ({
@@ -11,19 +11,19 @@ vi.mock('../search/searxng.js', () => ({
       { title: 'Result 2', url: 'https://example.com/2', snippet: 'Snippet 2' },
     ],
   })),
-}));
+}))
 
 describe('Search Index', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   describe('search', () => {
     it('should search and return results', async () => {
-      const { search } = await import('../search/index.js');
-      const result = await search('test query');
+      const { search } = await import('../search/index.js')
+      const result = await search('test query')
 
-      expect(result).toBeDefined();
-    });
-  });
-});
+      expect(result).toBeDefined()
+    })
+  })
+})

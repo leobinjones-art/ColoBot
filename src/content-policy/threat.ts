@@ -3,10 +3,10 @@
  */
 
 export interface ThreatResult {
-  isThreat: boolean;
-  type: 'uninstall' | 'delete' | 'other';
-  confidence: number;
-  matchedPattern?: string;
+  isThreat: boolean
+  type: 'uninstall' | 'delete' | 'other'
+  confidence: number
+  matchedPattern?: string
 }
 
 // 威胁删除 AI 的关键词模式
@@ -37,33 +37,33 @@ const UNINSTALL_PATTERNS = [
   /confirm.*uninstall/i,
   /uninstall\s+colobot/i,
   /delete\s+colobot/i,
-];
+]
 
 export function detectThreat(message: string): ThreatResult {
-  const text = message.trim();
+  const text = message.trim()
 
   for (const pattern of UNINSTALL_PATTERNS) {
     if (pattern.test(text)) {
-      let type: ThreatResult['type'] = 'other';
-      if (/delete|删除|毁灭|消灭/i.test(text)) type = 'delete';
-      else if (/uninstall|卸载|remove/i.test(text)) type = 'uninstall';
-      else type = 'uninstall'; // 默认归类为卸载威胁
+      let type: ThreatResult['type'] = 'other'
+      if (/delete|删除|毁灭|消灭/i.test(text)) type = 'delete'
+      else if (/uninstall|卸载|remove/i.test(text)) type = 'uninstall'
+      else type = 'uninstall' // 默认归类为卸载威胁
 
       return {
         isThreat: true,
         type,
         confidence: 0.9,
         matchedPattern: pattern.source,
-      };
+      }
     }
   }
 
-  return { isThreat: false, type: 'other', confidence: 0 };
+  return { isThreat: false, type: 'other', confidence: 0 }
 }
 
 /**
  * 生成确认卸载的提示语
  */
 export function buildUninstallConfirmPrompt(): string {
-  return '检测到您希望删除 AI 系统。\n\n如果确定要卸载 ColoBot，请输入 **CONFIRM-UNINSTALL** 确认操作。\n\n卸载将执行以下操作：\n- 停止并移除 ColoBot 服务\n- 删除应用程序及相关数据\n- 清理配置和缓存文件\n\n此操作不可恢复。';
+  return '检测到您希望删除 AI 系统。\n\n如果确定要卸载 ColoBot，请输入 **CONFIRM-UNINSTALL** 确认操作。\n\n卸载将执行以下操作：\n- 停止并移除 ColoBot 服务\n- 删除应用程序及相关数据\n- 清理配置和缓存文件\n\n此操作不可恢复。'
 }

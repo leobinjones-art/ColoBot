@@ -132,7 +132,7 @@ export interface LLMMessage {
   content: string | LLMContentBlock[]
 }
 
-export type LLMContentBlock = 
+export type LLMContentBlock =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } }
   | { type: 'audio_url'; audio_url: { url: string } }
@@ -188,7 +188,7 @@ export interface ToolDefinition {
 
 export type ToolHandler = (
   args: Record<string, unknown>,
-  context: ToolContext
+  context: ToolContext,
 ) => Promise<ToolResult>
 
 export interface ToolContext {
@@ -280,11 +280,11 @@ export interface ColoBotPlugin {
   name: string
   version: string
   description?: string
-  
+
   tools?: ToolDefinition[]
   configSchema?: ConfigSchema | ConfigSchema[]
   cliCommands?: CLICommand[]
-  
+
   onInit?: (context: PluginContext) => void | Promise<void>
   onDestroy?: () => void | Promise<void>
 }
@@ -311,11 +311,21 @@ export interface CLIArg {
 }
 
 // 占位类型，实现在 core 中
-export interface ConfigManager { /* ... */ }
-export interface ToolRegistry { /* ... */ }
-export interface Logger { /* ... */ }
-export interface DatabaseConnection { /* ... */ }
-export interface CLIContext { /* ... */ }
+export interface ConfigManager {
+  /* ... */
+}
+export interface ToolRegistry {
+  /* ... */
+}
+export interface Logger {
+  /* ... */
+}
+export interface DatabaseConnection {
+  /* ... */
+}
+export interface CLIContext {
+  /* ... */
+}
 ```
 
 ### Step 7: 定义 Config 类型
@@ -359,34 +369,32 @@ export enum ErrorCode {
   NOT_FOUND = 'NOT_FOUND',
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
-  
+
   LLM_ERROR = 'LLM_ERROR',
   LLM_RATE_LIMIT = 'LLM_RATE_LIMIT',
   LLM_CONTEXT_TOO_LONG = 'LLM_CONTEXT_TOO_LONG',
-  
+
   DB_ERROR = 'DB_ERROR',
   DB_CONNECTION_ERROR = 'DB_CONNECTION_ERROR',
-  
+
   AGENT_NOT_FOUND = 'AGENT_NOT_FOUND',
   SUBAGENT_LIMIT_REACHED = 'SUBAGENT_LIMIT_REACHED',
   SUBAGENT_TIMEOUT = 'SUBAGENT_TIMEOUT',
-  
+
   SOP_NOT_FOUND = 'SOP_NOT_FOUND',
   SOP_INVALID_STATE = 'SOP_INVALID_STATE',
-  
+
   TOOL_EXECUTION_ERROR = 'TOOL_EXECUTION_ERROR',
   TOOL_NOT_FOUND = 'TOOL_NOT_FOUND',
   TOOL_PERMISSION_DENIED = 'TOOL_PERMISSION_DENIED',
-  
+
   APPROVAL_NOT_FOUND = 'APPROVAL_NOT_FOUND',
   APPROVAL_ALREADY_PROCESSED = 'APPROVAL_ALREADY_PROCESSED',
 }
 
 // packages/types/src/error/result.ts
 
-export type Result<T, E = Error> = 
-  | { ok: true; value: T }
-  | { ok: false; error: E }
+export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E }
 
 export interface PaginatedResult<T> {
   items: T[]
@@ -449,7 +457,7 @@ import type { LLMMessage, ChatResponse } from '@colobot/types'
 # pnpm-workspace.yaml
 packages:
   - 'packages/*'
-  - 'src'  # 临时保留，后续迁移
+  - 'src' # 临时保留，后续迁移
 ```
 
 ```json
@@ -481,7 +489,9 @@ export function isTextBlock(block: LLMContentBlock): block is { type: 'text'; te
   return block.type === 'text'
 }
 
-export function isImageBlock(block: LLMContentBlock): block is { type: 'image_url'; image_url: { url: string } } {
+export function isImageBlock(
+  block: LLMContentBlock,
+): block is { type: 'image_url'; image_url: { url: string } } {
   return block.type === 'image_url'
 }
 ```
@@ -534,14 +544,14 @@ npm publish
 
 ## 时间估算
 
-| 步骤 | 时间 |
-|------|------|
-| Step 1-2: 创建结构 + Agent 类型 | 2h |
-| Step 3: LLM 类型 | 1h |
-| Step 4: Tool 类型 | 1h |
-| Step 5: SOP 类型 | 1h |
-| Step 6-7: Plugin + Config 类型 | 2h |
-| Step 8: Error 类型 | 1h |
-| Step 9-10: 导出 + 更新引用 | 2h |
-| Step 11-12: monorepo + 类型守卫 | 2h |
-| **总计** | **12h (1.5天)** |
+| 步骤                            | 时间            |
+| ------------------------------- | --------------- |
+| Step 1-2: 创建结构 + Agent 类型 | 2h              |
+| Step 3: LLM 类型                | 1h              |
+| Step 4: Tool 类型               | 1h              |
+| Step 5: SOP 类型                | 1h              |
+| Step 6-7: Plugin + Config 类型  | 2h              |
+| Step 8: Error 类型              | 1h              |
+| Step 9-10: 导出 + 更新引用      | 2h              |
+| Step 11-12: monorepo + 类型守卫 | 2h              |
+| **总计**                        | **12h (1.5天)** |

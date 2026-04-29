@@ -8,13 +8,13 @@
 
 ### 核心功能
 
-| 功能 | 说明 |
-|------|------|
+| 功能        | 说明                              |
+| ----------- | --------------------------------- |
 | 💬 对话模式 | 与 Agent 实时对话，支持多轮上下文 |
-| 📋 SOP 流程 | 终端内执行学术研究 SOP 流程 |
-| 🔧 配置管理 | 查看和修改配置 |
-| 📊 任务列表 | 查看进行中的 SOP 任务 |
-| 🔍 搜索记忆 | 搜索历史对话和知识库 |
+| 📋 SOP 流程 | 终端内执行学术研究 SOP 流程       |
+| 🔧 配置管理 | 查看和修改配置                    |
+| 📊 任务列表 | 查看进行中的 SOP 任务             |
+| 🔍 搜索记忆 | 搜索历史对话和知识库              |
 
 ### 界面布局
 
@@ -78,19 +78,19 @@
 
 按 `Tab` 进入命令模式，支持以下命令：
 
-| 命令 | 说明 |
-|------|------|
-| `/help` | 显示帮助信息 |
-| `/new` | 开始新对话 |
-| `/sop` | 查看 SOP 任务列表 |
-| `/sop resume <id>` | 恢复 SOP 任务 |
-| `/sop cancel` | 取消当前 SOP |
-| `/config` | 查看配置 |
-| `/config set <key> <value>` | 修改配置 |
-| `/search <query>` | 搜索记忆 |
-| `/export` | 导出对话历史 |
-| `/clear` | 清屏 |
-| `/quit` | 退出 |
+| 命令                        | 说明              |
+| --------------------------- | ----------------- |
+| `/help`                     | 显示帮助信息      |
+| `/new`                      | 开始新对话        |
+| `/sop`                      | 查看 SOP 任务列表 |
+| `/sop resume <id>`          | 恢复 SOP 任务     |
+| `/sop cancel`               | 取消当前 SOP      |
+| `/config`                   | 查看配置          |
+| `/config set <key> <value>` | 修改配置          |
+| `/search <query>`           | 搜索记忆          |
+| `/export`                   | 导出对话历史      |
+| `/clear`                    | 清屏              |
+| `/quit`                     | 退出              |
 
 ## 安装使用
 
@@ -135,10 +135,10 @@ npx colobot-tui --agent my-agent
 {
   "dependencies": {
     "@colobot/core": "^0.1.0",
-    "ink": "^4.4.1",           // React for CLI
+    "ink": "^4.4.1", // React for CLI
     "react": "^18.2.0",
-    "chalk": "^5.3.0",         // 终端颜色
-    "blessed": "^0.1.81"       // 终端 UI（备选）
+    "chalk": "^5.3.0", // 终端颜色
+    "blessed": "^0.1.81" // 终端 UI（备选）
   }
 }
 ```
@@ -223,7 +223,7 @@ export function Chat({ agentId, onSopStart }: Props) {
 
   const handleSend = async () => {
     if (!input.trim()) return
-    
+
     const userMsg = { role: 'user', content: input }
     setMessages(prev => [...prev, userMsg])
     setInput('')
@@ -257,17 +257,17 @@ export function Chat({ agentId, onSopStart }: Props) {
 
 ## 快捷键
 
-| 快捷键 | 功能 |
-|--------|------|
-| `Enter` | 发送消息 |
-| `Tab` | 切换命令模式 |
-| `Ctrl+C` | 退出程序 |
-| `Ctrl+L` | 清屏 |
-| `Ctrl+P` | 暂停 SOP |
-| `Ctrl+R` | 重启当前步骤 |
-| `Ctrl+S` | 跳过当前步骤 |
+| 快捷键    | 功能         |
+| --------- | ------------ |
+| `Enter`   | 发送消息     |
+| `Tab`     | 切换命令模式 |
+| `Ctrl+C`  | 退出程序     |
+| `Ctrl+L`  | 清屏         |
+| `Ctrl+P`  | 暂停 SOP     |
+| `Ctrl+R`  | 重启当前步骤 |
+| `Ctrl+S`  | 跳过当前步骤 |
 | `↑` / `↓` | 浏览历史消息 |
-| `Esc` | 取消当前输入 |
+| `Esc`     | 取消当前输入 |
 
 ## 与其他包的关系
 
@@ -286,22 +286,22 @@ export function Chat({ agentId, onSopStart }: Props) {
 
 ## 与 Dashboard 对比
 
-| 特性 | TUI | Dashboard |
-|------|-----|-----------|
-| 运行环境 | 终端 | 浏览器 |
-| 依赖 | 无 | 无 |
-| 实时对话 | ✅ | ✅ |
-| SOP 流程 | ✅ | ✅ |
-| 配置管理 | 基础 | 完整 |
-| 可视化 | 文本 | 图表 |
-| 远程访问 | SSH | HTTP |
+| 特性     | TUI  | Dashboard |
+| -------- | ---- | --------- |
+| 运行环境 | 终端 | 浏览器    |
+| 依赖     | 无   | 无        |
+| 实时对话 | ✅   | ✅        |
+| SOP 流程 | ✅   | ✅        |
+| 配置管理 | 基础 | 完整      |
+| 可视化   | 文本 | 图表      |
+| 远程访问 | SSH  | HTTP      |
 
 ## 开发计划
 
-| 阶段 | 功能 | 时间 |
-|------|------|------|
-| Phase 1 | 基础对话界面 | 2 天 |
-| Phase 2 | SOP 流程集成 | 2 天 |
-| Phase 3 | 命令模式 | 1 天 |
-| Phase 4 | 主题和配置 | 1 天 |
-| **总计** | | **6 天** |
+| 阶段     | 功能         | 时间     |
+| -------- | ------------ | -------- |
+| Phase 1  | 基础对话界面 | 2 天     |
+| Phase 2  | SOP 流程集成 | 2 天     |
+| Phase 3  | 命令模式     | 1 天     |
+| Phase 4  | 主题和配置   | 1 天     |
+| **总计** |              | **6 天** |

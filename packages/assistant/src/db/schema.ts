@@ -2,38 +2,38 @@
  * 数据库表结构定义和初始化
  */
 
-import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as fs from 'fs';
+import Database from 'better-sqlite3'
+import * as path from 'path'
+import * as fs from 'fs'
 
 export interface AssistantDbConfig {
   /** 数据库文件路径 */
-  path?: string;
+  path?: string
   /** 是否在内存中（测试用） */
-  inMemory?: boolean;
+  inMemory?: boolean
 }
 
-let db: Database.Database | null = null;
+let db: Database.Database | null = null
 
 /**
  * 获取数据库实例
  */
 export function getDb(config: AssistantDbConfig = {}): Database.Database {
-  if (db) return db;
+  if (db) return db
 
   if (config.inMemory) {
-    db = new Database(':memory:');
+    db = new Database(':memory:')
   } else {
-    const dbPath = config.path || path.join(process.env.HOME || '', '.colobot', 'assistant.db');
-    const dir = path.dirname(dbPath);
+    const dbPath = config.path || path.join(process.env.HOME || '', '.colobot', 'assistant.db')
+    const dir = path.dirname(dbPath)
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+      fs.mkdirSync(dir, { recursive: true })
     }
-    db = new Database(dbPath);
+    db = new Database(dbPath)
   }
 
-  initTables(db);
-  return db;
+  initTables(db)
+  return db
 }
 
 /**
@@ -41,8 +41,8 @@ export function getDb(config: AssistantDbConfig = {}): Database.Database {
  */
 export function closeDb(): void {
   if (db) {
-    db.close();
-    db = null;
+    db.close()
+    db = null
   }
 }
 
@@ -68,7 +68,7 @@ function initTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_todos_user ON assistant_todos(user_id);
     CREATE INDEX IF NOT EXISTS idx_todos_status ON assistant_todos(status);
     CREATE INDEX IF NOT EXISTS idx_todos_due ON assistant_todos(due_date);
-  `);
+  `)
 
   // 提醒
   db.exec(`
@@ -84,7 +84,7 @@ function initTables(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_reminders_user ON assistant_reminders(user_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_at ON assistant_reminders(remind_at);
-  `);
+  `)
 
   // 日程
   db.exec(`
@@ -101,7 +101,7 @@ function initTables(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_events_user ON assistant_events(user_id);
     CREATE INDEX IF NOT EXISTS idx_events_start ON assistant_events(start_at);
-  `);
+  `)
 
   // 笔记
   db.exec(`
@@ -115,7 +115,7 @@ function initTables(db: Database.Database): void {
       updated_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_notes_user ON assistant_notes(user_id);
-  `);
+  `)
 
   // 习惯追踪
   db.exec(`
@@ -134,7 +134,7 @@ function initTables(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_habits_user ON assistant_habits(user_id);
     CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON assistant_habit_logs(habit_id);
-  `);
+  `)
 
   // 情绪日记
   db.exec(`
@@ -147,7 +147,7 @@ function initTables(db: Database.Database): void {
       logged_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_moods_user ON assistant_moods(user_id);
-  `);
+  `)
 
   // 财务记录
   db.exec(`
@@ -161,7 +161,7 @@ function initTables(db: Database.Database): void {
       logged_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_finances_user ON assistant_finances(user_id);
-  `);
+  `)
 
   // 学习进度
   db.exec(`
@@ -175,7 +175,7 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_courses_user ON assistant_courses(user_id);
-  `);
+  `)
 
   // 目标
   db.exec(`
@@ -190,7 +190,7 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_goals_user ON assistant_goals(user_id);
-  `);
+  `)
 
   // 阅读清单
   db.exec(`
@@ -206,7 +206,7 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_readings_user ON assistant_readings(user_id);
-  `);
+  `)
 
   // 人脉
   db.exec(`
@@ -224,7 +224,7 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_contacts_user ON assistant_contacts(user_id);
-  `);
+  `)
 
   // 项目
   db.exec(`
@@ -238,7 +238,7 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_projects_user ON assistant_projects(user_id);
-  `);
+  `)
 
   // 灵感笔记
   db.exec(`
@@ -250,7 +250,7 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_inspirations_user ON assistant_inspirations(user_id);
-  `);
+  `)
 
   // 时间追踪
   db.exec(`
@@ -265,7 +265,7 @@ function initTables(db: Database.Database): void {
       note TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_time_logs_user ON assistant_time_logs(user_id);
-  `);
+  `)
 
   // 密码
   db.exec(`
@@ -281,7 +281,7 @@ function initTables(db: Database.Database): void {
       updated_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_passwords_user ON assistant_passwords(user_id);
-  `);
+  `)
 
   // 健康
   db.exec(`
@@ -295,7 +295,7 @@ function initTables(db: Database.Database): void {
       logged_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_health_user ON assistant_health(user_id);
-  `);
+  `)
 
   // 收藏
   db.exec(`
@@ -309,10 +309,10 @@ function initTables(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON assistant_bookmarks(user_id);
-  `);
+  `)
 }
 
 // 生成唯一 ID
 export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }

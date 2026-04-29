@@ -2,35 +2,35 @@
  * 投毒防御系统
  */
 
-import type { TrustLevel } from '@colobot/types';
-import { ContentScanner, detectThreat } from './scanner.js';
+import type { TrustLevel } from '@colobot/types'
+import { ContentScanner, detectThreat } from './scanner.js'
 
 export interface ContentSource {
-  type: 'user_input' | 'ai_generated' | 'external_url' | 'import';
-  agentId?: string;
-  userId?: string;
-  url?: string;
-  timestamp: string;
+  type: 'user_input' | 'ai_generated' | 'external_url' | 'import'
+  agentId?: string
+  userId?: string
+  url?: string
+  timestamp: string
 }
 
 export interface ContentValidationResult {
-  valid: boolean;
-  trustLevel: TrustLevel;
-  requiresReview: boolean;
-  issues: string[];
-  confidence: number;
+  valid: boolean
+  trustLevel: TrustLevel
+  requiresReview: boolean
+  issues: string[]
+  confidence: number
 }
 
 export interface PoisoningAttempt {
-  id: string;
-  agentId: string;
-  contentType: 'memory' | 'skill' | 'rule' | 'profile' | 'knowledge';
-  contentKey: string;
-  contentPreview: string;
-  source: ContentSource;
-  issues: string[];
-  detectedAt: string;
-  actionTaken: 'blocked' | 'flagged' | 'allowed_with_warning';
+  id: string
+  agentId: string
+  contentType: 'memory' | 'skill' | 'rule' | 'profile' | 'knowledge'
+  contentKey: string
+  contentPreview: string
+  source: ContentSource
+  issues: string[]
+  detectedAt: string
+  actionTaken: 'blocked' | 'flagged' | 'allowed_with_warning'
 }
 
 // 投毒检测模式
@@ -52,7 +52,7 @@ const POISON_PATTERNS = [
   /覆盖\s*(安全|规则)/,
   /绕过\s*(安全|检测|过滤)/,
   /越狱/,
-];
+]
 
 /**
  * 根据来源判定信任等级
@@ -60,14 +60,14 @@ const POISON_PATTERNS = [
 export function determineTrustLevel(source: ContentSource): TrustLevel {
   switch (source.type) {
     case 'user_input':
-      return 'high';
+      return 'high'
     case 'ai_generated':
-      return 'medium';
+      return 'medium'
     case 'external_url':
     case 'import':
-      return 'low';
+      return 'low'
     default:
-      return 'low';
+      return 'low'
   }
 }
 
@@ -75,7 +75,7 @@ export function determineTrustLevel(source: ContentSource): TrustLevel {
  * 获取写入权限
  */
 export function canWrite(source: ContentSource): boolean {
-  return source.type === 'ai_generated' || source.type === 'user_input';
+  return source.type === 'ai_generated' || source.type === 'user_input'
 }
 
 /**
@@ -84,36 +84,36 @@ export function canWrite(source: ContentSource): boolean {
 export async function validateContent(
   content: string,
   source: ContentSource,
-  scanner?: ContentScanner
+  scanner?: ContentScanner,
 ): Promise<ContentValidationResult> {
-  const trustLevel = determineTrustLevel(source);
-  const issues: string[] = [];
-  let confidence = 1.0;
+  const trustLevel = determineTrustLevel(source)
+  const issues: string[] = []
+  let confidence = 1.0
 
   // 基础内容扫描
   if (scanner) {
-    const inputScan = await scanner.scanInput(content);
+    const inputScan = await scanner.scanInput(content)
     if (!inputScan.safe) {
-      issues.push(`内容安全: ${inputScan.reason}`);
-      confidence *= 0.5;
+      issues.push(`内容安全: ${inputScan.reason}`)
+      confidence *= 0.5
     }
   }
 
   // 投毒检测
-  const poisonDetection = detectPoisoning(content);
+  const poisonDetection = detectPoisoning(content)
   if (poisonDetection.isPoison) {
-    issues.push(`投毒检测: ${poisonDetection.reason}`);
-    confidence *= 0.3;
+    issues.push(`投毒检测: ${poisonDetection.reason}`)
+    confidence *= 0.3
   }
 
   // 格式验证
-  const formatValidation = validateFormat(content);
+  const formatValidation = validateFormat(content)
   if (!formatValidation.valid) {
-    issues.push(`格式错误: ${formatValidation.reason}`);
-    confidence *= 0.8;
+    issues.push(`格式错误: ${formatValidation.reason}`)
+    confidence *= 0.8
   }
 
-  const requiresReview = trustLevel === 'low' || issues.length > 0;
+  const requiresReview = trustLevel === 'low' || issues.length > 0
 
   return {
     valid: issues.length === 0 || (trustLevel !== 'low' && issues.length <= 1),
@@ -121,7 +121,7 @@ export async function validateContent(
     requiresReview,
     issues,
     confidence,
-  };
+  }
 }
 
 /**
@@ -130,22 +130,22 @@ export async function validateContent(
 export function detectPoisoning(content: string): { isPoison: boolean; reason?: string } {
   for (const pattern of POISON_PATTERNS) {
     if (pattern.test(content)) {
-      return { isPoison: true, reason: `检测到可疑模式: ${pattern.source.slice(0, 50)}` };
+      return { isPoison: true, reason: `检测到可疑模式: ${pattern.source.slice(0, 50)}` }
     }
   }
 
   // 检查异常长度
   if (content.length > 100000) {
-    return { isPoison: true, reason: '内容异常长，可能包含注入攻击' };
+    return { isPoison: true, reason: '内容异常长，可能包含注入攻击' }
   }
 
   // 检查重复模式
-  const repeatMatch = content.match(/(.{10,})\1{5,}/);
+  const repeatMatch = content.match(/(.{10,})\1{5,}/)
   if (repeatMatch) {
-    return { isPoison: true, reason: '检测到重复注入模式' };
+    return { isPoison: true, reason: '检测到重复注入模式' }
   }
 
-  return { isPoison: false };
+  return { isPoison: false }
 }
 
 /**
@@ -154,54 +154,54 @@ export function detectPoisoning(content: string): { isPoison: boolean; reason?: 
 function validateFormat(content: string): { valid: boolean; reason?: string } {
   // 检查是否为有效字符串
   if (typeof content !== 'string') {
-    return { valid: false, reason: '内容不是有效字符串' };
+    return { valid: false, reason: '内容不是有效字符串' }
   }
 
   // 检查是否为空
   if (content.trim().length === 0) {
-    return { valid: false, reason: '内容为空' };
+    return { valid: false, reason: '内容为空' }
   }
 
-  return { valid: true };
+  return { valid: true }
 }
 
 /**
  * 记录投毒尝试
  */
 export async function recordPoisoningAttempt(
-  attempt: Omit<PoisoningAttempt, 'id' | 'detectedAt'>
+  attempt: Omit<PoisoningAttempt, 'id' | 'detectedAt'>,
 ): Promise<string> {
-  const id = crypto.randomUUID();
+  const id = crypto.randomUUID()
   // 实际实现应写入数据库
-  console.log('[PoisonDefense] Attempt recorded:', id, attempt.issues);
-  return id;
+  console.log('[PoisonDefense] Attempt recorded:', id, attempt.issues)
+  return id
 }
 
 /**
  * 写入请求
  */
 export interface WriteRequest {
-  agentId: string;
-  contentType: 'memory' | 'skill' | 'rule' | 'profile' | 'knowledge';
-  contentKey: string;
-  content: string;
-  source: ContentSource;
+  agentId: string
+  contentType: 'memory' | 'skill' | 'rule' | 'profile' | 'knowledge'
+  contentKey: string
+  content: string
+  source: ContentSource
 }
 
 /**
  * 写入结果
  */
 export interface WriteResult {
-  allowed: boolean;
-  requiresReview: boolean;
-  reason?: string;
+  allowed: boolean
+  requiresReview: boolean
+  reason?: string
 }
 
 /**
  * 写入前检查
  */
 export async function checkWritePermission(request: WriteRequest): Promise<WriteResult> {
-  const { agentId, content, source } = request;
+  const { agentId, content, source } = request
 
   // 检查写入权限
   if (!canWrite(source)) {
@@ -209,14 +209,14 @@ export async function checkWritePermission(request: WriteRequest): Promise<Write
       allowed: false,
       requiresReview: true,
       reason: '外部来源需要人工确认后才能写入',
-    };
+    }
   }
 
   // 验证内容
-  const validation = await validateContent(content, source);
+  const validation = await validateContent(content, source)
 
   // 如果检测到投毒
-  if (validation.issues.some(i => i.includes('投毒'))) {
+  if (validation.issues.some((i) => i.includes('投毒'))) {
     await recordPoisoningAttempt({
       agentId,
       contentType: request.contentType,
@@ -225,12 +225,12 @@ export async function checkWritePermission(request: WriteRequest): Promise<Write
       source,
       issues: validation.issues,
       actionTaken: 'blocked',
-    });
+    })
     return {
       allowed: false,
       requiresReview: true,
       reason: '检测到投毒尝试，已阻止并记录',
-    };
+    }
   }
 
   // 需要人工审核
@@ -239,8 +239,8 @@ export async function checkWritePermission(request: WriteRequest): Promise<Write
       allowed: false,
       requiresReview: true,
       reason: '内容需要人工审核',
-    };
+    }
   }
 
-  return { allowed: true, requiresReview: false };
+  return { allowed: true, requiresReview: false }
 }

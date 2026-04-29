@@ -2,15 +2,15 @@
  * 向量记忆 - 基于 pgvector
  */
 
-import { query, queryOne } from './db.js';
-import { embed } from './embeddings.js';
+import { query, queryOne } from './db.js'
+import { embed } from './embeddings.js'
 
 export interface MemoryResult {
-  id: string;
-  content: string;
-  similarity: number;
-  metadata: Record<string, unknown>;
-  created_at: Date;
+  id: string
+  content: string
+  similarity: number
+  metadata: Record<string, unknown>
+  created_at: Date
 }
 
 /**
@@ -20,10 +20,10 @@ export async function addMemory(
   agentId: string,
   key: string,
   value: string,
-  metadata: Record<string, unknown> = {}
+  metadata: Record<string, unknown> = {},
 ): Promise<void> {
-  const { embedding } = await embed(value);
-  if (!embedding) return;
+  const { embedding } = await embed(value)
+  if (!embedding) return
 
   await query(
     `INSERT INTO agent_memory (agent_id, memory_key, memory_value, embedding, metadata)
@@ -32,8 +32,8 @@ export async function addMemory(
        memory_value = EXCLUDED.memory_value,
        embedding = EXCLUDED.embedding,
        metadata = EXCLUDED.metadata`,
-    [agentId, key, value, JSON.stringify(embedding), JSON.stringify(metadata)]
-  );
+    [agentId, key, value, JSON.stringify(embedding), JSON.stringify(metadata)],
+  )
 }
 
 /**
@@ -42,29 +42,36 @@ export async function addMemory(
 export async function searchMemory(
   agentId: string,
   queryText: string,
-  topK = 5
+  topK = 5,
 ): Promise<MemoryResult[]> {
-  const { embedding } = await embed(queryText);
-  if (!embedding?.length) return [];
+  const { embedding } = await embed(queryText)
+  if (!embedding?.length) return []
 
   // pgvector 相似度搜索
-  const rows = await query<{ id: string; memory_key: string; memory_value: string; metadata: Record<string, unknown>; created_at: Date; similarity: number }>(
+  const rows = await query<{
+    id: string
+    memory_key: string
+    memory_value: string
+    metadata: Record<string, unknown>
+    created_at: Date
+    similarity: number
+  }>(
     `SELECT id, memory_key, memory_value, metadata, created_at,
             (embedding <=> $2::vector) AS similarity
      FROM agent_memory
      WHERE agent_id = $1
      ORDER BY embedding <=> $2::vector
      LIMIT $3`,
-    [agentId, JSON.stringify(embedding), topK]
-  );
+    [agentId, JSON.stringify(embedding), topK],
+  )
 
-  return rows.map(r => ({
+  return rows.map((r) => ({
     id: r.id,
     content: r.memory_value,
     similarity: 1 - (r.similarity || 0), // cosine distance → similarity
     metadata: r.metadata,
     created_at: r.created_at,
-  }));
+  }))
 }
 
 /**
@@ -73,45 +80,57 @@ export async function searchMemory(
 export async function searchMemoryText(
   agentId: string,
   queryText: string,
-  topK = 5
+  topK = 5,
 ): Promise<MemoryResult[]> {
-  const rows = await query<{ id: string; memory_key: string; memory_value: string; metadata: Record<string, unknown>; created_at: Date }>(
+  const rows = await query<{
+    id: string
+    memory_key: string
+    memory_value: string
+    metadata: Record<string, unknown>
+    created_at: Date
+  }>(
     `SELECT id, memory_key, memory_value, metadata, created_at
      FROM agent_memory
      WHERE agent_id = $1 AND memory_value ILIKE $2
      ORDER BY created_at DESC
      LIMIT $3`,
-    [agentId, `%${queryText.replace(/[%_]/g, '\\$&')}%`, topK]
-  );
+    [agentId, `%${queryText.replace(/[%_]/g, '\\$&')}%`, topK],
+  )
 
-  return rows.map(r => ({
+  return rows.map((r) => ({
     id: r.id,
     content: r.memory_value,
     similarity: 1,
     metadata: r.metadata,
     created_at: r.created_at,
-  }));
+  }))
 }
 
 /**
  * 列出所有记忆
  */
 export async function listMemory(agentId: string): Promise<MemoryResult[]> {
-  const rows = await query<{ id: string; memory_key: string; memory_value: string; metadata: Record<string, unknown>; created_at: Date }>(
+  const rows = await query<{
+    id: string
+    memory_key: string
+    memory_value: string
+    metadata: Record<string, unknown>
+    created_at: Date
+  }>(
     `SELECT id, memory_key, memory_value, metadata, created_at
      FROM agent_memory
      WHERE agent_id = $1
      ORDER BY created_at DESC`,
-    [agentId]
-  );
+    [agentId],
+  )
 
-  return rows.map(r => ({
+  return rows.map((r) => ({
     id: r.id,
     content: r.memory_value,
     similarity: 1,
     metadata: r.metadata,
     created_at: r.created_at,
-  }));
+  }))
 }
 
 /**
@@ -120,22 +139,22 @@ export async function listMemory(agentId: string): Promise<MemoryResult[]> {
 export async function hybridSearch(
   agentId: string,
   queryText: string,
-  topK = 5
+  topK = 5,
 ): Promise<MemoryResult[]> {
-  const vectorResults = await searchMemory(agentId, queryText, topK * 2);
-  const textResults = await searchMemoryText(agentId, queryText, topK * 2);
+  const vectorResults = await searchMemory(agentId, queryText, topK * 2)
+  const textResults = await searchMemoryText(agentId, queryText, topK * 2)
 
   // 合并去重，以向量结果优先
-  const seen = new Set<string>();
-  const results: MemoryResult[] = [];
+  const seen = new Set<string>()
+  const results: MemoryResult[] = []
 
   for (const r of [...vectorResults, ...textResults]) {
     if (!seen.has(r.id)) {
-      seen.add(r.id);
-      results.push(r);
+      seen.add(r.id)
+      results.push(r)
     }
-    if (results.length >= topK) break;
+    if (results.length >= topK) break
   }
 
-  return results;
+  return results
 }

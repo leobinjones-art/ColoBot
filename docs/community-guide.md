@@ -16,6 +16,7 @@
 **标题**: `👋 欢迎来到 ColoBot 社区！`
 
 **内容**:
+
 ```markdown
 # 欢迎来到 ColoBot 社区！ 🎉
 
@@ -52,7 +53,8 @@
 **Title**: `ColoBot v0.1.0 - 首个开源版本 🎉`
 
 **内容**:
-```markdown
+
+````markdown
 # ColoBot v0.1.0 - 首个开源版本 🎉
 
 ## 🌟 项目简介
@@ -78,6 +80,7 @@ docker compose up -d postgres
 npm run db:init
 npm run dev
 ```
+````
 
 ## 📚 文档
 
@@ -92,23 +95,27 @@ npm run dev
 ## 📜 许可证
 
 Apache 2.0
+
 ```
 
 ### 2.2 社交媒体发布
 
 **Twitter/X**:
 ```
+
 🚀 Excited to announce ColoBot - an open-source AI agent collaboration platform!
 
 ✨ Features:
+
 - Multi-agent collaboration
-- Skill orchestration  
+- Skill orchestration
 - Auto-approval workflow
 - Feishu integration
 
 GitHub: https://github.com/leobinjones-art/ColoBot
 
 #OpenSource #AI
+
 ```
 
 **微信公众号标题**: `ColoBot 开源了！一个强大的 AI 智能体协作平台`
@@ -151,3 +158,4 @@ GitHub: https://github.com/leobinjones-art/ColoBot
 - 处理 Issues 和 PR
 - 更新文档和示例
 - 发布新版本时更新 Release Notes
+```

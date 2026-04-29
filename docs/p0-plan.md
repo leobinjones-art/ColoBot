@@ -76,15 +76,18 @@ ColoBot 使用 MiniMax Coding Plan，需全面接入以下能力：
 用户正在考虑是否增加前端对话 UI。
 
 **方案 A: 自建 Web UI**
+
 - React/Vue 单页应用
 - WebSocket 实时通信
 - 对接现有 `/api/chat` 端点
 
 **方案 B: 接入现有 Chat UI**
+
 - 如 Chatbot UI / Open WebUI
 - 通过 API 对接
 
 **方案 C: 暂不做**
+
 - 当前通过 API / WebSocket 集成即可满足需求
 
 ---

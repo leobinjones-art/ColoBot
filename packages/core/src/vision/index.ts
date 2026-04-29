@@ -10,4 +10,4 @@ export {
   clearVisionCache,
   type VisionAnalysisResult,
   type LocalVisionConfig,
-} from './local.js';
+} from './local.js'

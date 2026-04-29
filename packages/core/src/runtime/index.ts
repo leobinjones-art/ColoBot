@@ -2,63 +2,59 @@
  * Agent 运行时核心逻辑
  */
 
-import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@colobot/types';
-import type {
-  RuntimeDeps,
-  LLMResponse,
-  ScanResult,
-} from './types.js';
-import { compressMessages, estimateMessagesTokens } from '../compression.js';
+import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@colobot/types'
+import type { RuntimeDeps, LLMResponse, ScanResult } from './types.js'
+import { compressMessages, estimateMessagesTokens } from '../compression.js'
 
 // 导出接口和实现
-export * from './interface.js';
-export { ColoBotRuntimeImpl } from './runtime.js';
-export type { ColoBotRuntime, RuntimeDependencies } from './interface.js';
+export * from './interface.js'
+export { ColoBotRuntimeImpl } from './runtime.js'
+export type { ColoBotRuntime, RuntimeDependencies } from './interface.js'
 
 export interface RunOptions {
-  agentId: string;
-  sessionKey: string;
-  userMessage: string | ContentBlock[];
-  maxRounds?: number;
-  ipAddress?: string;
-  systemPrompt?: string;
-  temperature?: number;
-  maxTokens?: number;
+  agentId: string
+  sessionKey: string
+  userMessage: string | ContentBlock[]
+  maxRounds?: number
+  ipAddress?: string
+  systemPrompt?: string
+  temperature?: number
+  maxTokens?: number
   /** Soul 配置 */
-  soul?: { personality?: string; role?: string };
+  soul?: { personality?: string; role?: string }
   /** 上下文窗口大小（用于压缩） */
-  contextWindowSize?: number;
+  contextWindowSize?: number
   /** Fallback 模型 ID */
-  fallbackModelId?: string;
+  fallbackModelId?: string
 }
 
 export interface RunResult {
-  response: string | ContentBlock[];
-  toolCalls: string[];
-  finished: boolean;
+  response: string | ContentBlock[]
+  toolCalls: string[]
+  finished: boolean
 }
 
 /** 待继续状态（危险工具审批中暂存） */
 export interface PendingConversation {
-  id: string;
-  approvalId: string;
-  agentId: string;
-  sessionKey: string;
-  messages: LLMMessage[];
-  dangerousCalls: ToolCall[];
-  currentRound: number;
-  allowedCalls: ToolCall[];
-  blockedCalls: ToolCall[];
-  ipAddress?: string;
+  id: string
+  approvalId: string
+  agentId: string
+  sessionKey: string
+  messages: LLMMessage[]
+  dangerousCalls: ToolCall[]
+  currentRound: number
+  allowedCalls: ToolCall[]
+  blockedCalls: ToolCall[]
+  ipAddress?: string
 }
 
 export interface PendingResult {
-  pending: true;
-  approvalId: string;
+  pending: true
+  approvalId: string
 }
 
-const DEFAULT_MAX_ROUNDS = 10;
-const DEFAULT_CONTEXT_WINDOW = 128_000;
+const DEFAULT_MAX_ROUNDS = 10
+const DEFAULT_CONTEXT_WINDOW = 128_000
 
 /**
  * Agent 运行时
@@ -78,103 +74,105 @@ export class AgentRuntime {
       maxTokens,
       soul,
       contextWindowSize = DEFAULT_CONTEXT_WINDOW,
-    } = opts;
+    } = opts
 
     // 获取历史
-    const history = await this.deps.memory.getHistory(agentId, sessionKey);
+    const history = await this.deps.memory.getHistory(agentId, sessionKey)
 
     // 构建消息
-    let messages: LLMMessage[] = [
-      ...history,
-      { role: 'user', content: userMessage },
-    ];
+    let messages: LLMMessage[] = [...history, { role: 'user', content: userMessage }]
 
     // 追加用户消息
-    await this.deps.memory.append(agentId, sessionKey, 'user', userMessage);
+    await this.deps.memory.append(agentId, sessionKey, 'user', userMessage)
 
     // 输入扫描
-    const messageText = typeof userMessage === 'string' ? userMessage
-      : userMessage.map(b => b.type === 'text' ? b.text : '').join(' ');
+    const messageText =
+      typeof userMessage === 'string'
+        ? userMessage
+        : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
 
-    const inputScan = await this.deps.scanner.scanInput(messageText);
+    const inputScan = await this.deps.scanner.scanInput(messageText)
     if (!inputScan.safe) {
-      const blocked = `[Message blocked: ${inputScan.reason}]`;
-      await this.deps.memory.append(agentId, sessionKey, 'assistant', blocked);
-      return { response: blocked, toolCalls: [], finished: true };
+      const blocked = `[Message blocked: ${inputScan.reason}]`
+      await this.deps.memory.append(agentId, sessionKey, 'assistant', blocked)
+      return { response: blocked, toolCalls: [], finished: true }
     }
 
     // Context Compression：超过 80% context window 时压缩
-    const totalTokens = estimateMessagesTokens(messages);
+    const totalTokens = estimateMessagesTokens(messages)
     if (totalTokens > contextWindowSize * 0.8) {
-      messages = await compressMessages(messages, contextWindowSize, this.deps.llm, systemPrompt);
+      messages = await compressMessages(messages, contextWindowSize, this.deps.llm, systemPrompt)
     }
 
-    const toolCallNames: string[] = [];
-    const toolCtx: ToolContext = { agentId, sessionKey, ipAddress };
-    let finalContent: string | ContentBlock[] = '';
+    const toolCallNames: string[] = []
+    const toolCtx: ToolContext = { agentId, sessionKey, ipAddress }
+    let finalContent: string | ContentBlock[] = ''
 
     // LLM 循环
     for (let round = 0; round < maxRounds; round++) {
       // 构建 system prompt
-      const fullMessages = this.buildMessagesWithSystem(messages, soul, systemPrompt);
+      const fullMessages = this.buildMessagesWithSystem(messages, soul, systemPrompt)
 
       const response = await this.deps.llm.chat(fullMessages, {
         temperature,
         maxTokens,
         tools: this.deps.tools.getTools?.() || undefined,
-      });
+      })
 
-      const rawContent = response.content;
-      messages.push({ role: 'assistant', content: rawContent });
+      const rawContent = response.content
+      messages.push({ role: 'assistant', content: rawContent })
 
       // 处理原生 tool_calls（优先）
       if (response.toolCalls && response.toolCalls.length > 0) {
-        toolCallNames.push(...response.toolCalls.map(c => c.name));
-        const results = await this.deps.tools.execute(response.toolCalls, toolCtx);
-        const resultText = this.deps.tools.format(results);
-        messages.push({ role: 'user', content: resultText });
-        finalContent = rawContent;
-        continue;
+        toolCallNames.push(...response.toolCalls.map((c) => c.name))
+        const results = await this.deps.tools.execute(response.toolCalls, toolCtx)
+        const resultText = this.deps.tools.format(results)
+        messages.push({ role: 'user', content: resultText })
+        finalContent = rawContent
+        continue
       }
 
       // 解析 XML 格式工具调用（兼容）
-      const rawText = typeof rawContent === 'string' ? rawContent
-        : rawContent.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+      const rawText =
+        typeof rawContent === 'string'
+          ? rawContent
+          : rawContent.map((b) => (b.type === 'text' ? b.text : `[${b.type}]`)).join(' ')
 
-      const toolCalls = this.deps.tools.parse(rawText);
+      const toolCalls = this.deps.tools.parse(rawText)
 
       if (toolCalls.length === 0) {
-        finalContent = rawContent;
-        break;
+        finalContent = rawContent
+        break
       }
 
-      toolCallNames.push(...toolCalls.map(c => c.name));
+      toolCallNames.push(...toolCalls.map((c) => c.name))
 
       // 执行工具
-      const results = await this.deps.tools.execute(toolCalls, toolCtx);
-      const resultText = this.deps.tools.format(results);
+      const results = await this.deps.tools.execute(toolCalls, toolCtx)
+      const resultText = this.deps.tools.format(results)
 
-      messages.push({ role: 'user', content: resultText });
-      finalContent = rawContent;
+      messages.push({ role: 'user', content: resultText })
+      finalContent = rawContent
     }
 
     // 保存助手回复
-    await this.deps.memory.append(agentId, sessionKey, 'assistant', finalContent);
+    await this.deps.memory.append(agentId, sessionKey, 'assistant', finalContent)
 
     // 输出扫描
-    const responseText = typeof finalContent === 'string' ? finalContent : '';
-    const outputScan = await this.deps.scanner.scanOutput(responseText);
+    const responseText = typeof finalContent === 'string' ? finalContent : ''
+    const outputScan = await this.deps.scanner.scanOutput(responseText)
     if (!outputScan.safe) {
-      const blocked = `[Output blocked: ${outputScan.reason}]`;
-      await this.deps.memory.append(agentId, sessionKey, 'assistant', blocked);
-      return { response: blocked, toolCalls: [], finished: true };
+      const blocked = `[Output blocked: ${outputScan.reason}]`
+      await this.deps.memory.append(agentId, sessionKey, 'assistant', blocked)
+      return { response: blocked, toolCalls: [], finished: true }
     }
 
     return {
       response: finalContent || '(no response)',
       toolCalls: toolCallNames,
-      finished: toolCallNames.length >= maxRounds || (finalContent !== '' && toolCallNames.length === 0),
-    };
+      finished:
+        toolCallNames.length >= maxRounds || (finalContent !== '' && toolCallNames.length === 0),
+    }
   }
 
   /**
@@ -191,58 +189,60 @@ export class AgentRuntime {
       soul,
       systemPrompt,
       contextWindowSize = DEFAULT_CONTEXT_WINDOW,
-    } = opts;
+    } = opts
 
-    const history = await this.deps.memory.getHistory(agentId, sessionKey);
-    let messages: LLMMessage[] = [
-      ...history,
-      { role: 'user', content: userMessage },
-    ];
+    const history = await this.deps.memory.getHistory(agentId, sessionKey)
+    let messages: LLMMessage[] = [...history, { role: 'user', content: userMessage }]
 
-    await this.deps.memory.append(agentId, sessionKey, 'user', userMessage);
+    await this.deps.memory.append(agentId, sessionKey, 'user', userMessage)
 
-    const messageText = typeof userMessage === 'string' ? userMessage
-      : userMessage.map(b => b.type === 'text' ? b.text : '').join(' ');
+    const messageText =
+      typeof userMessage === 'string'
+        ? userMessage
+        : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
 
-    const inputScan = await this.deps.scanner.scanInput(messageText);
+    const inputScan = await this.deps.scanner.scanInput(messageText)
     if (!inputScan.safe) {
-      yield `[Message blocked: ${inputScan.reason}]`;
-      return;
+      yield `[Message blocked: ${inputScan.reason}]`
+      return
     }
 
     // Context Compression
-    const totalTokens = estimateMessagesTokens(messages);
+    const totalTokens = estimateMessagesTokens(messages)
     if (totalTokens > contextWindowSize * 0.8) {
-      messages = await compressMessages(messages, contextWindowSize, this.deps.llm, systemPrompt);
+      messages = await compressMessages(messages, contextWindowSize, this.deps.llm, systemPrompt)
     }
 
-    const toolCtx: ToolContext = { agentId, sessionKey, ipAddress: opts.ipAddress };
+    const toolCtx: ToolContext = { agentId, sessionKey, ipAddress: opts.ipAddress }
 
     for (let round = 0; round < maxRounds; round++) {
-      const fullMessages = this.buildMessagesWithSystem(messages, soul, systemPrompt);
+      const fullMessages = this.buildMessagesWithSystem(messages, soul, systemPrompt)
 
       // 流式输出
-      let accumulated = '';
-      for await (const chunk of this.deps.llm.chatStream(fullMessages, { temperature, maxTokens })) {
+      let accumulated = ''
+      for await (const chunk of this.deps.llm.chatStream(fullMessages, {
+        temperature,
+        maxTokens,
+      })) {
         if (chunk.type === 'text' && chunk.content) {
-          accumulated += chunk.content;
-          yield chunk.content;
+          accumulated += chunk.content
+          yield chunk.content
         }
       }
 
-      messages.push({ role: 'assistant', content: accumulated });
+      messages.push({ role: 'assistant', content: accumulated })
 
       // 检查工具调用
-      const toolCalls = this.deps.tools.parse(accumulated);
+      const toolCalls = this.deps.tools.parse(accumulated)
       if (toolCalls.length === 0) {
-        await this.deps.memory.append(agentId, sessionKey, 'assistant', accumulated);
-        break;
+        await this.deps.memory.append(agentId, sessionKey, 'assistant', accumulated)
+        break
       }
 
       // 执行工具
-      const results = await this.deps.tools.execute(toolCalls, toolCtx);
-      const resultText = this.deps.tools.format(results);
-      messages.push({ role: 'user', content: resultText });
+      const results = await this.deps.tools.execute(toolCalls, toolCtx)
+      const resultText = this.deps.tools.format(results)
+      messages.push({ role: 'user', content: resultText })
     }
   }
 
@@ -252,25 +252,25 @@ export class AgentRuntime {
   private buildMessagesWithSystem(
     messages: LLMMessage[],
     soul?: { personality?: string; role?: string },
-    systemPrompt?: string
+    systemPrompt?: string,
   ): LLMMessage[] {
     if (systemPrompt) {
-      return [{ role: 'system', content: systemPrompt }, ...messages];
+      return [{ role: 'system', content: systemPrompt }, ...messages]
     }
 
     if (soul) {
-      const parts: string[] = [];
-      if (soul.role) parts.push(`你是 ${soul.role}。`);
-      if (soul.personality) parts.push(`\n## 性格\n${soul.personality}`);
-      const system = parts.join('\n\n');
+      const parts: string[] = []
+      if (soul.role) parts.push(`你是 ${soul.role}。`)
+      if (soul.personality) parts.push(`\n## 性格\n${soul.personality}`)
+      const system = parts.join('\n\n')
       if (system) {
-        return [{ role: 'system', content: system }, ...messages];
+        return [{ role: 'system', content: system }, ...messages]
       }
     }
 
-    return messages;
+    return messages
   }
 }
 
-export * from './types.js';
-export { compressMessages, estimateMessagesTokens, estimateTokens } from '../compression.js';
+export * from './types.js'
+export { compressMessages, estimateMessagesTokens, estimateTokens } from '../compression.js'

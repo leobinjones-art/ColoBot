@@ -5,16 +5,16 @@
 
 ## 现状总览
 
-| 模态 | 能力 | 状态 | 实现方式 |
-|------|------|------|----------|
-| **文本生成** | M2.7 / M2.5 / M2.1 / M2 | ✅ 已支持 | `src/llm/index.ts` |
-| **图片生成** | image-01 | ✅ 已支持 | `generate_image` 工具 |
-| **TTS 语音合成** | speech-2.8-hd / 2.6 系列 | ✅ 已支持 | `speak` 工具 |
-| **音乐生成** | music-2.6 / music-cover | ✅ 已支持 | `generate_music` / `generate_music_cover` |
-| **文生视频** | Hailuo-2.3 / 02 | ✅ 已支持 | `generate_video` 工具 |
-| **图生视频** | I2V-01 / S2V-01 | ✅ 已支持 | `generate_video` 工具 |
-| **视觉理解** | coding-plan-vlm | ✅ 已支持 | `vision` 工具 |
-| **搜索** | coding-plan-search | ✅ 已支持 | `minimax_search` 工具 |
+| 模态             | 能力                     | 状态      | 实现方式                                  |
+| ---------------- | ------------------------ | --------- | ----------------------------------------- |
+| **文本生成**     | M2.7 / M2.5 / M2.1 / M2  | ✅ 已支持 | `src/llm/index.ts`                        |
+| **图片生成**     | image-01                 | ✅ 已支持 | `generate_image` 工具                     |
+| **TTS 语音合成** | speech-2.8-hd / 2.6 系列 | ✅ 已支持 | `speak` 工具                              |
+| **音乐生成**     | music-2.6 / music-cover  | ✅ 已支持 | `generate_music` / `generate_music_cover` |
+| **文生视频**     | Hailuo-2.3 / 02          | ✅ 已支持 | `generate_video` 工具                     |
+| **图生视频**     | I2V-01 / S2V-01          | ✅ 已支持 | `generate_video` 工具                     |
+| **视觉理解**     | coding-plan-vlm          | ✅ 已支持 | `vision` 工具                             |
+| **搜索**         | coding-plan-search       | ✅ 已支持 | `minimax_search` 工具                     |
 
 ---
 
@@ -24,15 +24,15 @@
 
 **基础 URL**: `https://api.minimaxi.com/v1/text/chatcompletion_v2`
 
-| 模型 | Token | 速度 | 说明 |
-|------|-------|------|------|
-| MiniMax-M2.7 | 204800 | ~60 tps | 开启自我迭代 |
-| MiniMax-M2.7-highspeed | 204800 | ~100 tps | 极速版 |
-| MiniMax-M2.5 | 204800 | ~60 tps | 顶尖性能+性价比 |
-| MiniMax-M2.5-highspeed | 204800 | ~100 tps | 极速版 |
-| MiniMax-M2.1 | 204800 | ~60 tps | 强大编程能力 |
-| MiniMax-M2.1-highspeed | 204800 | ~100 tps | 极速版 |
-| MiniMax-M2 | 204800 | — | Agent 工作流专用 |
+| 模型                   | Token  | 速度     | 说明             |
+| ---------------------- | ------ | -------- | ---------------- |
+| MiniMax-M2.7           | 204800 | ~60 tps  | 开启自我迭代     |
+| MiniMax-M2.7-highspeed | 204800 | ~100 tps | 极速版           |
+| MiniMax-M2.5           | 204800 | ~60 tps  | 顶尖性能+性价比  |
+| MiniMax-M2.5-highspeed | 204800 | ~100 tps | 极速版           |
+| MiniMax-M2.1           | 204800 | ~60 tps  | 强大编程能力     |
+| MiniMax-M2.1-highspeed | 204800 | ~100 tps | 极速版           |
+| MiniMax-M2             | 204800 | —        | Agent 工作流专用 |
 
 **接入方式**: OpenAI SDK 兼容，HTTP API
 
@@ -42,28 +42,29 @@
 
 **基础 URL**: `https://api.minimaxi.com/v1/image_generation`
 
-| 模型 | 说明 |
-|------|------|
-| image-01 | 文生图 + 图生图（人物主体参考） |
+| 模型          | 说明                            |
+| ------------- | ------------------------------- |
+| image-01      | 文生图 + 图生图（人物主体参考） |
 | image-01-live | image-01 基础上支持多种画风设置 |
 
 **工具调用参数**:
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `model` | string | `image-01` | 模型选择 |
-| `prompt` | string | (必填) | 文本描述，最长 1500 字符 |
-| `subject_reference` | array | — | 图生图，`[{type:"character", image_file:"url或base64"}]` |
-| `style` | object | — | 仅 `image-01-live` 支持 |
-| `aspect_ratio` | string | `1:1` | 1:1 16:9 4:3 3:2 2:3 3:4 9:16 21:9 |
-| `width` / `height` | number | — | 仅 image-01，512-2048，需同时设 |
-| `response_format` | string | `url` | `url` 或 `base64` |
-| `seed` | number | — | 随机种子，可复现 |
-| `n` | number | 1 | 1-9 张 |
-| `prompt_optimizer` | boolean | false | 自动优化 prompt |
-| `aigc_watermark` | boolean | false | 添加水印 |
+| 参数                | 类型    | 默认值     | 说明                                                     |
+| ------------------- | ------- | ---------- | -------------------------------------------------------- |
+| `model`             | string  | `image-01` | 模型选择                                                 |
+| `prompt`            | string  | (必填)     | 文本描述，最长 1500 字符                                 |
+| `subject_reference` | array   | —          | 图生图，`[{type:"character", image_file:"url或base64"}]` |
+| `style`             | object  | —          | 仅 `image-01-live` 支持                                  |
+| `aspect_ratio`      | string  | `1:1`      | 1:1 16:9 4:3 3:2 2:3 3:4 9:16 21:9                       |
+| `width` / `height`  | number  | —          | 仅 image-01，512-2048，需同时设                          |
+| `response_format`   | string  | `url`      | `url` 或 `base64`                                        |
+| `seed`              | number  | —          | 随机种子，可复现                                         |
+| `n`                 | number  | 1          | 1-9 张                                                   |
+| `prompt_optimizer`  | boolean | false      | 自动优化 prompt                                          |
+| `aigc_watermark`    | boolean | false      | 添加水印                                                 |
 
 **返回格式**:
+
 ```json
 {
   "images": ["https://..."],
@@ -82,77 +83,77 @@
 
 MiniMax 视觉理解（coding-plan-vlm）
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `prompt` | string | 要问图片的问题 |
+| 参数        | 类型   | 说明               |
+| ----------- | ------ | ------------------ |
+| `prompt`    | string | 要问图片的问题     |
 | `image_url` | string | 图片 URL 或 base64 |
-| `file_id` | string | 预上传文件 ID |
+| `file_id`   | string | 预上传文件 ID      |
 
 ### `minimax_search`
 
 MiniMax 官方搜索，支持 Google 高级语法
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `q` | string | 搜索词 |
+| 参数 | 类型   | 说明   |
+| ---- | ------ | ------ |
+| `q`  | string | 搜索词 |
 
 ### `speak`
 
 MiniMax TTS HD（语音合成）
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `text` | string | 待合成文本，最长 10000 字符 |
-| `model` | string | speech-2.8-hd 等 |
-| `voice_id` | string | 音色 ID |
-| `speed` | number | 语速 0.5-2.0 |
-| `emotion` | string | happy/sad/angry/fearful 等 |
-| `stream` | boolean | 流式输出 |
-| `output_format` | string | url 或 hex |
+| 参数            | 类型    | 说明                        |
+| --------------- | ------- | --------------------------- |
+| `text`          | string  | 待合成文本，最长 10000 字符 |
+| `model`         | string  | speech-2.8-hd 等            |
+| `voice_id`      | string  | 音色 ID                     |
+| `speed`         | number  | 语速 0.5-2.0                |
+| `emotion`       | string  | happy/sad/angry/fearful 等  |
+| `stream`        | boolean | 流式输出                    |
+| `output_format` | string  | url 或 hex                  |
 
 ### `generate_music`
 
 MiniMax 音乐生成
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `prompt` | string | 歌曲描述/灵感 |
-| `lyrics` | string | 歌词 |
-| `model` | string | music-2.6-free 等 |
-| `instrumental` | boolean | 纯器乐 |
-| `lyrics_optimizer` | boolean | 自动生成歌词 |
-| `vocals` | string | 人声音色描述 |
-| `genre` | string | 音乐风格 |
+| 参数               | 类型    | 说明              |
+| ------------------ | ------- | ----------------- |
+| `prompt`           | string  | 歌曲描述/灵感     |
+| `lyrics`           | string  | 歌词              |
+| `model`            | string  | music-2.6-free 等 |
+| `instrumental`     | boolean | 纯器乐            |
+| `lyrics_optimizer` | boolean | 自动生成歌词      |
+| `vocals`           | string  | 人声音色描述      |
+| `genre`            | string  | 音乐风格          |
 
 ### `generate_music_cover`
 
 MiniMax 音乐翻唱（参考音频生成翻唱版）
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `prompt` | string | 翻唱风格描述 |
+| 参数        | 类型   | 说明         |
+| ----------- | ------ | ------------ |
+| `prompt`    | string | 翻唱风格描述 |
 | `audio_url` | string | 参考音频 URL |
-| `lyrics` | string | 歌词（可选） |
-| `seed` | number | 随机种子 |
+| `lyrics`    | string | 歌词（可选） |
+| `seed`      | number | 随机种子     |
 
 ### `generate_video`
 
 MiniMax 视频生成（异步，自动轮询，最长 5 分钟）
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `prompt` | string | 视频描述 |
-| `model` | string | MiniMax-Hailuo-2.3 等 |
-| `first_frame_image` | string | 首帧图片 URL（I2V） |
-| `last_frame_image` | string | 尾帧图片 URL（S2V with Hailuo-02） |
-| `subject_image` | string | 主体参考图 URL（S2V-01） |
+| 参数                | 类型   | 说明                               |
+| ------------------- | ------ | ---------------------------------- |
+| `prompt`            | string | 视频描述                           |
+| `model`             | string | MiniMax-Hailuo-2.3 等              |
+| `first_frame_image` | string | 首帧图片 URL（I2V）                |
+| `last_frame_image`  | string | 尾帧图片 URL（S2V with Hailuo-02） |
+| `subject_image`     | string | 主体参考图 URL（S2V-01）           |
 
 ### `query_video_task`
 
 查询视频任务状态
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数      | 类型   | 说明        |
+| --------- | ------ | ----------- |
 | `task_id` | string | 视频任务 ID |
 
 ---
@@ -178,19 +179,19 @@ MiniMax 视频生成（异步，自动轮询，最长 5 分钟）
 
 **ColoBot 用户使用的是 Coding Plan（Token Plan）套餐**。
 
-| 套餐类型 | API Host | 说明 |
-|----------|----------|------|
+| 套餐类型                     | API Host           | 说明                      |
+| ---------------------------- | ------------------ | ------------------------- |
 | **Coding Plan (Token Plan)** | `api.minimaxi.com` | 当前使用，Token Plan 专用 |
-| 按量付费（标准） | `api.minimax.chat` | 标准接口 |
+| 按量付费（标准）             | `api.minimax.chat` | 标准接口                  |
 
 > `api.minimax.chat` 和 `api.minimaxi.com` **不是同一个域名**，接错会报 `Invalid API key`。
 
 **各模态 API Host（当前配置）**:
 
-| 模态 | Coding Plan Host |
-|------|-----------------|
-| 文本生成 | `api.minimax.chat` 或 `api.minimaxi.com` |
-| 图片/视频/TTS/音乐 | `api.minimaxi.com` |
+| 模态               | Coding Plan Host                         |
+| ------------------ | ---------------------------------------- |
+| 文本生成           | `api.minimax.chat` 或 `api.minimaxi.com` |
+| 图片/视频/TTS/音乐 | `api.minimaxi.com`                       |
 
 > ⚠️ Coding Plan 的 API Key 对应 `api.minimaxi.com`，文本接口可能也需用此 host。
 
@@ -202,15 +203,15 @@ MiniMax 视频生成（异步，自动轮询，最长 5 分钟）
 
 **MCP 暴露的工具清单**（参考 Python 版 `server.py`）:
 
-| 工具名 | 功能 | 对应 API |
-|--------|------|----------|
-| `list_voices` | 列出可用音色 | TTS |
-| `voice_clone` | 音色克隆 | 复刻音色接口 |
-| `generate_video` | 视频生成 | `/v1/video_generation` |
-| `query_video_generation` | 查询视频任务状态 | 异步三步曲 |
-| `text_to_image` | 图片生成 | `/v1/image_generation` |
-| `music_generation` | 音乐生成 | `/v1/music_generation` |
-| `voice_design` | 音色设计（prompt 生成音色） | `/v1/voice_design/design` |
+| 工具名                   | 功能                        | 对应 API                  |
+| ------------------------ | --------------------------- | ------------------------- |
+| `list_voices`            | 列出可用音色                | TTS                       |
+| `voice_clone`            | 音色克隆                    | 复刻音色接口              |
+| `generate_video`         | 视频生成                    | `/v1/video_generation`    |
+| `query_video_generation` | 查询视频任务状态            | 异步三步曲                |
+| `text_to_image`          | 图片生成                    | `/v1/image_generation`    |
+| `music_generation`       | 音乐生成                    | `/v1/music_generation`    |
+| `voice_design`           | 音色设计（prompt 生成音色） | `/v1/voice_design/design` |
 
 ---
 
@@ -249,6 +250,7 @@ M2.5 / M2.7 模型升级版本。
 官方 MCP 服务器，**核心参考**。
 
 暴露工具（`server.py`）:
+
 - `list_voices` — 音色列表
 - `voice_clone` — 音色克隆
 - `generate_video` — 视频生成
@@ -293,6 +295,7 @@ mmx vision photo.jpg
 MiniMax 搜索 MCP 服务器，基于 MiniMax Search API。
 
 暴露工具:
+
 - `search(queries: string[])` — 并行 Web 搜索
 - `browse(urls: string[], query: string)` — 抓取 URL 内容后 LLM 总结
 
@@ -308,6 +311,7 @@ MiniMax 搜索 MCP 服务器，基于 MiniMax Search API。
 MiniMax M2.5 模型的最佳实践 Agent demo，**最值得研究**。
 
 核心特性:
+
 - ✅ **完整 Agent 执行循环** — planning → tool calling → observation → response
 - ✅ **持久化 Session Note** — 多轮对话记忆
 - ✅ **自动上下文摘要** — 超过 token 上限时自动压缩历史
@@ -316,6 +320,7 @@ MiniMax M2.5 模型的最佳实践 Agent demo，**最值得研究**。
 - ✅ **完整日志** — 每步请求/响应/工具执行都记录
 
 源码结构:
+
 ```
 mini_agent/
   (核心 Agent 类)
@@ -372,6 +377,7 @@ Hackathon 资料。
 [MiniMax-VL-01](https://github.com/MiniMax-AI/MiniMax-01) 是视觉-语言模型，支持图片理解 + 对话，可作为 Agent 的"眼睛"。
 
 **关键参数**（参考 Model Card）:
+
 - 支持单图 + 多图输入
 - 图片描述、视觉问答
 - 256K context window
@@ -384,5 +390,5 @@ Hackathon 资料。
 // MiniMax-VL-01 图片理解（官方 API 开放后可接）
 registerTool('vision', async (args) => {
   // 传入图片 URL 或 base64，返回图片描述
-});
+})
 ```

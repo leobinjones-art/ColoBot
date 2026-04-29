@@ -3,7 +3,12 @@
  * 优先级：数据库 > 环境变量 > 默认值
  */
 
-export type SopPromptName = 'taskAnalysis' | 'stepGuidance' | 'summarizeSubAgent' | 'reviewStep' | 'finalOutput';
+export type SopPromptName =
+  | 'taskAnalysis'
+  | 'stepGuidance'
+  | 'summarizeSubAgent'
+  | 'reviewStep'
+  | 'finalOutput'
 
 export const SOP_PROMPTS = {
   /**
@@ -138,34 +143,34 @@ export const SOP_PROMPTS = {
 8. **参考文献**：列出提到的文献（如有）
 
 请直接输出 Markdown 格式的报告内容。`,
-};
+}
 
 // 缓存数据库配置
-let cachedPrompts: Record<string, string> | null = null;
+let cachedPrompts: Record<string, string> | null = null
 
 /**
  * 从数据库加载 SOP Prompts
  */
 export async function loadSopPromptsFromDb(): Promise<Record<string, string>> {
-  if (cachedPrompts) return cachedPrompts;
+  if (cachedPrompts) return cachedPrompts
 
   try {
-    const { query } = await import('../memory/db.js');
+    const { query } = await import('../memory/db.js')
     const rows = await query<{ setting_key: string; setting_value: string }>(
-      `SELECT setting_key, setting_value FROM agent_settings WHERE setting_key LIKE 'sop_prompt_%'`
-    );
+      `SELECT setting_key, setting_value FROM agent_settings WHERE setting_key LIKE 'sop_prompt_%'`,
+    )
 
-    const prompts: Record<string, string> = {};
+    const prompts: Record<string, string> = {}
     for (const row of rows) {
-      const name = row.setting_key.replace('sop_prompt_', '');
-      prompts[name] = row.setting_value;
+      const name = row.setting_key.replace('sop_prompt_', '')
+      prompts[name] = row.setting_value
     }
 
-    cachedPrompts = Object.keys(prompts).length > 0 ? prompts : null;
-    return prompts;
+    cachedPrompts = Object.keys(prompts).length > 0 ? prompts : null
+    return prompts
   } catch (e) {
-    console.error('[SOP] Failed to load prompts from DB:', e);
-    return {};
+    console.error('[SOP] Failed to load prompts from DB:', e)
+    return {}
   }
 }
 
@@ -173,14 +178,14 @@ export async function loadSopPromptsFromDb(): Promise<Record<string, string>> {
  * 保存 SOP Prompt 到数据库
  */
 export async function saveSopPromptToDb(name: string, value: string): Promise<void> {
-  const { query } = await import('../memory/db.js');
+  const { query } = await import('../memory/db.js')
   await query(
     `INSERT INTO agent_settings (setting_key, setting_value, description, created_at, updated_at)
      VALUES ($1, $2, $3, NOW(), NOW())
      ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2, updated_at = NOW()`,
-    [`sop_prompt_${name}`, value, `SOP Prompt: ${name}`]
-  );
-  cachedPrompts = null; // 清除缓存
+    [`sop_prompt_${name}`, value, `SOP Prompt: ${name}`],
+  )
+  cachedPrompts = null // 清除缓存
 }
 
 /**
@@ -189,55 +194,57 @@ export async function saveSopPromptToDb(name: string, value: string): Promise<vo
  */
 export async function getSopPromptAsync(name: SopPromptName): Promise<string> {
   // 1. 检查数据库
-  const dbPrompts = await loadSopPromptsFromDb();
+  const dbPrompts = await loadSopPromptsFromDb()
   if (dbPrompts[name]) {
-    return dbPrompts[name];
+    return dbPrompts[name]
   }
 
   // 2. 检查环境变量
-  const envKey = `SOP_PROMPT_${name.toUpperCase()}`;
+  const envKey = `SOP_PROMPT_${name.toUpperCase()}`
   if (process.env[envKey]) {
-    return process.env[envKey]!;
+    return process.env[envKey]!
   }
 
   // 3. 返回默认值
-  return SOP_PROMPTS[name];
+  return SOP_PROMPTS[name]
 }
 
 /**
  * 获取 Prompt 模板（同步版本，用于向后兼容）
  */
 export function getSopPrompt(name: SopPromptName): string {
-  const envKey = `SOP_PROMPT_${name.toUpperCase()}`;
-  return process.env[envKey] || SOP_PROMPTS[name];
+  const envKey = `SOP_PROMPT_${name.toUpperCase()}`
+  return process.env[envKey] || SOP_PROMPTS[name]
 }
 
 /**
  * 获取所有 Prompts（包含来源信息）
  */
-export async function getAllSopPrompts(): Promise<Record<string, { value: string; source: 'db' | 'env' | 'default' }>> {
-  const result: Record<string, { value: string; source: 'db' | 'env' | 'default' }> = {};
+export async function getAllSopPrompts(): Promise<
+  Record<string, { value: string; source: 'db' | 'env' | 'default' }>
+> {
+  const result: Record<string, { value: string; source: 'db' | 'env' | 'default' }> = {}
 
-  const dbPrompts = await loadSopPromptsFromDb();
+  const dbPrompts = await loadSopPromptsFromDb()
 
   for (const name of Object.keys(SOP_PROMPTS) as SopPromptName[]) {
-    const envKey = `SOP_PROMPT_${name.toUpperCase()}`;
+    const envKey = `SOP_PROMPT_${name.toUpperCase()}`
 
     if (dbPrompts[name]) {
-      result[name] = { value: dbPrompts[name], source: 'db' };
+      result[name] = { value: dbPrompts[name], source: 'db' }
     } else if (process.env[envKey]) {
-      result[name] = { value: process.env[envKey]!, source: 'env' };
+      result[name] = { value: process.env[envKey]!, source: 'env' }
     } else {
-      result[name] = { value: SOP_PROMPTS[name], source: 'default' };
+      result[name] = { value: SOP_PROMPTS[name], source: 'default' }
     }
   }
 
-  return result;
+  return result
 }
 
 /**
  * 填充 Prompt 模板
  */
 export function fillPrompt(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? ''));
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? ''))
 }

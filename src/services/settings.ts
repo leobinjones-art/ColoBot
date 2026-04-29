@@ -2,37 +2,36 @@
  * 应用设置服务 - 存储飞书/API 等配置
  */
 
-import { query, queryOne } from '../memory/db.js';
+import { query, queryOne } from '../memory/db.js'
 
 export interface AppSetting {
-  key: string;
-  value: string;
-  description: string | null;
-  updated_at: Date;
+  key: string
+  value: string
+  description: string | null
+  updated_at: Date
 }
 
 /**
  * 获取单个配置
  */
 export async function getSetting(key: string): Promise<string | null> {
-  const row = await queryOne<{ value: string }>(
-    'SELECT value FROM app_settings WHERE key = $1',
-    [key]
-  );
-  return row?.value ?? null;
+  const row = await queryOne<{ value: string }>('SELECT value FROM app_settings WHERE key = $1', [
+    key,
+  ])
+  return row?.value ?? null
 }
 
 /**
  * 获取多个配置
  */
 export async function getSettings(keys: string[]): Promise<Record<string, string>> {
-  if (!keys.length) return {};
-  const placeholders = keys.map((_, i) => `$${i + 1}`).join(',');
+  if (!keys.length) return {}
+  const placeholders = keys.map((_, i) => `$${i + 1}`).join(',')
   const rows = await query<{ key: string; value: string }>(
     `SELECT key, value FROM app_settings WHERE key IN (${placeholders})`,
-    keys
-  );
-  return Object.fromEntries(rows.map(r => [r.key, r.value]));
+    keys,
+  )
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]))
 }
 
 /**
@@ -43,8 +42,8 @@ export async function setSetting(key: string, value: string, description?: strin
     `INSERT INTO app_settings (key, value, description, updated_at)
      VALUES ($1, $2, $3, NOW())
      ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
-    [key, value, description ?? null]
-  );
+    [key, value, description ?? null],
+  )
 }
 
 /**
@@ -52,7 +51,7 @@ export async function setSetting(key: string, value: string, description?: strin
  */
 export async function setSettings(settings: Record<string, string>): Promise<void> {
   for (const [key, value] of Object.entries(settings)) {
-    await setSetting(key, value);
+    await setSetting(key, value)
   }
 }
 
@@ -60,7 +59,7 @@ export async function setSettings(settings: Record<string, string>): Promise<voi
  * 删除配置
  */
 export async function deleteSetting(key: string): Promise<void> {
-  await query('DELETE FROM app_settings WHERE key = $1', [key]);
+  await query('DELETE FROM app_settings WHERE key = $1', [key])
 }
 
 // 飞书配置 key 常量
@@ -76,56 +75,63 @@ export const SETTINGS_KEYS = {
   SUBAGENT_DEFAULT_TTL_MS: 'subagent_default_ttl_ms',
   SEARXNG_URL: 'searxng_url',
   FEISHU_AGENT_ID: 'feishu_agent_id',
-} as const;
+} as const
 
 export type FeishuSettings = {
-  lark_app_id: string;
-  lark_app_secret: string;
-  lark_verification_token: string;
-  feishu_approver_open_id: string;
-  feishu_webhook_url: string;
-  colobot_public_url: string;
-  feishu_agent_id: string;
-};
+  lark_app_id: string
+  lark_app_secret: string
+  lark_verification_token: string
+  feishu_approver_open_id: string
+  feishu_webhook_url: string
+  colobot_public_url: string
+  feishu_agent_id: string
+}
 
 /**
  * 获取飞书配置
  */
 export async function getFeishuSettings(): Promise<FeishuSettings> {
-  const keys = Object.values(SETTINGS_KEYS);
-  const settings = await getSettings(keys);
+  const keys = Object.values(SETTINGS_KEYS)
+  const settings = await getSettings(keys)
   return {
     lark_app_id: settings[SETTINGS_KEYS.LARK_APP_ID] || process.env.LARK_APP_ID || '',
     lark_app_secret: settings[SETTINGS_KEYS.LARK_APP_SECRET] || process.env.LARK_APP_SECRET || '',
-    lark_verification_token: settings[SETTINGS_KEYS.LARK_VERIFICATION_TOKEN] || process.env.LARK_VERIFICATION_TOKEN || '',
-    feishu_approver_open_id: settings[SETTINGS_KEYS.FEISHU_APPROVER_OPEN_ID] || process.env.FEISHU_APPROVER_OPEN_ID || '',
-    feishu_webhook_url: settings[SETTINGS_KEYS.FEISHU_WEBHOOK_URL] || process.env.FEISHU_WEBHOOK_URL || '',
-    colobot_public_url: settings[SETTINGS_KEYS.COLOBOT_PUBLIC_URL] || process.env.COLOBOT_PUBLIC_URL || '',
+    lark_verification_token:
+      settings[SETTINGS_KEYS.LARK_VERIFICATION_TOKEN] || process.env.LARK_VERIFICATION_TOKEN || '',
+    feishu_approver_open_id:
+      settings[SETTINGS_KEYS.FEISHU_APPROVER_OPEN_ID] || process.env.FEISHU_APPROVER_OPEN_ID || '',
+    feishu_webhook_url:
+      settings[SETTINGS_KEYS.FEISHU_WEBHOOK_URL] || process.env.FEISHU_WEBHOOK_URL || '',
+    colobot_public_url:
+      settings[SETTINGS_KEYS.COLOBOT_PUBLIC_URL] || process.env.COLOBOT_PUBLIC_URL || '',
     feishu_agent_id: settings[SETTINGS_KEYS.FEISHU_AGENT_ID] || '',
-  };
+  }
 }
 
 /**
  * 保存飞书配置
  */
 export async function saveFeishuSettings(settings: Partial<FeishuSettings>): Promise<void> {
-  const entries = Object.entries(settings).filter(([, v]) => v !== undefined);
+  const entries = Object.entries(settings).filter(([, v]) => v !== undefined)
   for (const [key, value] of entries) {
-    await setSetting(key, value);
+    await setSetting(key, value)
   }
 }
 
 export type SearXNGSettings = {
-  searxng_url: string;
-};
+  searxng_url: string
+}
 
 /**
  * 获取 SearXNG 配置
  */
 export async function getSearXNGSettings(): Promise<SearXNGSettings> {
   return {
-    searxng_url: (await getSetting(SETTINGS_KEYS.SEARXNG_URL)) || process.env.SEARXNG_URL || 'http://127.0.0.1:8080',
-  };
+    searxng_url:
+      (await getSetting(SETTINGS_KEYS.SEARXNG_URL)) ||
+      process.env.SEARXNG_URL ||
+      'http://127.0.0.1:8080',
+  }
 }
 
 /**
@@ -133,7 +139,7 @@ export async function getSearXNGSettings(): Promise<SearXNGSettings> {
  */
 export async function saveSearXNGSettings(settings: Partial<SearXNGSettings>): Promise<void> {
   if (settings.searxng_url !== undefined) {
-    await setSetting(SETTINGS_KEYS.SEARXNG_URL, settings.searxng_url);
+    await setSetting(SETTINGS_KEYS.SEARXNG_URL, settings.searxng_url)
   }
 }
 
@@ -144,29 +150,31 @@ export const LLM_SETTINGS_KEYS = {
   OPENAI_API_KEY: 'openai_api_key',
   ANTHROPIC_API_KEY: 'anthropic_api_key',
   MINIMAX_API_KEY: 'minimax_api_key',
-} as const;
+} as const
 
 export type LLMSettings = {
-  llm_provider: string;
-  mock_llm: boolean;
-  openai_api_key: string;
-  anthropic_api_key: string;
-  minimax_api_key: string;
-};
+  llm_provider: string
+  mock_llm: boolean
+  openai_api_key: string
+  anthropic_api_key: string
+  minimax_api_key: string
+}
 
 /**
  * 获取 LLM 配置
  */
 export async function getLLMSettings(): Promise<LLMSettings> {
-  const keys = Object.values(LLM_SETTINGS_KEYS);
-  const settings = await getSettings(keys);
+  const keys = Object.values(LLM_SETTINGS_KEYS)
+  const settings = await getSettings(keys)
   return {
     llm_provider: settings[LLM_SETTINGS_KEYS.LLM_PROVIDER] || process.env.LLM_PROVIDER || 'openai',
     mock_llm: settings[LLM_SETTINGS_KEYS.MOCK_LLM] === 'true' || process.env.MOCK_LLM === 'true',
     openai_api_key: settings[LLM_SETTINGS_KEYS.OPENAI_API_KEY] || process.env.OPENAI_API_KEY || '',
-    anthropic_api_key: settings[LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY] || process.env.ANTHROPIC_API_KEY || '',
-    minimax_api_key: settings[LLM_SETTINGS_KEYS.MINIMAX_API_KEY] || process.env.MINIMAX_API_KEY || '',
-  };
+    anthropic_api_key:
+      settings[LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY] || process.env.ANTHROPIC_API_KEY || '',
+    minimax_api_key:
+      settings[LLM_SETTINGS_KEYS.MINIMAX_API_KEY] || process.env.MINIMAX_API_KEY || '',
+  }
 }
 
 /**
@@ -174,18 +182,18 @@ export async function getLLMSettings(): Promise<LLMSettings> {
  */
 export async function saveLLMSettings(settings: Partial<LLMSettings>): Promise<void> {
   if (settings.llm_provider !== undefined) {
-    await setSetting(LLM_SETTINGS_KEYS.LLM_PROVIDER, settings.llm_provider);
+    await setSetting(LLM_SETTINGS_KEYS.LLM_PROVIDER, settings.llm_provider)
   }
   if (settings.mock_llm !== undefined) {
-    await setSetting(LLM_SETTINGS_KEYS.MOCK_LLM, String(settings.mock_llm));
+    await setSetting(LLM_SETTINGS_KEYS.MOCK_LLM, String(settings.mock_llm))
   }
   if (settings.openai_api_key !== undefined) {
-    await setSetting(LLM_SETTINGS_KEYS.OPENAI_API_KEY, settings.openai_api_key);
+    await setSetting(LLM_SETTINGS_KEYS.OPENAI_API_KEY, settings.openai_api_key)
   }
   if (settings.anthropic_api_key !== undefined) {
-    await setSetting(LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY, settings.anthropic_api_key);
+    await setSetting(LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY, settings.anthropic_api_key)
   }
   if (settings.minimax_api_key !== undefined) {
-    await setSetting(LLM_SETTINGS_KEYS.MINIMAX_API_KEY, settings.minimax_api_key);
+    await setSetting(LLM_SETTINGS_KEYS.MINIMAX_API_KEY, settings.minimax_api_key)
   }
 }

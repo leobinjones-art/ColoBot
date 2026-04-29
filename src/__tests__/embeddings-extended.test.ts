@@ -1,7 +1,7 @@
 /**
  * Embeddings Extended 测试
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock settings-cache
 vi.mock('../services/settings-cache.js', () => ({
@@ -10,22 +10,25 @@ vi.mock('../services/settings-cache.js', () => ({
   getMinimaxApiKey: vi.fn(() => ''),
   getLlmProvider: vi.fn(() => 'openai'),
   getEmbeddingProvider: vi.fn(() => 'openai'),
-}));
+}))
 
 // Mock config/llm
 vi.mock('../config/llm.js', () => ({
-  getEmbeddingConfig: vi.fn(() => ({ model: 'text-embedding-3-small', endpoint: 'https://api.openai.com/v1/embeddings' })),
-}));
+  getEmbeddingConfig: vi.fn(() => ({
+    model: 'text-embedding-3-small',
+    endpoint: 'https://api.openai.com/v1/embeddings',
+  })),
+}))
 
 // Mock fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+const mockFetch = vi.fn()
+global.fetch = mockFetch
 
 describe('Embeddings Extended', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockFetch.mockReset();
-  });
+    vi.clearAllMocks()
+    mockFetch.mockReset()
+  })
 
   describe('embed', () => {
     it('should return embedding from API', async () => {
@@ -34,26 +37,26 @@ describe('Embeddings Extended', () => {
         json: async () => ({
           data: [{ embedding: [0.1, 0.2, 0.3] }],
         }),
-      });
+      })
 
-      const { embed } = await import('../memory/embeddings.js');
-      const result = await embed('test text');
+      const { embed } = await import('../memory/embeddings.js')
+      const result = await embed('test text')
 
-      expect(result.embedding).toEqual([0.1, 0.2, 0.3]);
-    });
+      expect(result.embedding).toEqual([0.1, 0.2, 0.3])
+    })
 
     it('should handle API error', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
         text: async () => 'Error',
-      });
+      })
 
       // The module uses mock mode when API fails, so it won't throw
-      const { embed } = await import('../memory/embeddings.js');
-      const result = await embed('test');
+      const { embed } = await import('../memory/embeddings.js')
+      const result = await embed('test')
 
-      expect(result).toBeDefined();
-    });
-  });
-});
+      expect(result).toBeDefined()
+    })
+  })
+})

@@ -3,8 +3,8 @@
  * ColoBot CLI 入口 - 纯 JS 避免 TypeScript 编译问题
  */
 
-const args = process.argv.slice(2);
-const firstArg = args[0];
+const args = process.argv.slice(2)
+const firstArg = args[0]
 
 // 快速处理 help/version，不加载任何模块
 if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
@@ -27,14 +27,14 @@ ColoBot TUI - 终端交互界面
 
 配置文件:
   ~/.colobot/config.json
-`);
-  process.exit(0);
+`)
+  process.exit(0)
 }
 
 if (firstArg === 'version' || firstArg === '-v' || firstArg === '--version') {
-  console.log(`ColoBot v${process.env.npm_package_version || '0.1.0'}`);
-  process.exit(0);
+  console.log(`ColoBot v${process.env.npm_package_version || '0.1.0'}`)
+  process.exit(0)
 }
 
 // 加载主模块
-import('./main.js');
+import('./main.js')

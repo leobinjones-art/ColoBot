@@ -103,6 +103,7 @@ done
 ### 前置条件
 
 `.env` 中配置：
+
 ```
 LARK_VERIFICATION_TOKEN=your_token_here
 ```

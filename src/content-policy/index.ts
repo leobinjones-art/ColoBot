@@ -5,5 +5,5 @@
  * 此文件仅保留内容安全检测功能
  */
 
-export { scanInput, scanOutput } from './guard.js';
-export { detectThreat, buildUninstallConfirmPrompt } from './threat.js';
+export { scanInput, scanOutput } from './guard.js'
+export { detectThreat, buildUninstallConfirmPrompt } from './threat.js'

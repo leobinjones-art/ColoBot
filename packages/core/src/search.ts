@@ -3,49 +3,49 @@
  */
 
 export interface SearchOptions {
-  language?: string;
-  safe_search?: 0 | 1 | 2;
-  time_range?: string;
-  categories?: string[];
-  engines?: string[];
-  maxResults?: number;
+  language?: string
+  safe_search?: 0 | 1 | 2
+  time_range?: string
+  categories?: string[]
+  engines?: string[]
+  maxResults?: number
 }
 
 export interface SearchResult {
-  url: string;
-  title: string;
-  content: string;
-  engine: string;
-  category: string;
-  thumbnail?: string;
-  publishedDate?: string | null;
+  url: string
+  title: string
+  content: string
+  engine: string
+  category: string
+  thumbnail?: string
+  publishedDate?: string | null
 }
 
 export interface SearchResponse {
-  query: string;
-  results: SearchResult[];
-  answers: string[];
-  suggestions: string[];
-  numberOfResults: number;
+  query: string
+  results: SearchResult[]
+  answers: string[]
+  suggestions: string[]
+  numberOfResults: number
 }
 
 export interface AcademicPaper {
-  title: string;
-  url: string;
-  abstract: string;
-  source: string;
-  publishedDate?: string | null;
+  title: string
+  url: string
+  abstract: string
+  source: string
+  publishedDate?: string | null
 }
 
 // ── 搜索配置 ──────────────────────────────────────────────
 
 interface SearchConfig {
-  engine: 'searxng' | 'duckduckgo' | 'google' | 'bing' | 'baidu';
-  baseUrl: string;
-  apiKey?: string;
-  cx?: string;
-  maxResults: number;
-  timeout: number;
+  engine: 'searxng' | 'duckduckgo' | 'google' | 'bing' | 'baidu'
+  baseUrl: string
+  apiKey?: string
+  cx?: string
+  maxResults: number
+  timeout: number
 }
 
 let searchConfig: SearchConfig = {
@@ -53,20 +53,20 @@ let searchConfig: SearchConfig = {
   baseUrl: 'http://127.0.0.1:8080',
   maxResults: 10,
   timeout: 30000,
-};
+}
 
 /**
  * 配置搜索服务
  */
 export function configureSearch(config: Partial<SearchConfig>): void {
-  searchConfig = { ...searchConfig, ...config };
+  searchConfig = { ...searchConfig, ...config }
 }
 
 /**
  * 获取搜索配置
  */
 export function getSearchConfig(): SearchConfig {
-  return { ...searchConfig };
+  return { ...searchConfig }
 }
 
 /**
@@ -74,23 +74,23 @@ export function getSearchConfig(): SearchConfig {
  */
 export async function search(
   queryText: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
 ): Promise<SearchResponse> {
-  const maxResults = options.maxResults ?? searchConfig.maxResults;
+  const maxResults = options.maxResults ?? searchConfig.maxResults
 
   // 根据引擎选择搜索方式
   switch (searchConfig.engine) {
     case 'duckduckgo':
-      return searchDuckDuckGo(queryText, maxResults);
+      return searchDuckDuckGo(queryText, maxResults)
     case 'google':
-      return searchGoogle(queryText, maxResults);
+      return searchGoogle(queryText, maxResults)
     case 'bing':
-      return searchBing(queryText, maxResults);
+      return searchBing(queryText, maxResults)
     case 'baidu':
-      return searchBaidu(queryText, maxResults);
+      return searchBaidu(queryText, maxResults)
     case 'searxng':
     default:
-      return searchSearXNG(queryText, options, maxResults);
+      return searchSearXNG(queryText, options, maxResults)
   }
 }
 
@@ -100,43 +100,43 @@ export async function search(
 async function searchSearXNG(
   queryText: string,
   options: SearchOptions,
-  maxResults: number
+  maxResults: number,
 ): Promise<SearchResponse> {
   const params = new URLSearchParams({
     q: queryText,
     format: 'json',
-  });
+  })
 
-  if (options.language) params.set('language', options.language);
-  if (options.safe_search !== undefined) params.set('safesearch', String(options.safe_search));
-  if (options.time_range) params.set('time_range', options.time_range);
-  if (options.categories?.length) params.set('categories', options.categories.join(','));
-  if (options.engines?.length) params.set('engines', options.engines.join(','));
+  if (options.language) params.set('language', options.language)
+  if (options.safe_search !== undefined) params.set('safesearch', String(options.safe_search))
+  if (options.time_range) params.set('time_range', options.time_range)
+  if (options.categories?.length) params.set('categories', options.categories.join(','))
+  if (options.engines?.length) params.set('engines', options.engines.join(','))
 
   try {
     const response = await fetch(`${searchConfig.baseUrl}/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: params.toString(),
-    });
+    })
 
     if (!response.ok) {
       if (response.status === 429 || response.status === 503) {
-        return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+        return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
       }
-      throw new Error(`Search failed: ${response.status}`);
+      throw new Error(`Search failed: ${response.status}`)
     }
 
-    const data = await response.json() as {
-      query: string;
-      results: SearchResult[];
-      answers: string[];
-      suggestions: string[];
-      number_of_results: number;
-    };
+    const data = (await response.json()) as {
+      query: string
+      results: SearchResult[]
+      answers: string[]
+      suggestions: string[]
+      number_of_results: number
+    }
 
     return {
       query: data.query,
@@ -144,40 +144,38 @@ async function searchSearXNG(
       answers: data.answers,
       suggestions: data.suggestions,
       numberOfResults: data.number_of_results,
-    };
+    }
   } catch (e) {
-    console.error('[Search] SearXNG Error:', e);
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] SearXNG Error:', e)
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 }
 
 /**
  * DuckDuckGo 搜索 (使用 DuckDuckGo HTML)
  */
-async function searchDuckDuckGo(
-  queryText: string,
-  maxResults: number
-): Promise<SearchResponse> {
+async function searchDuckDuckGo(queryText: string, maxResults: number): Promise<SearchResponse> {
   try {
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(queryText)}`;
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(queryText)}`
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
       },
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`DuckDuckGo search failed: ${response.status}`);
+      throw new Error(`DuckDuckGo search failed: ${response.status}`)
     }
 
-    const html = await response.text();
-    const results = parseDuckDuckGoResults(html, maxResults);
+    const html = await response.text()
+    const results = parseDuckDuckGoResults(html, maxResults)
 
     // 如果没有结果，尝试备用解析
     if (results.length === 0) {
-      const fallbackResults = parseDuckDuckGoFallback(html, maxResults);
+      const fallbackResults = parseDuckDuckGoFallback(html, maxResults)
       if (fallbackResults.length > 0) {
         return {
           query: queryText,
@@ -185,7 +183,7 @@ async function searchDuckDuckGo(
           answers: [],
           suggestions: [],
           numberOfResults: fallbackResults.length,
-        };
+        }
       }
     }
 
@@ -195,10 +193,10 @@ async function searchDuckDuckGo(
       answers: [],
       suggestions: [],
       numberOfResults: results.length,
-    };
+    }
   } catch (e) {
-    console.error('[Search] DuckDuckGo Error:', e);
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] DuckDuckGo Error:', e)
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 }
 
@@ -206,17 +204,17 @@ async function searchDuckDuckGo(
  * DuckDuckGo 备用解析
  */
 function parseDuckDuckGoFallback(html: string, maxResults: number): SearchResult[] {
-  const results: SearchResult[] = [];
+  const results: SearchResult[] = []
   // 尝试匹配任何链接
-  const regex = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi;
-  let match;
+  const regex = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi
+  let match
 
   while ((match = regex.exec(html)) !== null && results.length < maxResults) {
-    const url = match[1];
-    const title = match[2].trim();
+    const url = match[1]
+    const title = match[2].trim()
 
     // 跳过 duckduckgo 自身链接和空标题
-    if (url.includes('duckduckgo.com') || !title || title.length < 3) continue;
+    if (url.includes('duckduckgo.com') || !title || title.length < 3) continue
 
     results.push({
       url,
@@ -224,27 +222,27 @@ function parseDuckDuckGoFallback(html: string, maxResults: number): SearchResult
       content: '',
       engine: 'duckduckgo',
       category: 'general',
-    });
+    })
   }
 
-  return results;
+  return results
 }
 
 /**
  * 解析 DuckDuckGo 结果
  */
 function parseDuckDuckGoResults(html: string, maxResults: number): SearchResult[] {
-  const results: SearchResult[] = [];
-  const regex = /<a[^>]+class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g;
-  let match;
+  const results: SearchResult[] = []
+  const regex = /<a[^>]+class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g
+  let match
 
   while ((match = regex.exec(html)) !== null && results.length < maxResults) {
-    let url = match[1];
-    const title = match[2].trim();
+    let url = match[1]
+    const title = match[2].trim()
 
     // DuckDuckGo 使用重定向 URL
     if (url.startsWith('//duckduckgo.com/l/?uddg=')) {
-      url = decodeURIComponent(url.replace('//duckduckgo.com/l/?uddg=', '').split('&')[0]);
+      url = decodeURIComponent(url.replace('//duckduckgo.com/l/?uddg=', '').split('&')[0])
     }
 
     results.push({
@@ -253,41 +251,40 @@ function parseDuckDuckGoResults(html: string, maxResults: number): SearchResult[
       content: '',
       engine: 'duckduckgo',
       category: 'general',
-    });
+    })
   }
 
-  return results;
+  return results
 }
 
 /**
  * Google 搜索 (需要 API Key)
  */
-async function searchGoogle(
-  queryText: string,
-  maxResults: number
-): Promise<SearchResponse> {
+async function searchGoogle(queryText: string, maxResults: number): Promise<SearchResponse> {
   if (!searchConfig.apiKey || !searchConfig.cx) {
-    console.error('[Search] Google requires apiKey and cx');
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] Google requires apiKey and cx')
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 
   try {
-    const url = `https://www.googleapis.com/customsearch/v1?key=${searchConfig.apiKey}&cx=${searchConfig.cx}&q=${encodeURIComponent(queryText)}&num=${maxResults}`;
-    const response = await fetch(url);
+    const url = `https://www.googleapis.com/customsearch/v1?key=${searchConfig.apiKey}&cx=${searchConfig.cx}&q=${encodeURIComponent(queryText)}&num=${maxResults}`
+    const response = await fetch(url)
 
     if (!response.ok) {
-      throw new Error(`Google search failed: ${response.status}`);
+      throw new Error(`Google search failed: ${response.status}`)
     }
 
-    const data = await response.json() as { items?: Array<{ link: string; title: string; snippet: string }> };
+    const data = (await response.json()) as {
+      items?: Array<{ link: string; title: string; snippet: string }>
+    }
 
-    const results: SearchResult[] = (data.items || []).map(item => ({
+    const results: SearchResult[] = (data.items || []).map((item) => ({
       url: item.link,
       title: item.title,
       content: item.snippet || '',
       engine: 'google',
       category: 'general',
-    }));
+    }))
 
     return {
       query: queryText,
@@ -295,48 +292,45 @@ async function searchGoogle(
       answers: [],
       suggestions: [],
       numberOfResults: results.length,
-    };
+    }
   } catch (e) {
-    console.error('[Search] Google Error:', e);
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] Google Error:', e)
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 }
 
 /**
  * Bing 搜索 (需要 API Key)
  */
-async function searchBing(
-  queryText: string,
-  maxResults: number
-): Promise<SearchResponse> {
+async function searchBing(queryText: string, maxResults: number): Promise<SearchResponse> {
   if (!searchConfig.apiKey) {
-    console.error('[Search] Bing requires apiKey');
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] Bing requires apiKey')
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 
   try {
-    const url = `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(queryText)}&count=${maxResults}`;
+    const url = `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(queryText)}&count=${maxResults}`
     const response = await fetch(url, {
       headers: {
         'Ocp-Apim-Subscription-Key': searchConfig.apiKey,
       },
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`Bing search failed: ${response.status}`);
+      throw new Error(`Bing search failed: ${response.status}`)
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       webPages?: { value: Array<{ url: string; name: string; snippet: string }> }
-    };
+    }
 
-    const results: SearchResult[] = (data.webPages?.value || []).map(item => ({
+    const results: SearchResult[] = (data.webPages?.value || []).map((item) => ({
       url: item.url,
       title: item.name,
       content: item.snippet || '',
       engine: 'bing',
       category: 'general',
-    }));
+    }))
 
     return {
       query: queryText,
@@ -344,41 +338,39 @@ async function searchBing(
       answers: [],
       suggestions: [],
       numberOfResults: results.length,
-    };
+    }
   } catch (e) {
-    console.error('[Search] Bing Error:', e);
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] Bing Error:', e)
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 }
 
 /**
  * 百度搜索 (中国可用)
  */
-async function searchBaidu(
-  queryText: string,
-  maxResults: number
-): Promise<SearchResponse> {
+async function searchBaidu(queryText: string, maxResults: number): Promise<SearchResponse> {
   try {
-    const url = `https://www.baidu.com/s?wd=${encodeURIComponent(queryText)}`;
+    const url = `https://www.baidu.com/s?wd=${encodeURIComponent(queryText)}`
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'Cookie': 'BAIDUID=test', // 简单的 cookie 避免验证码
+        Cookie: 'BAIDUID=test', // 简单的 cookie 避免验证码
       },
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`Baidu search failed: ${response.status}`);
+      throw new Error(`Baidu search failed: ${response.status}`)
     }
 
-    const html = await response.text();
-    const results = parseBaiduResults(html, maxResults);
+    const html = await response.text()
+    const results = parseBaiduResults(html, maxResults)
 
     // 如果没有结果，尝试备用解析
     if (results.length === 0) {
-      const fallbackResults = parseBaiduFallback(html, maxResults);
+      const fallbackResults = parseBaiduFallback(html, maxResults)
       if (fallbackResults.length > 0) {
         return {
           query: queryText,
@@ -386,7 +378,7 @@ async function searchBaidu(
           answers: [],
           suggestions: [],
           numberOfResults: fallbackResults.length,
-        };
+        }
       }
     }
 
@@ -396,10 +388,10 @@ async function searchBaidu(
       answers: [],
       suggestions: [],
       numberOfResults: results.length,
-    };
+    }
   } catch (e) {
-    console.error('[Search] Baidu Error:', e);
-    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 };
+    console.error('[Search] Baidu Error:', e)
+    return { query: queryText, results: [], answers: [], suggestions: [], numberOfResults: 0 }
   }
 }
 
@@ -407,17 +399,17 @@ async function searchBaidu(
  * 百度备用解析
  */
 function parseBaiduFallback(html: string, maxResults: number): SearchResult[] {
-  const results: SearchResult[] = [];
+  const results: SearchResult[] = []
   // 匹配任何外部链接
-  const regex = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi;
-  let match;
+  const regex = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi
+  let match
 
   while ((match = regex.exec(html)) !== null && results.length < maxResults) {
-    const url = match[1];
-    const title = match[2].replace(/<[^>]+>/g, '').trim();
+    const url = match[1]
+    const title = match[2].replace(/<[^>]+>/g, '').trim()
 
     // 跳过百度自身链接
-    if (url.includes('baidu.com') || !title || title.length < 3) continue;
+    if (url.includes('baidu.com') || !title || title.length < 3) continue
 
     results.push({
       url,
@@ -425,26 +417,27 @@ function parseBaiduFallback(html: string, maxResults: number): SearchResult[] {
       content: '',
       engine: 'baidu',
       category: 'general',
-    });
+    })
   }
 
-  return results;
+  return results
 }
 
 /**
  * 解析百度搜索结果
  */
 function parseBaiduResults(html: string, maxResults: number): SearchResult[] {
-  const results: SearchResult[] = [];
+  const results: SearchResult[] = []
 
   // 匹配百度搜索结果
-  const resultRegex = /<div[^>]*class="[^"]*result[^"]*"[^>]*>[\s\S]*?<h3[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+  const resultRegex =
+    /<div[^>]*class="[^"]*result[^"]*"[^>]*>[\s\S]*?<h3[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>([\s\S]*?)<\/div>/gi
 
-  let match;
+  let match
   while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
-    const url = match[1];
-    const title = match[2].replace(/<[^>]+>/g, '').trim();
-    const content = match[3].replace(/<[^>]+>/g, '').trim();
+    const url = match[1]
+    const title = match[2].replace(/<[^>]+>/g, '').trim()
+    const content = match[3].replace(/<[^>]+>/g, '').trim()
 
     if (url && title && !url.startsWith('/')) {
       results.push({
@@ -453,16 +446,16 @@ function parseBaiduResults(html: string, maxResults: number): SearchResult[] {
         content: content.slice(0, 300),
         engine: 'baidu',
         category: 'general',
-      });
+      })
     }
   }
 
   // 备用解析：更简单的模式
   if (results.length === 0) {
-    const simpleRegex = /<a[^>]*data-click[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    const simpleRegex = /<a[^>]*data-click[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
     while ((match = simpleRegex.exec(html)) !== null && results.length < maxResults) {
-      const url = match[1];
-      const title = match[2].replace(/<[^>]+>/g, '').trim();
+      const url = match[1]
+      const title = match[2].replace(/<[^>]+>/g, '').trim()
       if (url && title && url.startsWith('http')) {
         results.push({
           url,
@@ -470,33 +463,42 @@ function parseBaiduResults(html: string, maxResults: number): SearchResult[] {
           content: '',
           engine: 'baidu',
           category: 'general',
-        });
+        })
       }
     }
   }
 
-  return results;
+  return results
 }
 
 /**
  * 图片搜索
  */
-export async function imageSearch(queryText: string, options: SearchOptions = {}): Promise<SearchResponse> {
-  return search(queryText, { ...options, categories: ['images'] });
+export async function imageSearch(
+  queryText: string,
+  options: SearchOptions = {},
+): Promise<SearchResponse> {
+  return search(queryText, { ...options, categories: ['images'] })
 }
 
 /**
  * 视频搜索
  */
-export async function videoSearch(queryText: string, options: SearchOptions = {}): Promise<SearchResponse> {
-  return search(queryText, { ...options, categories: ['videos'] });
+export async function videoSearch(
+  queryText: string,
+  options: SearchOptions = {},
+): Promise<SearchResponse> {
+  return search(queryText, { ...options, categories: ['videos'] })
 }
 
 /**
  * 新闻搜索
  */
-export async function newsSearch(queryText: string, options: SearchOptions = {}): Promise<SearchResponse> {
-  return search(queryText, { ...options, categories: ['news'] });
+export async function newsSearch(
+  queryText: string,
+  options: SearchOptions = {},
+): Promise<SearchResponse> {
+  return search(queryText, { ...options, categories: ['news'] })
 }
 
 /**
@@ -504,13 +506,13 @@ export async function newsSearch(queryText: string, options: SearchOptions = {})
  */
 export async function multimodalSearch(
   queryText: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
 ): Promise<{ text: SearchResponse; images: SearchResponse }> {
   const [text, images] = await Promise.all([
     search(queryText, options),
     imageSearch(queryText, options),
-  ]);
-  return { text, images };
+  ])
+  return { text, images }
 }
 
 /**
@@ -518,25 +520,25 @@ export async function multimodalSearch(
  */
 export async function academicSearch(
   queryText: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
 ): Promise<SearchResponse & { papers: AcademicPaper[] }> {
   try {
     const result = await search(queryText, {
       ...options,
       engines: ['google scholar', 'arxiv', 'pubmed', 'semantic scholar'],
-    });
+    })
 
-    const papers: AcademicPaper[] = result.results.map(r => ({
+    const papers: AcademicPaper[] = result.results.map((r) => ({
       title: r.title,
       url: r.url,
       abstract: r.content,
       source: r.engine,
       publishedDate: r.publishedDate,
-    }));
+    }))
 
-    return { ...result, papers };
+    return { ...result, papers }
   } catch (e) {
-    console.error('[AcademicSearch] Error:', e);
+    console.error('[AcademicSearch] Error:', e)
     return {
       query: queryText,
       results: [],
@@ -544,6 +546,6 @@ export async function academicSearch(
       suggestions: [],
       numberOfResults: 0,
       papers: [],
-    };
+    }
   }
 }

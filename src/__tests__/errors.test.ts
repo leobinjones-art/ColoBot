@@ -115,10 +115,7 @@ describe('Error Utils', () => {
     })
 
     it('should return fallback on error', async () => {
-      const result = await safeExecute(
-        () => Promise.reject(new Error('fail')),
-        'fallback'
-      )
+      const result = await safeExecute(() => Promise.reject(new Error('fail')), 'fallback')
       expect(result).toBe('fallback')
     })
 
@@ -129,7 +126,7 @@ describe('Error Utils', () => {
         'fallback',
         () => {
           called = true
-        }
+        },
       )
       expect(called).toBe(true)
     })
@@ -159,7 +156,7 @@ describe('Error Utils', () => {
         executeWithRetry(() => Promise.reject(new Error('always fail')), {
           maxRetries: 2,
           delayMs: 10,
-        })
+        }),
       ).rejects.toThrow('always fail')
     })
 
@@ -175,8 +172,8 @@ describe('Error Utils', () => {
             maxRetries: 3,
             delayMs: 10,
             shouldRetry: () => false,
-          }
-        )
+          },
+        ),
       ).rejects.toThrow('no retry')
       expect(attempts).toBe(1)
     })

@@ -2,73 +2,83 @@
  * 子 Agent 工具
  */
 
-import * as path from 'path';
-import type { ToolContext, LLMMessage, ContentBlock } from '@colobot/types';
-import { toolRegistry } from './registry.js';
-import { parseToolCalls, formatToolResults } from './executor.js';
+import * as path from 'path'
+import type { ToolContext, LLMMessage, ContentBlock } from '@colobot/types'
+import { toolRegistry } from './registry.js'
+import { parseToolCalls, formatToolResults } from './executor.js'
 import {
   spawnSubAgent,
   getSubAgent,
   runSubAgentTask,
   destroySubAgent,
   isToolAllowed,
-} from '../subagents/index.js';
-import { chat } from '../llm/index.js';
-import { ConsoleAudit } from '../adapters/audit.js';
-import { Logger } from '../logger.js';
+} from '../subagents/index.js'
+import { chat } from '../llm/index.js'
+import { ConsoleAudit } from '../adapters/audit.js'
+import { Logger } from '../logger.js'
 
 // 子 Agent 日志器 - 写入单独的日志文件
 const logger = new Logger({
   file: path.join(process.env.HOME || '', '.colobot', 'logs', 'subagent.log'),
   prefix: 'subagent',
   level: (process.env.COLOBOT_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
-});
+})
 
 const ALL_TOOLS = [
-  'search_memory', 'add_memory', 'list_memory',
-  'web_search', 'image_search', 'video_search', 'academic_search',
-  'read_file', 'write_file', 'list_dir', 'delete_file',
-  'add_knowledge', 'search_knowledge', 'list_knowledge',
-];
+  'search_memory',
+  'add_memory',
+  'list_memory',
+  'web_search',
+  'image_search',
+  'video_search',
+  'academic_search',
+  'read_file',
+  'write_file',
+  'list_dir',
+  'delete_file',
+  'add_knowledge',
+  'search_knowledge',
+  'list_knowledge',
+]
 
 function estimateComplexity(task: string): number {
-  const t = task.toLowerCase();
-  let score = 1;
-  if (/分析|拆解|对比|评估|判断/i.test(t)) score = Math.max(score, 3);
-  if (/代码|开发|实现|编写.*程序/i.test(t)) score = Math.max(score, 4);
-  if (/研究|调研|全面.*分析/i.test(t)) score = Math.max(score, 5);
-  if (task.length > 200) score = Math.max(score, 2);
-  if (task.length > 500) score = Math.max(score, 3);
-  if (/先|然后|接着|最后|首先|其次/i.test(t)) score = Math.max(score, 3);
-  return Math.min(score, 5);
+  const t = task.toLowerCase()
+  let score = 1
+  if (/分析|拆解|对比|评估|判断/i.test(t)) score = Math.max(score, 3)
+  if (/代码|开发|实现|编写.*程序/i.test(t)) score = Math.max(score, 4)
+  if (/研究|调研|全面.*分析/i.test(t)) score = Math.max(score, 5)
+  if (task.length > 200) score = Math.max(score, 2)
+  if (task.length > 500) score = Math.max(score, 3)
+  if (/先|然后|接着|最后|首先|其次/i.test(t)) score = Math.max(score, 3)
+  return Math.min(score, 5)
 }
 
 function recommendTools(task: string): Array<{ tool: string; reason: string }> {
-  const t = task.toLowerCase();
-  const recs: Array<{ tool: string; reason: string }> = [];
+  const t = task.toLowerCase()
+  const recs: Array<{ tool: string; reason: string }> = []
 
   if (/代码|开发|函数|class|bug|调试/i.test(t)) {
-    recs.push({ tool: 'search_memory', reason: '搜索项目记忆中的相关代码' });
-    recs.push({ tool: 'web_search', reason: '查找技术实现方案' });
+    recs.push({ tool: 'search_memory', reason: '搜索项目记忆中的相关代码' })
+    recs.push({ tool: 'web_search', reason: '查找技术实现方案' })
   }
   if (/搜索|查找|调研|确认.*信息/i.test(t)) {
-    recs.push({ tool: 'web_search', reason: '搜索网络信息' });
+    recs.push({ tool: 'web_search', reason: '搜索网络信息' })
   }
   if (/记忆|记住|存储/i.test(t)) {
-    recs.push({ tool: 'add_memory', reason: '存储关键信息' });
-    recs.push({ tool: 'search_memory', reason: '检索已有记忆' });
+    recs.push({ tool: 'add_memory', reason: '存储关键信息' })
+    recs.push({ tool: 'search_memory', reason: '检索已有记忆' })
   }
   if (recs.length === 0) {
-    recs.push({ tool: 'search_memory', reason: '先搜索项目记忆' });
-    recs.push({ tool: 'web_search', reason: '补充外部信息' });
+    recs.push({ tool: 'search_memory', reason: '先搜索项目记忆' })
+    recs.push({ tool: 'web_search', reason: '补充外部信息' })
   }
-  return recs;
+  return recs
 }
 
 async function summarizeSubAgentResult(
   subAgentName: string,
   task: string,
-  rawResult: string
+  rawResult: string,
 ): Promise<string> {
   const prompt = `你是父Agent，负责整理汇总子Agent"${subAgentName}"的工作成果。
 
@@ -89,62 +99,66 @@ ${rawResult.slice(0, 4000)}
 4. 如果是分析结果，提炼关键结论
 5. 控制在300-500字以内
 
-直接输出整理后的内容，不要添加"以下是整理结果"等前缀。`;
+直接输出整理后的内容，不要添加"以下是整理结果"等前缀。`
 
   try {
     const response = await chat([{ role: 'user', content: prompt }], {
       maxTokens: 800,
       temperature: 0.3,
-    });
-    return typeof response.content === 'string' ? response.content : rawResult;
+    })
+    return typeof response.content === 'string' ? response.content : rawResult
   } catch (e) {
-    console.error('[SubAgent] Summarize failed:', e);
-    return rawResult;
+    console.error('[SubAgent] Summarize failed:', e)
+    return rawResult
   }
 }
 
 async function configSubagent(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const { task, parent_id } = args as { task: string; parent_id?: string };
+  const { task, parent_id } = args as { task: string; parent_id?: string }
 
-  const complexityScore = estimateComplexity(task);
-  const ttlMs = Math.min(Math.max(60_000, complexityScore * 60_000), 10 * 60 * 1000);
-  const recommendedTools = recommendTools(task);
+  const complexityScore = estimateComplexity(task)
+  const ttlMs = Math.min(Math.max(60_000, complexityScore * 60_000), 10 * 60 * 1000)
+  const recommendedTools = recommendTools(task)
 
-  return JSON.stringify({
-    soul_content_guide: {
-      description: 'soul_content 是 JSON 对象，包含子Agent的角色设定',
-      fields: {
-        role: 'string — 子Agent的身份角色名',
-        personality: 'string — 性格描述',
-        rules: 'string[] — 行为规则',
-        skills: 'string[] — 擅长的技能',
+  return JSON.stringify(
+    {
+      soul_content_guide: {
+        description: 'soul_content 是 JSON 对象，包含子Agent的角色设定',
+        fields: {
+          role: 'string — 子Agent的身份角色名',
+          personality: 'string — 性格描述',
+          rules: 'string[] — 行为规则',
+          skills: 'string[] — 擅长的技能',
+        },
+        example: {
+          role: '代码助手',
+          personality: '严谨高效，注重代码质量',
+          rules: ['写代码前先理解需求', '复杂逻辑添加注释'],
+          skills: ['代码生成', 'Bug修复'],
+        },
       },
-      example: {
-        role: '代码助手',
-        personality: '严谨高效，注重代码质量',
-        rules: ['写代码前先理解需求', '复杂逻辑添加注释'],
-        skills: ['代码生成', 'Bug修复'],
-      },
+      available_tools: ALL_TOOLS,
+      recommended_tools: recommendedTools,
+      ttl_ms: ttlMs,
+      ttl_reason: `任务复杂度评分 ${complexityScore}/5，建议 TTL ${ttlMs / 1000}秒`,
+      parent_id: parent_id || '__parent__',
     },
-    available_tools: ALL_TOOLS,
-    recommended_tools: recommendedTools,
-    ttl_ms: ttlMs,
-    ttl_reason: `任务复杂度评分 ${complexityScore}/5，建议 TTL ${ttlMs / 1000}秒`,
-    parent_id: parent_id || '__parent__',
-  }, null, 2);
+    null,
+    2,
+  )
 }
 
 async function spawnSubagentTool(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
   const { name, soul_content, parent_id, ttl_ms, allowed_tools, fallback_model_id } = args as {
-    name: string;
-    soul_content: string;
-    parent_id: string;
-    ttl_ms?: number;
-    allowed_tools?: string[];
-    fallback_model_id?: string;
-  };
+    name: string
+    soul_content: string
+    parent_id: string
+    ttl_ms?: number
+    allowed_tools?: string[]
+    fallback_model_id?: string
+  }
 
-  logger.info('SPAWN', { name, parentId: parent_id || ctx.agentId, ttl_ms, allowed_tools });
+  logger.info('SPAWN', { name, parentId: parent_id || ctx.agentId, ttl_ms, allowed_tools })
 
   const agent = spawnSubAgent({
     name,
@@ -153,43 +167,43 @@ async function spawnSubagentTool(args: Record<string, unknown>, ctx: ToolContext
     ttlMs: ttl_ms,
     allowedTools: allowed_tools,
     fallbackModelId: fallback_model_id,
-  });
+  })
 
-  logger.info('SPAWNED', { id: agent.id, name: agent.name });
+  logger.info('SPAWNED', { id: agent.id, name: agent.name })
 
-  return JSON.stringify({ id: agent.id, name: agent.name }, null, 2);
+  return JSON.stringify({ id: agent.id, name: agent.name }, null, 2)
 }
 
 async function delegateTask(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
-  const { sub_agent_id, task } = args as { sub_agent_id: string; task: string };
+  const { sub_agent_id, task } = args as { sub_agent_id: string; task: string }
 
-  const agent = getSubAgent(sub_agent_id);
+  const agent = getSubAgent(sub_agent_id)
   if (!agent) {
-    logger.error('DELEGATE_NOT_FOUND', { sub_agent_id });
-    throw new Error(`SubAgent not found: ${sub_agent_id}`);
+    logger.error('DELEGATE_NOT_FOUND', { sub_agent_id })
+    throw new Error(`SubAgent not found: ${sub_agent_id}`)
   }
 
-  logger.info('DELEGATE_START', { sub_agent_id, name: agent.name, taskLength: task.length });
+  logger.info('DELEGATE_START', { sub_agent_id, name: agent.name, taskLength: task.length })
 
   // 创建 LLM provider 适配器
   const llmProvider = {
     name: 'subagent-llm',
     chat: async (messages: LLMMessage[], _options?: unknown) => {
-      const response = await chat(messages, {});
+      const response = await chat(messages, {})
       return {
         content: response.content,
         toolCalls: [],
         usage: undefined,
-      };
+      }
     },
     chatStream: async function* (_messages: LLMMessage[], _options?: unknown) {
       // 子 Agent 不使用流式输出
-      yield { type: 'done' as const };
+      yield { type: 'done' as const }
     },
-  };
+  }
 
   // 创建审计日志
-  const audit = new ConsoleAudit();
+  const audit = new ConsoleAudit()
 
   // 执行子 Agent 任务
   const deps = {
@@ -197,59 +211,70 @@ async function delegateTask(args: Record<string, unknown>, ctx: ToolContext): Pr
     audit,
     parseTools: (content: string) => parseToolCalls(content),
     executeTools: async (calls: ReturnType<typeof parseToolCalls>, toolCtx: ToolContext) => {
-      const results: { name: string; result?: unknown; error?: string }[] = [];
+      const results: { name: string; result?: unknown; error?: string }[] = []
       for (const call of calls) {
         if (!isToolAllowed(sub_agent_id, call.name)) {
-          logger.warn('TOOL_BLOCKED', { sub_agent_id, tool: call.name });
-          results.push({ name: call.name, error: 'Tool not allowed' });
-          continue;
+          logger.warn('TOOL_BLOCKED', { sub_agent_id, tool: call.name })
+          results.push({ name: call.name, error: 'Tool not allowed' })
+          continue
         }
         try {
-          const tool = toolRegistry.get(call.name);
+          const tool = toolRegistry.get(call.name)
           if (!tool) {
-            results.push({ name: call.name, error: `Tool not found: ${call.name}` });
-            continue;
+            results.push({ name: call.name, error: `Tool not found: ${call.name}` })
+            continue
           }
-          logger.debug('TOOL_EXECUTE', { sub_agent_id, tool: call.name });
-          const result = await tool.execute({ ...call.args, sub_agent_id: sub_agent_id }, toolCtx);
-          results.push({ name: call.name, result });
+          logger.debug('TOOL_EXECUTE', { sub_agent_id, tool: call.name })
+          const result = await tool.execute({ ...call.args, sub_agent_id: sub_agent_id }, toolCtx)
+          results.push({ name: call.name, result })
         } catch (e) {
-          logger.error('TOOL_ERROR', { sub_agent_id, tool: call.name, error: String(e) });
-          results.push({ name: call.name, error: String(e) });
+          logger.error('TOOL_ERROR', { sub_agent_id, tool: call.name, error: String(e) })
+          results.push({ name: call.name, error: String(e) })
         }
       }
-      return results;
+      return results
     },
     formatResults: (results: { name: string; result?: unknown; error?: string }[]) => {
       return results
-        .map(r => r.error ? `[${r.name}] ERROR: ${r.error}` : `[${r.name}] OK: ${JSON.stringify(r.result).slice(0, 500)}`)
-        .join('\n');
+        .map((r) =>
+          r.error
+            ? `[${r.name}] ERROR: ${r.error}`
+            : `[${r.name}] OK: ${JSON.stringify(r.result).slice(0, 500)}`,
+        )
+        .join('\n')
     },
-  };
+  }
 
   try {
-    const rawResult = await runSubAgentTask(agent, task, agent.parentId, deps);
-    const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult);
-    logger.info('DELEGATE_DONE', { sub_agent_id, name: agent.name, resultLength: summarizedResult.length });
-    return summarizedResult;
+    const rawResult = await runSubAgentTask(agent, task, agent.parentId, deps)
+    const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult)
+    logger.info('DELEGATE_DONE', {
+      sub_agent_id,
+      name: agent.name,
+      resultLength: summarizedResult.length,
+    })
+    return summarizedResult
   } catch (e) {
-    logger.error('DELEGATE_ERROR', { sub_agent_id, error: String(e) });
-    throw e;
+    logger.error('DELEGATE_ERROR', { sub_agent_id, error: String(e) })
+    throw e
   }
 }
 
-async function destroySubagentTool(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
-  const { sub_agent_id } = args as { sub_agent_id: string };
+async function destroySubagentTool(
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<string> {
+  const { sub_agent_id } = args as { sub_agent_id: string }
 
-  const agent = getSubAgent(sub_agent_id);
+  const agent = getSubAgent(sub_agent_id)
   if (!agent) {
-    logger.error('DESTROY_NOT_FOUND', { sub_agent_id });
-    throw new Error(`SubAgent not found: ${sub_agent_id}`);
+    logger.error('DESTROY_NOT_FOUND', { sub_agent_id })
+    throw new Error(`SubAgent not found: ${sub_agent_id}`)
   }
 
-  logger.info('DESTROY', { sub_agent_id, name: agent.name });
-  destroySubAgent(sub_agent_id, agent.parentId);
-  return JSON.stringify({ ok: true, destroyed: sub_agent_id });
+  logger.info('DESTROY', { sub_agent_id, name: agent.name })
+  destroySubAgent(sub_agent_id, agent.parentId)
+  return JSON.stringify({ ok: true, destroyed: sub_agent_id })
 }
 
 export function registerSubagentTools(): void {
@@ -265,7 +290,7 @@ export function registerSubagentTools(): void {
       required: ['task'],
     },
     execute: configSubagent,
-  });
+  })
 
   toolRegistry.register({
     name: 'spawn_subagent',
@@ -274,16 +299,23 @@ export function registerSubagentTools(): void {
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Sub-agent name' },
-        soul_content: { type: 'string', description: 'JSON string containing role, personality, rules, skills' },
+        soul_content: {
+          type: 'string',
+          description: 'JSON string containing role, personality, rules, skills',
+        },
         parent_id: { type: 'string', description: 'Parent agent ID' },
         ttl_ms: { type: 'number', description: 'Time-to-live in milliseconds' },
-        allowed_tools: { type: 'array', items: { type: 'string' }, description: 'Allowed tools for this sub-agent' },
+        allowed_tools: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Allowed tools for this sub-agent',
+        },
         fallback_model_id: { type: 'string', description: 'Fallback model ID' },
       },
       required: ['name', 'soul_content'],
     },
     execute: spawnSubagentTool,
-  });
+  })
 
   toolRegistry.register({
     name: 'delegate_task',
@@ -297,7 +329,7 @@ export function registerSubagentTools(): void {
       required: ['sub_agent_id', 'task'],
     },
     execute: delegateTask,
-  });
+  })
 
   toolRegistry.register({
     name: 'destroy_subagent',
@@ -310,5 +342,5 @@ export function registerSubagentTools(): void {
       required: ['sub_agent_id'],
     },
     execute: destroySubagentTool,
-  });
+  })
 }

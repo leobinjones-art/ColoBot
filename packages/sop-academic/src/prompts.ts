@@ -2,7 +2,7 @@
  * SOP Prompt 模板
  */
 
-export type SopPromptName = 'taskAnalysis' | 'stepGuidance' | 'summarize' | 'review' | 'finalOutput';
+export type SopPromptName = 'taskAnalysis' | 'stepGuidance' | 'summarize' | 'review' | 'finalOutput'
 
 export const SOP_PROMPTS: Record<SopPromptName, string> = {
   taskAnalysis: `分析以下用户消息，判断是否为学术研究任务。
@@ -84,11 +84,11 @@ export const SOP_PROMPTS: Record<SopPromptName, string> = {
 6. 讨论
 7. 结论
 8. 参考文献（如有）`,
-};
+}
 
 /**
  * 填充 Prompt 模板
  */
 export function fillPrompt(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? ''));
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? ''))
 }

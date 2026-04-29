@@ -23,17 +23,18 @@ ColoBot 已集成 `llm-guard` 实现内容安全扫描，扫描用户输入和 A
 当前版本：`0.1.8`
 
 API 关键类型：
+
 ```typescript
 interface GuardResponse {
-  id: string;
-  input: string;
-  results: GuardResult[]; // 注意是 results，不是 scannerResults
+  id: string
+  input: string
+  results: GuardResult[] // 注意是 results，不是 scannerResults
 }
 
 interface GuardResult {
-  valid: boolean;
-  score?: number;
-  details?: { rule: string; message: string; matched?: string }[];
+  valid: boolean
+  score?: number
+  details?: { rule: string; message: string; matched?: string }[]
 }
 ```
 

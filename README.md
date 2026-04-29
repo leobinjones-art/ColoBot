@@ -46,37 +46,37 @@ ColoBot 是一个基于 TypeScript 的 AI Agent 框架，专注于**个人助理
 
 ### 🤖 Agent 核心
 
-| 功能 | 说明 |
-|------|------|
+| 功能        | 说明                                |
+| ----------- | ----------------------------------- |
 | 多 Provider | OpenAI / Anthropic / MiniMax / Mock |
-| Fallback | 链式降级，自动切换模型 |
-| 流式输出 | 支持 SSE 流式响应 |
-| 上下文压缩 | 超过窗口自动压缩历史 |
-| 子 Agent | 创建、委托、销毁子 Agent |
-| 工具白名单 | 子 Agent 受限权限控制 |
+| Fallback    | 链式降级，自动切换模型              |
+| 流式输出    | 支持 SSE 流式响应                   |
+| 上下文压缩  | 超过窗口自动压缩历史                |
+| 子 Agent    | 创建、委托、销毁子 Agent            |
+| 工具白名单  | 子 Agent 受限权限控制               |
 
 ### 📋 个人助理 (@colobot/assistant)
 
-| 模块 | 功能 |
-|------|------|
+| 模块         | 功能                         |
+| ------------ | ---------------------------- |
 | **待办清单** | 创建、优先级、截止日期、标签 |
-| **提醒通知** | 定时、重复、自然语言创建 |
-| **日程管理** | 日历、冲突检测、周/月视图 |
-| **笔记系统** | Markdown、标签、全文搜索 |
-| **习惯追踪** | 打卡、连续天数、统计 |
-| **情绪日记** | 心情记录、趋势分析 |
-| **财务管理** | 收支记录、分类统计 |
-| **健康追踪** | 运动、睡眠、体重、饮水 |
-| **学习进度** | 课程管理、进度追踪 |
-| **阅读清单** | 书籍/文章、阅读进度 |
-| **目标管理** | 目标设定、进度追踪 |
-| **灵感笔记** | 快速记录、标签分类 |
-| **人脉管理** | 联系人、互动记录 |
-| **项目管理** | 项目追踪、里程碑 |
-| **密码管理** | AES 加密、密码生成 |
-| **时间追踪** | 开始/结束、分类统计 |
-| **网页收藏** | URL、摘要、标签 |
-| **意图识别** | 自然语言理解用户意图 |
+| **提醒通知** | 定时、重复、自然语言创建     |
+| **日程管理** | 日历、冲突检测、周/月视图    |
+| **笔记系统** | Markdown、标签、全文搜索     |
+| **习惯追踪** | 打卡、连续天数、统计         |
+| **情绪日记** | 心情记录、趋势分析           |
+| **财务管理** | 收支记录、分类统计           |
+| **健康追踪** | 运动、睡眠、体重、饮水       |
+| **学习进度** | 课程管理、进度追踪           |
+| **阅读清单** | 书籍/文章、阅读进度          |
+| **目标管理** | 目标设定、进度追踪           |
+| **灵感笔记** | 快速记录、标签分类           |
+| **人脉管理** | 联系人、互动记录             |
+| **项目管理** | 项目追踪、里程碑             |
+| **密码管理** | AES 加密、密码生成           |
+| **时间追踪** | 开始/结束、分类统计          |
+| **网页收藏** | URL、摘要、标签              |
+| **意图识别** | 自然语言理解用户意图         |
 
 ### 🔧 内置工具
 
@@ -246,32 +246,27 @@ Commands:
 ### 编程使用
 
 ```typescript
-import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@colobot/core';
+import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@colobot/core'
 
 const runtime = new AgentRuntime({
   llm: new OpenAIProvider({ apiKey: 'your-key', defaultModel: 'gpt-4o' }),
   memory: new SQLiteStore({ path: '~/.colobot/chat.db' }),
   // ...
-});
+})
 
 const result = await runtime.run({
   agentId: 'my-agent',
   sessionKey: 'session-1',
   userMessage: '你好',
-});
+})
 
-console.log(result.response);
+console.log(result.response)
 ```
 
 ### 使用助理功能
 
 ```typescript
-import {
-  createTodo,
-  createReminderFromText,
-  logMood,
-  parseIntent,
-} from '@colobot/assistant';
+import { createTodo, createReminderFromText, logMood, parseIntent } from '@colobot/assistant'
 
 // 创建待办
 const todo = createTodo({
@@ -279,16 +274,16 @@ const todo = createTodo({
   title: '完成报告',
   priority: 'high',
   dueDate: '2024-12-31',
-});
+})
 
 // 自然语言创建提醒
-const reminder = createReminderFromText('user1', '提醒我明天下午3点开会');
+const reminder = createReminderFromText('user1', '提醒我明天下午3点开会')
 
 // 记录心情
-logMood('user1', 'happy', 8, '今天很顺利');
+logMood('user1', 'happy', 8, '今天很顺利')
 
 // 意图识别
-const intent = parseIntent('添加待办 完成报告');
+const intent = parseIntent('添加待办 完成报告')
 // { type: 'todo.add', confidence: 0.9 }
 ```
 
@@ -302,23 +297,23 @@ const intent = parseIntent('添加待办 完成报告');
 
 ```typescript
 interface RunOptions {
-  agentId: string;
-  sessionKey: string;
-  userMessage: string | ContentBlock[];
-  maxRounds?: number;
-  systemPrompt?: string;
-  soul?: { personality?: string; role?: string };
+  agentId: string
+  sessionKey: string
+  userMessage: string | ContentBlock[]
+  maxRounds?: number
+  systemPrompt?: string
+  soul?: { personality?: string; role?: string }
 }
 
 interface RunResult {
-  response: string | ContentBlock[];
-  toolCalls: string[];
-  finished: boolean;
+  response: string | ContentBlock[]
+  toolCalls: string[]
+  finished: boolean
 }
 
 class AgentRuntime {
-  run(options: RunOptions): Promise<RunResult>;
-  runStream(options: RunOptions): AsyncGenerator<string>;
+  run(options: RunOptions): Promise<RunResult>
+  runStream(options: RunOptions): AsyncGenerator<string>
 }
 ```
 
@@ -350,13 +345,13 @@ const agent = spawnSubAgent({
   soulContent: JSON.stringify({ role: '研究助手' }),
   parentId: 'parent-agent-id',
   allowedTools: ['web_search', 'read_file'],
-});
+})
 
 // 委托任务
-const result = await runSubAgentTask(agent, task, parentId, deps);
+const result = await runSubAgentTask(agent, task, parentId, deps)
 
 // 销毁
-destroySubAgent(agent.id, parentId);
+destroySubAgent(agent.id, parentId)
 ```
 
 ### @colobot/assistant
@@ -452,7 +447,7 @@ npx tsc --noEmit
 
 ```typescript
 // packages/core/src/tools/my-tool.ts
-import { toolRegistry } from './registry.js';
+import { toolRegistry } from './registry.js'
 
 export function registerMyTool(): void {
   toolRegistry.register({
@@ -466,9 +461,9 @@ export function registerMyTool(): void {
       required: ['input'],
     },
     execute: async (args, ctx) => {
-      return 'result';
+      return 'result'
     },
-  });
+  })
 }
 ```
 
@@ -476,11 +471,11 @@ export function registerMyTool(): void {
 
 ```typescript
 // packages/assistant/src/my-module/index.ts
-import { getDb, generateId } from '../db/schema.js';
+import { getDb, generateId } from '../db/schema.js'
 
 export function createMyEntry(userId: string, data: any): MyEntry {
-  const db = getDb();
-  const id = generateId();
+  const db = getDb()
+  const id = generateId()
   // ...
 }
 ```
@@ -527,16 +522,16 @@ colobot-sop-*              # 社区贡献（npm 发布）
 
 ### 官方 SOP 模块
 
-| 模块 | 场景 | 状态 |
-|------|------|------|
+| 模块                    | 场景               | 状态      |
+| ----------------------- | ------------------ | --------- |
 | `@colobot/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
-| `@colobot/sop-writing` | 长文写作、报告生成 | 📋 规划中 |
-| `@colobot/sop-coding` | 项目开发、代码重构 | 📋 规划中 |
+| `@colobot/sop-writing`  | 长文写作、报告生成 | 📋 规划中 |
+| `@colobot/sop-coding`   | 项目开发、代码重构 | 📋 规划中 |
 
 ### 开发 SOP 模块
 
 ```typescript
-import type { SopModule } from '@colobot/sop-base';
+import type { SopModule } from '@colobot/sop-base'
 
 export const mySop: SopModule = {
   name: 'my-domain',
@@ -544,7 +539,7 @@ export const mySop: SopModule = {
   description: '我的领域流程',
 
   detectIntent(message) {
-    return /关键词/i.test(message);
+    return /关键词/i.test(message)
   },
 
   async analyzeTask(message, runtime) {
@@ -555,7 +550,7 @@ export const mySop: SopModule = {
     { name: '步骤1', description: '...' },
     { name: '步骤2', description: '...' },
   ],
-};
+}
 ```
 
 详细规划见 [docs/sop-ecosystem-plan.md](docs/sop-ecosystem-plan.md)。
@@ -564,37 +559,37 @@ export const mySop: SopModule = {
 
 ## 环境变量
 
-| 变量 | 说明 |
-|------|------|
-| `OPENAI_API_KEY` | OpenAI API Key |
-| `ANTHROPIC_API_KEY` | Anthropic API Key |
-| `MINIMAX_API_KEY` | MiniMax API Key |
-| `COLOBOT_LOG_LEVEL` | 日志级别 (debug/info/warn/error) |
-| `COLOBOT_LOG_CONSOLE` | 是否输出到控制台 (true/false) |
-| `COLOBOT_ENCRYPTION_KEY` | 密码加密密钥 |
+| 变量                     | 说明                             |
+| ------------------------ | -------------------------------- |
+| `OPENAI_API_KEY`         | OpenAI API Key                   |
+| `ANTHROPIC_API_KEY`      | Anthropic API Key                |
+| `MINIMAX_API_KEY`        | MiniMax API Key                  |
+| `COLOBOT_LOG_LEVEL`      | 日志级别 (debug/info/warn/error) |
+| `COLOBOT_LOG_CONSOLE`    | 是否输出到控制台 (true/false)    |
+| `COLOBOT_ENCRYPTION_KEY` | 密码加密密钥                     |
 
 ---
 
 ## 日志文件
 
-| 文件 | 说明 |
-|------|------|
-| `~/.colobot/logs/cli.log` | CLI 日志 |
-| `~/.colobot/logs/tui.log` | TUI 日志 |
+| 文件                           | 说明          |
+| ------------------------------ | ------------- |
+| `~/.colobot/logs/cli.log`      | CLI 日志      |
+| `~/.colobot/logs/tui.log`      | TUI 日志      |
 | `~/.colobot/logs/subagent.log` | 子 Agent 日志 |
 
 ---
 
 ## 项目统计
 
-| 指标 | 数值 |
-|------|------|
+| 指标     | 数值                  |
+| -------- | --------------------- |
 | 总代码量 | ~20,500 行 TypeScript |
-| 源文件数 | 115 个 |
-| 包数量 | 5 个 |
-| 助理模块 | 18 个 |
-| 数据表 | 15 张 |
-| SOP 模块 | 1 个（学术研究） |
+| 源文件数 | 115 个                |
+| 包数量   | 5 个                  |
+| 助理模块 | 18 个                 |
+| 数据表   | 15 张                 |
+| SOP 模块 | 1 个（学术研究）      |
 
 ---
 

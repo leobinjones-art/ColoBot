@@ -8,6 +8,7 @@
 ## ✅ 已完成工作
 
 ### 第一阶段：开源准备
+
 - [x] 创建 SECURITY.md - 安全策略
 - [x] 创建 CODE_OF_CONDUCT.md - 行为准则
 - [x] 创建 .github/PULL_REQUEST_TEMPLATE.md - PR模板
@@ -17,16 +18,18 @@
 - [x] 更新 README.md - 添加徽章、架构图、演示、社区指南
 
 ### 第二阶段：代码质量
+
 - [x] 修复 ESLint 警告（类型问题）
 - [x] 新增测试文件：
-  - src/__tests__/skill-runtime.test.ts (11个测试)
-  - src/__tests__/llm.test.ts (12个测试)
-  - src/__tests__/approval.test.ts (10个测试)
+  - src/**tests**/skill-runtime.test.ts (11个测试)
+  - src/**tests**/llm.test.ts (12个测试)
+  - src/**tests**/approval.test.ts (10个测试)
 - [x] 测试数量: 120 → 143 个
 - [x] 增强 CI 流水线（覆盖率、安全扫描、构建）
 - [x] 创建 .github/dependabot.yml
 
 ### 持续改进
+
 - [x] 创建 docs/api-reference.md - 完整API文档
 - [x] 创建 docs/examples.md - 使用示例文档
 - [x] 创建 docs/community-guide.md - 社区建设指南
@@ -36,11 +39,13 @@
 ## ⏳ 待完成工作
 
 ### GitHub 操作（需要token）
+
 - [ ] 启用 Discussions
 - [ ] 创建 Release v0.1.0
 - [ ] 创建 Discussions 欢迎帖
 
 ### 命令已准备好
+
 见下方"待执行命令"
 
 ---
@@ -50,6 +55,7 @@
 **注意**: 将 `YOUR_TOKEN` 替换为实际的 GitHub token
 
 ### 1. 启用 Discussions
+
 ```bash
 curl -s -X PUT \
   -H "Accept: application/vnd.github+json" \
@@ -60,6 +66,7 @@ curl -s -X PUT \
 ```
 
 ### 2. 创建 Release
+
 ```bash
 curl -s -X POST \
   -H "Accept: application/vnd.github+json" \
@@ -77,6 +84,7 @@ curl -s -X POST \
 ```
 
 ### 3. 创建欢迎帖
+
 ```bash
 curl -s -X POST \
   -H "Accept: application/vnd.github+json" \
@@ -128,13 +136,13 @@ curl -s -X POST \
 
 ## 📊 项目状态
 
-| 指标 | 状态 |
-|------|------|
-| 测试 | 143个通过 |
-| TypeScript | 编译通过 |
-| ESLint | ~65个警告 |
-| 文档 | 完整 |
-| CI/CD | 已配置 |
+| 指标       | 状态      |
+| ---------- | --------- |
+| 测试       | 143个通过 |
+| TypeScript | 编译通过  |
+| ESLint     | ~65个警告 |
+| 文档       | 完整      |
+| CI/CD      | 已配置    |
 
 **开源准备度**: 90%
 
@@ -143,6 +151,7 @@ curl -s -X POST \
 ## 🔄 重启后继续
 
 重启后运行：
+
 ```bash
 export GITHUB_TOKEN=你的token
 ```

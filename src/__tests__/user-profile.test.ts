@@ -1,41 +1,41 @@
 /**
  * User Profile 测试
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock database
 vi.mock('../memory/db.js', () => ({
   query: vi.fn(async () => []),
   queryOne: vi.fn(async () => null),
-}));
+}))
 
 // Mock vector
 vi.mock('../memory/vector.js', () => ({
   addMemory: vi.fn(async () => {}),
   searchMemory: vi.fn(async () => []),
-}));
+}))
 
-import { query, queryOne } from '../memory/db.js';
+import { query, queryOne } from '../memory/db.js'
 import {
   getUserProfile,
   upsertUserProfile,
   deleteUserProfile,
   buildProfilePrompt,
-} from '../services/user-profile.js';
+} from '../services/user-profile.js'
 
 describe('User Profile', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   describe('getUserProfile', () => {
     it('should return null when profile not found', async () => {
-      vi.mocked(queryOne).mockResolvedValueOnce(null);
+      vi.mocked(queryOne).mockResolvedValueOnce(null)
 
-      const profile = await getUserProfile('agent-1');
+      const profile = await getUserProfile('agent-1')
 
-      expect(profile).toBeNull();
-    });
+      expect(profile).toBeNull()
+    })
 
     it('should return profile when found', async () => {
       vi.mocked(queryOne).mockResolvedValueOnce({
@@ -56,44 +56,44 @@ describe('User Profile', () => {
         current_projects: '["Project X"]',
         created_at: '2024-01-01',
         updated_at: '2024-01-01',
-      });
+      })
 
-      const profile = await getUserProfile('agent-1');
+      const profile = await getUserProfile('agent-1')
 
-      expect(profile).not.toBeNull();
-      expect(profile?.name).toBe('Test User');
-      expect(profile?.role).toBe('developer');
-    });
-  });
+      expect(profile).not.toBeNull()
+      expect(profile?.name).toBe('Test User')
+      expect(profile?.role).toBe('developer')
+    })
+  })
 
   describe('upsertUserProfile', () => {
     it('should create or update profile', async () => {
-      vi.mocked(query).mockResolvedValueOnce([]);
+      vi.mocked(query).mockResolvedValueOnce([])
 
       await upsertUserProfile('agent-1', {
         name: 'New User',
         role: 'student',
-      });
+      })
 
-      expect(query).toHaveBeenCalled();
-    });
-  });
+      expect(query).toHaveBeenCalled()
+    })
+  })
 
   describe('deleteUserProfile', () => {
     it('should delete profile', async () => {
-      vi.mocked(query).mockResolvedValueOnce([]);
+      vi.mocked(query).mockResolvedValueOnce([])
 
-      await deleteUserProfile('agent-1');
+      await deleteUserProfile('agent-1')
 
-      expect(query).toHaveBeenCalled();
-    });
-  });
+      expect(query).toHaveBeenCalled()
+    })
+  })
 
   describe('buildProfilePrompt', () => {
     it('should return empty string for null profile', () => {
-      const prompt = buildProfilePrompt(null);
-      expect(prompt).toBe('');
-    });
+      const prompt = buildProfilePrompt(null)
+      expect(prompt).toBe('')
+    })
 
     it('should build prompt from profile', () => {
       const prompt = buildProfilePrompt({
@@ -104,10 +104,10 @@ describe('User Profile', () => {
         expertise_level: 'intermediate',
         created_at: '2024-01-01',
         updated_at: '2024-01-01',
-      });
+      })
 
-      expect(prompt).toContain('开发者');
-      expect(prompt).toContain('经验');
-    });
-  });
-});
+      expect(prompt).toContain('开发者')
+      expect(prompt).toContain('经验')
+    })
+  })
+})

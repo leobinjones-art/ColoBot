@@ -40,7 +40,7 @@ export {
   type Approval,
   type AuditFilter,
   type AuditLog,
-} from './runtime/index.js';
+} from './runtime/index.js'
 
 // 类型定义
 export type {
@@ -50,42 +50,37 @@ export type {
   ToolCall,
   ToolResult,
   ToolContext,
-} from '@colobot/types';
+} from '@colobot/types'
 
 // ═══════════════════════════════════════════════════════════════
 // Provider 实现（按需使用）
 // ═══════════════════════════════════════════════════════════════
 
-export { OpenAIProvider, type OpenAIConfig } from './providers/openai.js';
-export { AnthropicProvider, type AnthropicConfig } from './providers/anthropic.js';
-export { MiniMaxProvider, type MiniMaxConfig } from './providers/minimax.js';
-export { MockProvider, type MockConfig } from './providers/mock.js';
+export { OpenAIProvider, type OpenAIConfig } from './providers/openai.js'
+export { AnthropicProvider, type AnthropicConfig } from './providers/anthropic.js'
+export { MiniMaxProvider, type MiniMaxConfig } from './providers/minimax.js'
+export { MockProvider, type MockConfig } from './providers/mock.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 适配器实现（按需使用）
 // ═══════════════════════════════════════════════════════════════
 
-export { InMemoryStore } from './adapters/memory.js';
-export { DatabaseStore, type DatabaseStoreConfig } from './adapters/database-store.js';
-export { SQLiteStore, createAutoStore, type SQLiteStoreConfig } from './adapters/sqlite-store.js';
-export { NoOpScanner } from './adapters/scanner.js';
-export { ConsoleAudit, ConsolePusher, ToolExecutorImpl } from './adapters/index.js';
-export { InMemoryStateStore, type StateStore } from './adapters/state.js';
-export { LocalFileSystemAdapter, type FileSystemAdapter } from './adapters/filesystem.js';
-export { ToolRegistry, toolRegistry } from './tools/registry.js';
+export { InMemoryStore } from './adapters/memory.js'
+export { DatabaseStore, type DatabaseStoreConfig } from './adapters/database-store.js'
+export { SQLiteStore, createAutoStore, type SQLiteStoreConfig } from './adapters/sqlite-store.js'
+export { NoOpScanner } from './adapters/scanner.js'
+export { ConsoleAudit, ConsolePusher, ToolExecutorImpl } from './adapters/index.js'
+export { InMemoryStateStore, type StateStore } from './adapters/state.js'
+export { LocalFileSystemAdapter, type FileSystemAdapter } from './adapters/filesystem.js'
+export { ToolRegistry, toolRegistry } from './tools/registry.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 工具系统（高层 API）
 // ═══════════════════════════════════════════════════════════════
 
-export {
-  registerBuiltinTools,
-  registerAllTools,
-} from './tools/builtin.js';
+export { registerBuiltinTools, registerAllTools } from './tools/builtin.js'
 
-export type {
-  ToolPolicy,
-} from './tools/executor.js';
+export type { ToolPolicy } from './tools/executor.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 配置管理
@@ -99,17 +94,13 @@ export {
   type CoreConfig,
   type ModelConfig,
   type SearchConfig,
-} from './config/index.js';
+} from './config/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 插件系统（扩展能力）
 // ═══════════════════════════════════════════════════════════════
 
-export {
-  PluginManager,
-  type Plugin,
-  type PluginContext,
-} from './plugins/index.js';
+export { PluginManager, type Plugin, type PluginContext } from './plugins/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 子智能体系统（高层 API）
@@ -125,7 +116,7 @@ export {
   getGlobalAllowedTools,
   type SubAgent,
   type SubAgentConfig,
-} from './subagents/index.js';
+} from './subagents/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 搜索（高层 API）
@@ -137,24 +128,19 @@ export {
   configureSearch,
   type SearchOptions,
   type SearchResult,
-} from './search.js';
+} from './search.js'
 
 // ═══════════════════════════════════════════════════════════════
 // Skill 系统
 // ═══════════════════════════════════════════════════════════════
 
-export {
-  listSkills,
-  getSkillByName,
-  executeSkill,
-  type Skill,
-} from './skill-runtime/index.js';
+export { listSkills, getSkillByName, executeSkill, type Skill } from './skill-runtime/index.js'
 
 export {
   detectPatterns,
   evolveSkillFromConversation,
   type SkillProposal,
-} from './skill-evolution/index.js';
+} from './skill-evolution/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // Trigger 系统
@@ -165,18 +151,13 @@ export {
   createTrigger,
   stopTrigger,
   type Trigger,
-} from './trigger-runtime/index.js';
+} from './trigger-runtime/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // Agent 注册表
 // ═══════════════════════════════════════════════════════════════
 
-export {
-  agentRegistry,
-  type Agent,
-  type AgentCreate,
-  type AgentUpdate,
-} from './agents/registry.js';
+export { agentRegistry, type Agent, type AgentCreate, type AgentUpdate } from './agents/registry.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 日志系统
@@ -188,7 +169,7 @@ export {
   createTuiLogger,
   type LoggerConfig,
   type LogLevel,
-} from './logger.js';
+} from './logger.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 视觉系统
@@ -202,7 +183,7 @@ export {
   clearVisionCache,
   type VisionAnalysisResult,
   type LocalVisionConfig,
-} from './vision/index.js';
+} from './vision/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // Skills 技能
@@ -214,4 +195,4 @@ export {
   registerWechatArticleTool,
   type WechatArticle,
   type WechatArticleOptions,
-} from './skills/index.js';
+} from './skills/index.js'

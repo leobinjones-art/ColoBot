@@ -24,52 +24,52 @@ colobot-sop-*              # 社区贡献包（npm 发布）
 // @colobot/sop-base
 interface SopModule {
   // 元信息
-  name: string;                    // 唯一标识，如 'academic'
-  version: string;
-  description: string;
-  author?: string;
-  tags?: string[];                 // 如 ['research', 'paper', 'thesis']
+  name: string // 唯一标识，如 'academic'
+  version: string
+  description: string
+  author?: string
+  tags?: string[] // 如 ['research', 'paper', 'thesis']
 
   // 意图检测
-  detectIntent(message: string, context?: SopContext): boolean | Promise<boolean>;
+  detectIntent(message: string, context?: SopContext): boolean | Promise<boolean>
 
   // 任务分析
-  analyzeTask(message: string, runtime: ColoBotRuntime): Promise<TaskAnalysis>;
+  analyzeTask(message: string, runtime: ColoBotRuntime): Promise<TaskAnalysis>
 
   // 步骤模板（可选）
-  stepTemplates?: SopStepTemplate[];
+  stepTemplates?: SopStepTemplate[]
 
   // 配置 Schema
-  configSchema?: object;
+  configSchema?: object
 
   // 生命周期钩子
   hooks?: {
-    beforeStart?: (state: SopState) => Promise<void>;
-    afterStep?: (state: SopState, step: SopStep) => Promise<void>;
-    onComplete?: (state: SopState) => Promise<string>;
-    onError?: (state: SopState, error: Error) => Promise<void>;
-  };
+    beforeStart?: (state: SopState) => Promise<void>
+    afterStep?: (state: SopState, step: SopStep) => Promise<void>
+    onComplete?: (state: SopState) => Promise<string>
+    onError?: (state: SopState, error: Error) => Promise<void>
+  }
 }
 
 interface TaskAnalysis {
-  isMatched: boolean;
-  taskType: string;
-  taskName: string;
+  isMatched: boolean
+  taskType: string
+  taskName: string
   suggestedSteps: Array<{
-    name: string;
-    description?: string;
-    tools?: string[];           // 该步骤可用工具
-    estimatedTime?: string;
-  }>;
-  metadata?: Record<string, unknown>;
+    name: string
+    description?: string
+    tools?: string[] // 该步骤可用工具
+    estimatedTime?: string
+  }>
+  metadata?: Record<string, unknown>
 }
 
 interface SopStepTemplate {
-  name: string;
-  description?: string;
-  tools?: string[];
-  autoApprove?: boolean;        // 是否自动通过审核
-  guidance?: string;            // 引导提示模板
+  name: string
+  description?: string
+  tools?: string[]
+  autoApprove?: boolean // 是否自动通过审核
+  guidance?: string // 引导提示模板
 }
 ```
 
@@ -79,22 +79,22 @@ interface SopStepTemplate {
 // sopRegistry - 全局 SOP 注册器
 class SopRegistry {
   // 注册模块
-  register(module: SopModule): void;
+  register(module: SopModule): void
 
   // 批量注册
-  registerAll(modules: SopModule[]): void;
+  registerAll(modules: SopModule[]): void
 
   // 匹配意图
-  match(message: string, context?: SopContext): SopModule | null;
+  match(message: string, context?: SopContext): SopModule | null
 
   // 获取模块
-  get(name: string): SopModule | undefined;
+  get(name: string): SopModule | undefined
 
   // 列出所有
-  list(): SopModule[];
+  list(): SopModule[]
 
   // 按标签筛选
-  findByTag(tag: string): SopModule[];
+  findByTag(tag: string): SopModule[]
 }
 ```
 
@@ -107,6 +107,7 @@ class SopRegistry {
 学术研究流程，适用于论文写作、文献调研、实验设计等场景。
 
 **步骤：**
+
 1. 明确研究问题
 2. 文献检索与综述
 3. 研究方法设计
@@ -119,6 +120,7 @@ class SopRegistry {
 写作助手流程，适用于长文写作、报告生成等场景。
 
 **步骤：**
+
 1. 确定主题与大纲
 2. 资料收集
 3. 分段撰写
@@ -130,6 +132,7 @@ class SopRegistry {
 编程项目流程，适用于从零开始的项目开发。
 
 **步骤：**
+
 1. 需求分析
 2. 技术选型
 3. 架构设计
@@ -179,7 +182,7 @@ colobot-sop-legal/
 
 ```typescript
 // src/index.ts
-import type { SopModule } from '@colobot/sop-base';
+import type { SopModule } from '@colobot/sop-base'
 
 export const legalSop: SopModule = {
   name: 'legal',
@@ -188,12 +191,12 @@ export const legalSop: SopModule = {
   tags: ['legal', 'contract', 'document'],
 
   detectIntent(message) {
-    return /合同|协议|法律|条款|诉讼/i.test(message);
+    return /合同|协议|法律|条款|诉讼/i.test(message)
   },
 
   async analyzeTask(message, runtime) {
     // 调用 LLM 分析任务
-    const response = await runtime.chat(`分析法律文书任务：${message}`);
+    const response = await runtime.chat(`分析法律文书任务：${message}`)
     // 返回 TaskAnalysis
   },
 
@@ -204,7 +207,7 @@ export const legalSop: SopModule = {
     { name: '合规审核', description: '检查法律合规性' },
     { name: '格式整理', description: '调整文书格式' },
   ],
-};
+}
 ```
 
 ---
@@ -235,15 +238,15 @@ export const legalSop: SopModule = {
 
 ## 预期社区 SOP
 
-| 领域 | 包名 | 场景 |
-|------|------|------|
-| 法律 | `colobot-sop-legal` | 合同、协议、诉讼文书 |
-| 医疗 | `colobot-sop-medical` | 问诊记录、病历整理 |
-| 商业 | `colobot-sop-business` | 商业计划、市场分析 |
-| 教育 | `colobot-sop-education` | 课程设计、教案编写 |
-| 翻译 | `colobot-sop-translation` | 多语言文档翻译 |
-| 数据 | `colobot-sop-data` | 数据清洗、分析报告 |
-| 运维 | `colobot-sop-ops` | 故障排查、部署流程 |
+| 领域 | 包名                      | 场景                 |
+| ---- | ------------------------- | -------------------- |
+| 法律 | `colobot-sop-legal`       | 合同、协议、诉讼文书 |
+| 医疗 | `colobot-sop-medical`     | 问诊记录、病历整理   |
+| 商业 | `colobot-sop-business`    | 商业计划、市场分析   |
+| 教育 | `colobot-sop-education`   | 课程设计、教案编写   |
+| 翻译 | `colobot-sop-translation` | 多语言文档翻译       |
+| 数据 | `colobot-sop-data`        | 数据清洗、分析报告   |
+| 运维 | `colobot-sop-ops`         | 故障排查、部署流程   |
 
 ---
 
@@ -255,14 +258,14 @@ export const legalSop: SopModule = {
 
 ```typescript
 // 用户消息可能同时匹配多个 SOP
-const matches = sopRegistry.list().filter(m => m.detectIntent(message));
+const matches = sopRegistry.list().filter((m) => m.detectIntent(message))
 
 // 按匹配度排序
 const best = matches.sort((a, b) => {
   // 1. 专用 SOP 优先于通用 SOP
   // 2. 用户历史偏好
   // 3. 配置优先级
-})[0];
+})[0]
 ```
 
 ### 配置持久化
@@ -289,13 +292,13 @@ const best = matches.sort((a, b) => {
 
 ```typescript
 // 支持运行时加载新 SOP
-import { sopRegistry } from '@colobot/sop-base';
+import { sopRegistry } from '@colobot/sop-base'
 
 // 从 npm 包加载
-await sopRegistry.loadFromNpm('colobot-sop-legal');
+await sopRegistry.loadFromNpm('colobot-sop-legal')
 
 // 从本地路径加载
-await sopRegistry.loadFromPath('./my-sop');
+await sopRegistry.loadFromPath('./my-sop')
 ```
 
 ---

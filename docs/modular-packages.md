@@ -79,16 +79,16 @@ packages/
 interface ColoBotPlugin {
   name: string
   version: string
-  
+
   // 工具注册
   tools?: ToolDefinition[]
-  
+
   // 配置 Schema
   configSchema?: ConfigSchema
-  
+
   // CLI 命令
   cliCommands?: CLICommand[]
-  
+
   // 初始化钩子
   onInit?: (context: PluginContext) => void | Promise<void>
 }
@@ -108,8 +108,8 @@ registerPlugin({
   configSchema: sopConfigSchema,
   cliCommands: [
     { name: 'sop:list', handler: listSopTasks },
-    { name: 'sop:resume', handler: resumeSop }
-  ]
+    { name: 'sop:resume', handler: resumeSop },
+  ],
 })
 
 // 获取所有插件
@@ -187,7 +187,7 @@ const config = ConfigManager.getAll()
 @colobot/tui
     ↑
     └── @colobot/core (动态加载插件命令)
-    
+
 @colobot/dashboard (可选，轻量)
     ↑
     └── @colobot/core
@@ -284,18 +284,18 @@ Dashboard 是**可选的**轻量 Web 界面：
 
 ## 开发计划
 
-| 阶段 | 内容 | 时间 |
-|------|------|------|
-| Phase 0 | @colobot/types 类型包 | 1 天 |
-| Phase 1 | @colobot/core + 插件机制 | 3 天 |
-| Phase 2 | @colobot/tui 终端界面 | 5 天 |
-| Phase 3 | @colobot/sop 插件化 | 2 天 |
-| Phase 4 | @colobot/feishu 插件化 | 2 天 |
-| Phase 5 | @colobot/tools-minimax | 3 天 |
-| Phase 6 | @colobot/skills-openclaw | 3 天 |
-| Phase 7 | @colobot/dashboard（轻量） | 1 天 |
-| Phase 8 | @colobot/server 整合 | 1 天 |
-| **总计** | | **21 天** |
+| 阶段     | 内容                       | 时间      |
+| -------- | -------------------------- | --------- |
+| Phase 0  | @colobot/types 类型包      | 1 天      |
+| Phase 1  | @colobot/core + 插件机制   | 3 天      |
+| Phase 2  | @colobot/tui 终端界面      | 5 天      |
+| Phase 3  | @colobot/sop 插件化        | 2 天      |
+| Phase 4  | @colobot/feishu 插件化     | 2 天      |
+| Phase 5  | @colobot/tools-minimax     | 3 天      |
+| Phase 6  | @colobot/skills-openclaw   | 3 天      |
+| Phase 7  | @colobot/dashboard（轻量） | 1 天      |
+| Phase 8  | @colobot/server 整合       | 1 天      |
+| **总计** |                            | **21 天** |
 
 ## 优势
 

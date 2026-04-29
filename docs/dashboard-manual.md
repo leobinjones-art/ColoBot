@@ -22,13 +22,13 @@ Configure connection to Feishu (Lark) bot. Two methods are supported:
 
 ### Method B（Recommended）- Application Bot
 
-| Field | Description |
-|-------|-------------|
-| App ID | Feishu App ID, format `cli_xxxxxxxx` |
-| App Secret | Feishu App Secret |
-| Approver Open ID | Approver Open ID, format `ou_xxxxxxxx` |
-| Callback URL | **Fill this URL in Feishu Open Platform backend** |
-| Verification Token | Verification Token for Feishu event subscription |
+| Field              | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| App ID             | Feishu App ID, format `cli_xxxxxxxx`              |
+| App Secret         | Feishu App Secret                                 |
+| Approver Open ID   | Approver Open ID, format `ou_xxxxxxxx`            |
+| Callback URL       | **Fill this URL in Feishu Open Platform backend** |
+| Verification Token | Verification Token for Feishu event subscription  |
 
 ### Method A（Legacy）- Webhook
 
@@ -95,9 +95,7 @@ Click **+ Add Entry**, fill in:
 Click **Import JSON**, paste a JSON array for bulk import:
 
 ```json
-[
-  { "category": "concept", "name": "Entry Name", "content": "Content here" }
-]
+[{ "category": "concept", "name": "Entry Name", "content": "Content here" }]
 ```
 
 ### View / Delete
@@ -131,13 +129,13 @@ Detailed operation logs.
 
 Dropdown filters include:
 
-| Action | Description |
-|--------|-------------|
-| `agent.create` | Agent created |
-| `agent.delete` | Agent deleted |
+| Action              | Description      |
+| ------------------- | ---------------- |
+| `agent.create`      | Agent created    |
+| `agent.delete`      | Agent deleted    |
 | `approval.approved` | Approval granted |
-| `approval.rejected` | Approval denied |
-| `tool.execute` | Tool executed |
+| `approval.rejected` | Approval denied  |
+| `tool.execute`      | Tool executed    |
 
 ### Display
 
@@ -229,8 +227,8 @@ Fill in Bot Token and Chat ID.
 
 ## Keyboard & Mouse Shortcuts
 
-| Action | How |
-|--------|-----|
-| Refresh current tab | Click the tab title or its Refresh button |
-| Close modal | Click outside the modal or the × button |
-| Toast notification | Bottom-right corner, auto-dismisses after 3s |
+| Action              | How                                          |
+| ------------------- | -------------------------------------------- |
+| Refresh current tab | Click the tab title or its Refresh button    |
+| Close modal         | Click outside the modal or the × button      |
+| Toast notification  | Bottom-right corner, auto-dismisses after 3s |

@@ -2,35 +2,35 @@
  * 结果推送实现
  */
 
-import type { ResultPusher } from '../runtime/types.js';
+import type { ResultPusher } from '../runtime/types.js'
 
 export interface PusherConfig {
-  onResult?: (agentId: string, sessionKey: string, content: unknown) => void;
-  onChunk?: (agentId: string, sessionKey: string, chunk: string) => void;
-  onDone?: (agentId: string, sessionKey: string) => void;
+  onResult?: (agentId: string, sessionKey: string, content: unknown) => void
+  onChunk?: (agentId: string, sessionKey: string, chunk: string) => void
+  onDone?: (agentId: string, sessionKey: string) => void
 }
 
 export class CallbackPusher implements ResultPusher {
-  private onResultCallback?: PusherConfig['onResult'];
-  private onChunkCallback?: PusherConfig['onChunk'];
-  private onDoneCallback?: PusherConfig['onDone'];
+  private onResultCallback?: PusherConfig['onResult']
+  private onChunkCallback?: PusherConfig['onChunk']
+  private onDoneCallback?: PusherConfig['onDone']
 
   constructor(config: PusherConfig = {}) {
-    this.onResultCallback = config.onResult;
-    this.onChunkCallback = config.onChunk;
-    this.onDoneCallback = config.onDone;
+    this.onResultCallback = config.onResult
+    this.onChunkCallback = config.onChunk
+    this.onDoneCallback = config.onDone
   }
 
   pushResult(agentId: string, sessionKey: string, content: unknown): void {
-    this.onResultCallback?.(agentId, sessionKey, content);
+    this.onResultCallback?.(agentId, sessionKey, content)
   }
 
   pushChunk(agentId: string, sessionKey: string, chunk: string): void {
-    this.onChunkCallback?.(agentId, sessionKey, chunk);
+    this.onChunkCallback?.(agentId, sessionKey, chunk)
   }
 
   pushDone(agentId: string, sessionKey: string): void {
-    this.onDoneCallback?.(agentId, sessionKey);
+    this.onDoneCallback?.(agentId, sessionKey)
   }
 }
 
@@ -39,16 +39,16 @@ export class CallbackPusher implements ResultPusher {
  */
 export class ConsolePusher implements ResultPusher {
   pushResult(_agentId: string, _sessionKey: string, content: unknown): void {
-    console.log('\n=== Result ===');
-    console.log(content);
-    console.log('=== End ===\n');
+    console.log('\n=== Result ===')
+    console.log(content)
+    console.log('=== End ===\n')
   }
 
   pushChunk(_agentId: string, _sessionKey: string, chunk: string): void {
-    process.stdout.write(chunk);
+    process.stdout.write(chunk)
   }
 
   pushDone(_agentId: string, _sessionKey: string): void {
-    console.log('\n[Done]');
+    console.log('\n[Done]')
   }
 }

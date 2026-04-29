@@ -8,62 +8,64 @@
  * 3. 绑定 Agent
  */
 
-import { queryOne } from '../memory/db.js';
-import * as lark from '@larksuiteoapi/node-sdk';
+import { queryOne } from '../memory/db.js'
+import * as lark from '@larksuiteoapi/node-sdk'
 
-let wsClient: lark.WSClient | null = null;
+let wsClient: lark.WSClient | null = null
 
 // 消息去重缓存（5分钟内不重复处理同一消息）
-const processedMessages = new Map<string, number>();
-const DEDUP_TTL = 5 * 60 * 1000; // 5分钟
+const processedMessages = new Map<string, number>()
+const DEDUP_TTL = 5 * 60 * 1000 // 5分钟
 
 function isDuplicate(messageId: string): boolean {
-  const now = Date.now();
-  const lastProcessed = processedMessages.get(messageId);
+  const now = Date.now()
+  const lastProcessed = processedMessages.get(messageId)
   if (lastProcessed && now - lastProcessed < DEDUP_TTL) {
-    return true;
+    return true
   }
   // 清理过期记录
   for (const [id, time] of processedMessages) {
     if (now - time > DEDUP_TTL) {
-      processedMessages.delete(id);
+      processedMessages.delete(id)
     }
   }
-  processedMessages.set(messageId, now);
-  return false;
+  processedMessages.set(messageId, now)
+  return false
 }
 
 /**
  * 获取飞书配置
  */
 async function getFeishuConfig(): Promise<{ appId: string; appSecret: string } | null> {
-  const { getSettings, SETTINGS_KEYS } = await import('./settings.js');
-  const settings = await getSettings([SETTINGS_KEYS.LARK_APP_ID, SETTINGS_KEYS.LARK_APP_SECRET]);
-  const appId = settings[SETTINGS_KEYS.LARK_APP_ID] || process.env.LARK_APP_ID;
-  const appSecret = settings[SETTINGS_KEYS.LARK_APP_SECRET] || process.env.LARK_APP_SECRET;
+  const { getSettings, SETTINGS_KEYS } = await import('./settings.js')
+  const settings = await getSettings([SETTINGS_KEYS.LARK_APP_ID, SETTINGS_KEYS.LARK_APP_SECRET])
+  const appId = settings[SETTINGS_KEYS.LARK_APP_ID] || process.env.LARK_APP_ID
+  const appSecret = settings[SETTINGS_KEYS.LARK_APP_SECRET] || process.env.LARK_APP_SECRET
 
-  if (!appId || !appSecret) return null;
-  return { appId, appSecret };
+  if (!appId || !appSecret) return null
+  return { appId, appSecret }
 }
 
 /**
  * 启动长连接
  */
 export async function startLongPolling(): Promise<void> {
-  const config = await getFeishuConfig();
+  const config = await getFeishuConfig()
   if (!config) {
-    console.log('[FeishuLongPolling] Not configured, skipping');
-    return;
+    console.log('[FeishuLongPolling] Not configured, skipping')
+    return
   }
 
   try {
-    console.log(`[FeishuLongPolling] Config: appId=${config.appId}, appSecret=${config.appSecret.slice(0, 8)}...`);
+    console.log(
+      `[FeishuLongPolling] Config: appId=${config.appId}, appSecret=${config.appSecret.slice(0, 8)}...`,
+    )
     // 创建 WSClient，启用长连接
     wsClient = new lark.WSClient({
       appId: config.appId,
       appSecret: config.appSecret,
       domain: lark.Domain.Feishu, // 国内版飞书
-    });
+    })
 
     // 创建事件分发器
     const eventDispatcher = new lark.EventDispatcher({}).register({
@@ -71,30 +73,32 @@ export async function startLongPolling(): Promise<void> {
       'im.message.receive_v1': async (data: {
         sender: {
           sender_id?: {
-            open_id?: string;
-          };
-        };
+            open_id?: string
+          }
+        }
         message: {
-          content: string;
-          chat_type: string;
-        };
+          content: string
+          chat_type: string
+        }
       }) => {
-        await handleMessageEvent(data);
+        await handleMessageEvent(data)
       },
-    });
+    })
 
     // 启动长连接
-    await wsClient.start({ eventDispatcher });
-    console.log('[FeishuLongPolling] Started with Feishu SDK WSClient');
+    await wsClient.start({ eventDispatcher })
+    console.log('[FeishuLongPolling] Started with Feishu SDK WSClient')
   } catch (e) {
-    const errMsg = (e as Error).message;
+    const errMsg = (e as Error).message
     if (errMsg.includes('404')) {
-      console.error('[FeishuLongPolling] 长连接未启用。请在飞书开放平台 -> 事件订阅 中选择"使用长连接接收事件"');
+      console.error(
+        '[FeishuLongPolling] 长连接未启用。请在飞书开放平台 -> 事件订阅 中选择"使用长连接接收事件"',
+      )
     } else {
-      console.error('[FeishuLongPolling] Start failed:', errMsg);
+      console.error('[FeishuLongPolling] Start failed:', errMsg)
     }
     // 30秒后重试
-    setTimeout(() => startLongPolling(), 30000);
+    setTimeout(() => startLongPolling(), 30000)
   }
 }
 
@@ -104,90 +108,91 @@ export async function startLongPolling(): Promise<void> {
 async function handleMessageEvent(event: {
   sender: {
     sender_id?: {
-      open_id?: string;
-    };
-  };
+      open_id?: string
+    }
+  }
   message: {
-    message_id?: string;
-    content: string;
-    chat_type: string;
-  };
+    message_id?: string
+    content: string
+    chat_type: string
+  }
 }): Promise<void> {
-  const message = event.message;
-  const content = message.content || '';
-  const senderId = event.sender?.sender_id?.open_id || 'unknown';
-  const chatType = message.chat_type;
-  const messageId = message.message_id || `${senderId}-${Date.now()}`;
+  const message = event.message
+  const content = message.content || ''
+  const senderId = event.sender?.sender_id?.open_id || 'unknown'
+  const chatType = message.chat_type
+  const messageId = message.message_id || `${senderId}-${Date.now()}`
 
   // 消息去重
   if (isDuplicate(messageId)) {
-    console.log(`[FeishuLongPolling] ⏭️ 跳过重复消息: ${messageId}`);
-    return;
+    console.log(`[FeishuLongPolling] ⏭️ 跳过重复消息: ${messageId}`)
+    return
   }
 
   // 只处理私聊和群聊文本消息
-  if (chatType !== 'p2p' && chatType !== 'group') return;
+  if (chatType !== 'p2p' && chatType !== 'group') return
 
   // 解析消息内容
-  let text = '';
+  let text = ''
   try {
-    const contentJson = JSON.parse(content);
-    text = contentJson.text || '';
+    const contentJson = JSON.parse(content)
+    text = contentJson.text || ''
   } catch {
-    text = content;
+    text = content
   }
 
-  if (!text.trim()) return;
+  if (!text.trim()) return
 
-  console.log(`[FeishuLongPolling] 📩 收到消息 from ${senderId}: ${text.slice(0, 50)}...`);
+  console.log(`[FeishuLongPolling] 📩 收到消息 from ${senderId}: ${text.slice(0, 50)}...`)
 
   // 获取绑定的 Agent
-  const { getSetting, SETTINGS_KEYS } = await import('./settings.js');
-  const agentId = await getSetting(SETTINGS_KEYS.FEISHU_AGENT_ID);
+  const { getSetting, SETTINGS_KEYS } = await import('./settings.js')
+  const agentId = await getSetting(SETTINGS_KEYS.FEISHU_AGENT_ID)
 
   if (!agentId) {
-    console.warn('[FeishuLongPolling] No agent bound, set feishu_agent_id in settings');
-    return;
+    console.warn('[FeishuLongPolling] No agent bound, set feishu_agent_id in settings')
+    return
   }
 
   // 获取 Agent 信息
   const agent = await queryOne<{ id: string; name: string }>(
     'SELECT id, name FROM agents WHERE id = $1',
-    [agentId]
-  );
+    [agentId],
+  )
 
   if (!agent) {
-    console.warn(`[FeishuLongPolling] Agent ${agentId} not found`);
-    return;
+    console.warn(`[FeishuLongPolling] Agent ${agentId} not found`)
+    return
   }
 
-  console.log(`[FeishuLongPolling] 🔄 分发到 Agent: ${agent.name} (session=feishu-${senderId})`);
+  console.log(`[FeishuLongPolling] 🔄 分发到 Agent: ${agent.name} (session=feishu-${senderId})`)
 
   try {
     // 调用 Agent 运行时
-    const { runAgent } = await import('../agent-runtime/runtime.js');
+    const { runAgent } = await import('../agent-runtime/runtime.js')
     const result = await runAgent({
       agentId,
       sessionKey: `feishu-${senderId}`,
       userMessage: text,
-    });
+    })
 
     // 发送回复
-    const { feishuClient } = await import('./feishu.js');
+    const { feishuClient } = await import('./feishu.js')
 
     if ('pending' in result && result.pending) {
-      console.log(`[FeishuLongPolling] ⏳ 需要审批，等待处理...`);
-      await feishuClient.sendTextMessage(senderId, '您的请求需要审批，请等待审批人处理。');
+      console.log(`[FeishuLongPolling] ⏳ 需要审批，等待处理...`)
+      await feishuClient.sendTextMessage(senderId, '您的请求需要审批，请等待审批人处理。')
     } else if ('response' in result) {
-      const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result.response);
-      console.log(`[FeishuLongPolling] 📤 发送回复: ${responseText.slice(0, 100)}...`);
-      await feishuClient.sendTextMessage(senderId, responseText);
+      const responseText =
+        typeof result.response === 'string' ? result.response : JSON.stringify(result.response)
+      console.log(`[FeishuLongPolling] 📤 发送回复: ${responseText.slice(0, 100)}...`)
+      await feishuClient.sendTextMessage(senderId, responseText)
     } else {
-      console.log(`[FeishuLongPolling] ⚠️ 无响应内容:`, JSON.stringify(result).slice(0, 200));
+      console.log(`[FeishuLongPolling] ⚠️ 无响应内容:`, JSON.stringify(result).slice(0, 200))
     }
-    console.log(`[FeishuLongPolling] ✅ 处理完成 (session=feishu-${senderId})`);
+    console.log(`[FeishuLongPolling] ✅ 处理完成 (session=feishu-${senderId})`)
   } catch (e) {
-    console.error('[FeishuLongPolling] Failed to process message:', e);
+    console.error('[FeishuLongPolling] Failed to process message:', e)
   }
 }
 
@@ -197,6 +202,6 @@ async function handleMessageEvent(event: {
 export function stopLongPolling(): void {
   if (wsClient) {
     // WSClient 没有 stop 方法，设为 null 让 GC 处理
-    wsClient = null;
+    wsClient = null
   }
 }

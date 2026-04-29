@@ -78,6 +78,7 @@ graph TB
 **`src/colobot-server.ts`**
 
 HTTP + WebSocket server. All routing lives here (no external router). Responsibilities:
+
 - Parse body, CORS headers, client IP extraction
 - Route to appropriate handler (agents, chat, settings, etc.)
 - WebSocket connection management and message routing
@@ -117,6 +118,7 @@ Academic SOP state machine. Manages thesis/literature_review/experiment_report w
 **`src/llm/index.ts`**
 
 Provider-agnostic LLM interface. Supports:
+
 - OpenAI (`openai:gpt-4o`, `openai:gpt-4o-mini`)
 - Anthropic (`anthropic:claude-sonnet-4-20250514`)
 - MiniMax (`minimax:MiniMax-Text-01`)
@@ -128,11 +130,13 @@ Fallback chain: tries primary, then each fallback in order until success. Automa
 **`src/agent-runtime/tools/executor.ts`**
 
 Tool registry. `registerTool(name, fn)` registers a tool. Each tool can specify:
+
 - `require_approval`: marks as dangerous
 - `rbac`: required role (`admin`, `developer`, `readonly`)
 - `check_fn`: custom permission function
 
 **Dangerous Tools** (require approval):
+
 - `exec_code` — sandboxed Node.js code execution
 - `send_message` — multi-channel notifications
 - `delete_agent` — delete an agent
@@ -140,11 +144,13 @@ Tool registry. `registerTool(name, fn)` registers a tool. Each tool can specify:
 - `delete_file` — delete files
 
 **Workspace Tools** (`workspace.ts`):
+
 - `read_file`, `write_file`, `list_dir`, `delete_file`
 - Sub-agents are sandboxed to their own workspace directory
 - Parent agent has unrestricted access
 
 **MiniMax Tools**:
+
 - Text generation (`minimax-text`)
 - Image generation (`minimax-image`)
 - TTS (`minimax-tts`)
@@ -173,6 +179,7 @@ Database client using `pg`. All queries go through this module.
 **`src/agent-runtime/sub-agents.ts`**
 
 Manages sub-agent lifecycle:
+
 - Creates isolated workspace directory
 - Assigns tool whitelist/blacklist
 - Sets TTL (auto-cleanup via `SetInterval`)
@@ -187,6 +194,7 @@ Markdown-based skill executor. Skills are defined in Markdown with trigger words
 **`src/agent-runtime/skill-evolution.ts`**
 
 Skill evolution workflow: Agent proposes skill improvement → approval → apply. Workflow:
+
 1. Agent generates skill modification proposal
 2. Stored in `skill_proposals` table
 3. Human reviews and approves/rejects via `/api/approvals`
@@ -195,6 +203,7 @@ Skill evolution workflow: Agent proposes skill improvement → approval → appl
 **`src/agent-runtime/trigger-runtime.ts`**
 
 Trigger engine supporting:
+
 - **Cron** — `*/5 * * * *` style scheduling
 - **Interval** — every N minutes
 - **Webhook** — HTTP callback trigger
@@ -207,6 +216,7 @@ Trigger state (`next_fire_at`) is persisted to DB. On restart, missed triggers a
 **`src/services/feishu.ts`**
 
 Feishu bot integration:
+
 - Interactive cards with approve/reject buttons
 - `tenant_access_token` management (auto-refresh)
 - Feishu notification sending
@@ -220,6 +230,7 @@ WebSocket push channel for real-time streaming responses to connected clients.
 **`src/services/settings-cache.ts`**
 
 DB-backed settings with in-memory cache. Settings stored in `app_settings` table:
+
 - LLM API keys and model configs
 - Feishu credentials
 - Notification preferences
@@ -299,19 +310,19 @@ sequenceDiagram
 
 ### Core Tables
 
-| Table | Purpose |
-|-------|---------|
-| `agents` | Agent definitions (name, soul, model config) |
-| `agent_memory` | Per-session memory (SOP state, conversation history) |
-| `skills` | Skill registry (markdown content, trigger words) |
-| `skill_proposals` | Pending skill evolution proposals |
-| `approval_rules` | Tirith rule definitions with priority |
-| `approval_requests` | Active pending approvals |
-| `knowledge` | Knowledge base entries (concept/template/rule) |
-| `knowledge_vectors` | pgvector embeddings for knowledge |
-| `app_settings` | Key-value app configuration |
-| `audit_log` | All significant actions |
-| `trigger_definitions` | Cron/webhook/condition trigger configs |
+| Table                 | Purpose                                              |
+| --------------------- | ---------------------------------------------------- |
+| `agents`              | Agent definitions (name, soul, model config)         |
+| `agent_memory`        | Per-session memory (SOP state, conversation history) |
+| `skills`              | Skill registry (markdown content, trigger words)     |
+| `skill_proposals`     | Pending skill evolution proposals                    |
+| `approval_rules`      | Tirith rule definitions with priority                |
+| `approval_requests`   | Active pending approvals                             |
+| `knowledge`           | Knowledge base entries (concept/template/rule)       |
+| `knowledge_vectors`   | pgvector embeddings for knowledge                    |
+| `app_settings`        | Key-value app configuration                          |
+| `audit_log`           | All significant actions                              |
+| `trigger_definitions` | Cron/webhook/condition trigger configs               |
 
 ---
 
@@ -328,6 +339,7 @@ Sliding window per IP + endpoint. Returns `429` with `Retry-After` header when e
 ### Tool Permissions
 
 Tool executor checks:
+
 1. RBAC role (`admin`, `developer`, `readonly`) via `tool.rbac`
 2. Custom `check_fn` function
 3. Sub-agent tool whitelist/blacklist
@@ -358,6 +370,7 @@ Triggered by keywords: 论文, 文献综述, 实验报告, literature review, re
 ## Context Compression
 
 When conversation history exceeds 80% of context window, `compression.ts` triggers:
+
 1. LLM summarizes old messages
 2. Keeps last 6 messages intact
 3. Stores compressed summary in `agent_memory`

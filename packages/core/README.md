@@ -10,14 +10,14 @@ npm install @colobot/core
 
 ## 功能模块
 
-| 模块 | 说明 |
-|------|------|
-| 配置管理 | 多层级配置、模型能力自动计算 |
-| 子Agent | 生命周期管理、工具白名单、并发控制 |
-| 任务拆解 | AI驱动动态拆解、依赖处理、并行执行 |
-| 大文件处理 | 分块、流式、多策略合并 |
-| 搜索 | SearXNG/DuckDuckGo/Google/Bing |
-| 内置工具 | 12个工具（文件/搜索/执行/网络/数据） |
+| 模块       | 说明                                 |
+| ---------- | ------------------------------------ |
+| 配置管理   | 多层级配置、模型能力自动计算         |
+| 子Agent    | 生命周期管理、工具白名单、并发控制   |
+| 任务拆解   | AI驱动动态拆解、依赖处理、并行执行   |
+| 大文件处理 | 分块、流式、多策略合并               |
+| 搜索       | SearXNG/DuckDuckGo/Google/Bing       |
+| 内置工具   | 12个工具（文件/搜索/执行/网络/数据） |
 
 ## CLI 使用
 
@@ -96,20 +96,20 @@ SUBAGENT_MAX_CONCURRENT=10
 
 ## 内置工具
 
-| 工具 | 功能 |
-|------|------|
-| `read_file` | 读取文件 |
-| `write_file` | 写入文件 |
-| `list_dir` | 列出目录 |
-| `delete_file` | 删除文件 |
-| `web_search` | 网络搜索 |
-| `python` | 执行 Python |
-| `shell` | 执行 Shell（危险） |
-| `http` | HTTP 请求 |
-| `json_parse` | JSON 解析 |
-| `csv_parse` | CSV 解析 |
-| `calculate` | 数学计算 |
-| `echo` | 测试用 |
+| 工具          | 功能               |
+| ------------- | ------------------ |
+| `read_file`   | 读取文件           |
+| `write_file`  | 写入文件           |
+| `list_dir`    | 列出目录           |
+| `delete_file` | 删除文件           |
+| `web_search`  | 网络搜索           |
+| `python`      | 执行 Python        |
+| `shell`       | 执行 Shell（危险） |
+| `http`        | HTTP 请求          |
+| `json_parse`  | JSON 解析          |
+| `csv_parse`   | CSV 解析           |
+| `calculate`   | 数学计算           |
+| `echo`        | 测试用             |
 
 ## 架构
 
@@ -137,16 +137,16 @@ import {
   initConfig,
   setGlobalAllowedTools,
   OpenAIProvider,
-} from '@colobot/core';
+} from '@colobot/core'
 
 // 初始化配置
-const config = initConfig();
+const config = initConfig()
 
 // 设置工具白名单
-setGlobalAllowedTools(['read_file', 'write_file', 'web_search']);
+setGlobalAllowedTools(['read_file', 'write_file', 'web_search'])
 
 // 注册内置工具
-registerBuiltinTools();
+registerBuiltinTools()
 
 // 创建运行时
 const runtime = new AgentRuntime({
@@ -156,32 +156,32 @@ const runtime = new AgentRuntime({
   scanner: new ContentScanner(),
   audit: new ConsoleAudit(),
   pusher: new ConsolePusher(),
-});
+})
 
 // 运行对话
 const result = await runtime.run({
   agentId: 'my-agent',
   sessionKey: 'session-1',
   userMessage: 'Hello!',
-});
+})
 ```
 
 ### 任务拆解
 
 ```typescript
-import { analyzeRequest, executeDynamicTask } from '@colobot/core';
+import { analyzeRequest, executeDynamicTask } from '@colobot/core'
 
 // 分析请求
-const analysis = await analyzeRequest('分析销售数据', llm, deps);
+const analysis = await analyzeRequest('分析销售数据', llm, deps)
 
 // 执行任务（自动创建子Agent）
-const result = await executeDynamicTask('分析销售数据', 'parent-1', llm, deps);
+const result = await executeDynamicTask('分析销售数据', 'parent-1', llm, deps)
 ```
 
 ### 子Agent管理
 
 ```typescript
-import { spawnSubAgent, runSubAgentTask } from '@colobot/core';
+import { spawnSubAgent, runSubAgentTask } from '@colobot/core'
 
 // 创建子Agent
 const agent = spawnSubAgent({
@@ -189,98 +189,98 @@ const agent = spawnSubAgent({
   soulContent: JSON.stringify({ role: '数据分析专家' }),
   parentId: 'parent-1',
   allowedTools: ['read_file', 'python'],
-});
+})
 
 // 执行任务
-const result = await runSubAgentTask(agent, '分析数据', 'parent-1', deps);
+const result = await runSubAgentTask(agent, '分析数据', 'parent-1', deps)
 ```
 
 ### 大文件处理
 
 ```typescript
-import { processChunksParallel, mergeText } from '@colobot/core';
+import { processChunksParallel, mergeText } from '@colobot/core'
 
 // 分块并行处理
 const results = await processChunksParallel(
   largeContent,
   async (chunk, index) => {
-    return { chunkIndex: index, success: true, result: processed };
+    return { chunkIndex: index, success: true, result: processed }
   },
   { chunkSize: 100000, overlap: 1000, format: 'bytes' },
-  3 // 并行数
-);
+  3, // 并行数
+)
 
 // 合并结果
-const final = mergeText(results);
+const final = mergeText(results)
 ```
 
 ### 模型能力
 
 ```typescript
-import { getModelCapabilities } from '@colobot/core';
+import { getModelCapabilities } from '@colobot/core'
 
 // 获取模型能力（自动计算分块参数）
-const caps = getModelCapabilities('gpt-4o');
+const caps = getModelCapabilities('gpt-4o')
 // { contextWindow: 128000, recommendedChunkSize: 100000, recommendedParallel: 3 }
 
-const caps2 = getModelCapabilities('claude-sonnet-4-20250514');
+const caps2 = getModelCapabilities('claude-sonnet-4-20250514')
 // { contextWindow: 200000, recommendedChunkSize: 150000, recommendedParallel: 3 }
 ```
 
 ### 向量搜索
 
 ```typescript
-import { initDb, addMemory, searchMemory, hybridSearch } from '@colobot/core';
+import { initDb, addMemory, searchMemory, hybridSearch } from '@colobot/core'
 
-initDb();
+initDb()
 
 // 保存记忆
-await addMemory('agent-1', 'key-1', '这是一段记忆内容');
+await addMemory('agent-1', 'key-1', '这是一段记忆内容')
 
 // 语义搜索
-const results = await searchMemory('agent-1', '记忆');
+const results = await searchMemory('agent-1', '记忆')
 
 // 混合搜索
-const hybrid = await hybridSearch('agent-1', '记忆');
+const hybrid = await hybridSearch('agent-1', '记忆')
 ```
 
 ### 内容安全
 
 ```typescript
-import { ContentScanner, detectThreat, validateContent } from '@colobot/core';
+import { ContentScanner, detectThreat, validateContent } from '@colobot/core'
 
-const scanner = new ContentScanner();
+const scanner = new ContentScanner()
 
 // 扫描输入
-const result = await scanner.scanInput('hello world');
-console.log(result.safe); // true
+const result = await scanner.scanInput('hello world')
+console.log(result.safe) // true
 
 // 检测威胁
-const threat = detectThreat('删除 AI');
-console.log(threat.isThreat); // true
+const threat = detectThreat('删除 AI')
+console.log(threat.isThreat) // true
 ```
 
 ## 功能列表
 
-| 功能 | 说明 |
-|------|------|
-| ✅ LLM Provider | OpenAI / Anthropic API |
-| ✅ 配置管理 | 多层级配置、模型能力自动计算 |
-| ✅ 子Agent | 生命周期、工具白名单、并发控制 |
-| ✅ 任务拆解 | AI驱动、依赖处理、并行执行 |
-| ✅ 大文件处理 | 分块、流式、多策略合并 |
-| ✅ 搜索集成 | 4引擎支持 |
-| ✅ 内置工具 | 12个工具 |
-| ✅ PostgreSQL 存储 | pgvector 向量支持 |
-| ✅ 向量嵌入 | OpenAI / MiniMax Embeddings |
-| ✅ 语义搜索 | 向量 + 文本混合搜索 |
-| ✅ 内容安全 | 越狱/注入检测 |
-| ✅ 威胁检测 | 卸载/删除威胁识别 |
-| ✅ 投毒防御 | 信任等级 + 内容验证 |
-| ✅ 审批流程 | 四层漏斗自动决策 |
-| ✅ 上下文压缩 | LLM 摘要压缩 |
-| ✅ 插件系统 | 工具/中间件注册 |
-| ✅ CLI | 命令行交互 |
+| 功能               | 说明                           |
+| ------------------ | ------------------------------ |
+| ✅ LLM Provider    | OpenAI / Anthropic API         |
+| ✅ 配置管理        | 多层级配置、模型能力自动计算   |
+| ✅ 子Agent         | 生命周期、工具白名单、并发控制 |
+| ✅ 任务拆解        | AI驱动、依赖处理、并行执行     |
+| ✅ 大文件处理      | 分块、流式、多策略合并         |
+| ✅ 搜索集成        | 4引擎支持                      |
+| ✅ 内置工具        | 12个工具                       |
+| ✅ PostgreSQL 存储 | pgvector 向量支持              |
+| ✅ 向量嵌入        | OpenAI / MiniMax Embeddings    |
+| ✅ 语义搜索        | 向量 + 文本混合搜索            |
+| ✅ 内容安全        | 越狱/注入检测                  |
+| ✅ 威胁检测        | 卸载/删除威胁识别              |
+| ✅ 投毒防御        | 信任等级 + 内容验证            |
+| ✅ 审批流程        | 四层漏斗自动决策               |
+| ✅ 上下文压缩      | LLM 摘要压缩                   |
+| ✅ 插件系统        | 工具/中间件注册                |
+| ✅ CLI             | 命令行交互                     |
 
 ## 构建
 

@@ -14,19 +14,8 @@
     "maxConcurrent": 10,
     "defaultTtlMs": 300000,
     "defaultTimeoutMs": 300000,
-    "allowedTools": [
-      "read_file",
-      "write_file",
-      "list_dir",
-      "web_search",
-      "python",
-      "http"
-    ],
-    "blockedTools": [
-      "delete_file",
-      "execute_shell",
-      "system_access"
-    ]
+    "allowedTools": ["read_file", "write_file", "list_dir", "web_search", "python", "http"],
+    "blockedTools": ["delete_file", "execute_shell", "system_access"]
   },
   "audit": {
     "enabled": true,

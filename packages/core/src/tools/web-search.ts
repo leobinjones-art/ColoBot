@@ -2,49 +2,52 @@
  * 网络搜索工具
  */
 
-import type { ToolContext } from '@colobot/types';
-import { toolRegistry } from './registry.js';
-import { search, imageSearch, videoSearch, academicSearch } from '../search.js';
+import type { ToolContext } from '@colobot/types'
+import { toolRegistry } from './registry.js'
+import { search, imageSearch, videoSearch, academicSearch } from '../search.js'
 
 async function webSearch(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const { query, max_results } = args as { query: string; max_results?: number };
-  if (!query) throw new Error('query is required');
+  const { query, max_results } = args as { query: string; max_results?: number }
+  if (!query) throw new Error('query is required')
 
-  const response = await search(query, { maxResults: max_results || 10 });
-  const results = response.results.map(r => ({
+  const response = await search(query, { maxResults: max_results || 10 })
+  const results = response.results.map((r) => ({
     title: r.title,
     url: r.url,
     snippet: r.content.slice(0, 200),
-  }));
-  return JSON.stringify(results, null, 2);
+  }))
+  return JSON.stringify(results, null, 2)
 }
 
 async function imageSearchTool(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const { query, max_results } = args as { query: string; max_results?: number };
-  if (!query) throw new Error('query is required');
+  const { query, max_results } = args as { query: string; max_results?: number }
+  if (!query) throw new Error('query is required')
 
-  const response = await imageSearch(query, { maxResults: max_results || 10 });
-  return JSON.stringify(response.results, null, 2);
+  const response = await imageSearch(query, { maxResults: max_results || 10 })
+  return JSON.stringify(response.results, null, 2)
 }
 
 async function videoSearchTool(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const { query, max_results } = args as { query: string; max_results?: number };
-  if (!query) throw new Error('query is required');
+  const { query, max_results } = args as { query: string; max_results?: number }
+  if (!query) throw new Error('query is required')
 
-  const response = await videoSearch(query, { maxResults: max_results || 10 });
-  return JSON.stringify(response.results, null, 2);
+  const response = await videoSearch(query, { maxResults: max_results || 10 })
+  return JSON.stringify(response.results, null, 2)
 }
 
-async function academicSearchTool(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const { query, max_results } = args as { query: string; max_results?: number };
-  if (!query) throw new Error('query is required');
+async function academicSearchTool(
+  args: Record<string, unknown>,
+  _ctx: ToolContext,
+): Promise<string> {
+  const { query, max_results } = args as { query: string; max_results?: number }
+  if (!query) throw new Error('query is required')
 
-  const response = await academicSearch(query, { maxResults: max_results || 10 });
-  return JSON.stringify(response.results, null, 2);
+  const response = await academicSearch(query, { maxResults: max_results || 10 })
+  return JSON.stringify(response.results, null, 2)
 }
 
 async function getTime(_args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  return new Date().toISOString();
+  return new Date().toISOString()
 }
 
 export function registerSearchTools(): void {
@@ -60,7 +63,7 @@ export function registerSearchTools(): void {
       required: ['query'],
     },
     execute: webSearch,
-  });
+  })
 
   toolRegistry.register({
     name: 'image_search',
@@ -74,7 +77,7 @@ export function registerSearchTools(): void {
       required: ['query'],
     },
     execute: imageSearchTool,
-  });
+  })
 
   toolRegistry.register({
     name: 'video_search',
@@ -88,7 +91,7 @@ export function registerSearchTools(): void {
       required: ['query'],
     },
     execute: videoSearchTool,
-  });
+  })
 
   toolRegistry.register({
     name: 'academic_search',
@@ -102,12 +105,12 @@ export function registerSearchTools(): void {
       required: ['query'],
     },
     execute: academicSearchTool,
-  });
+  })
 
   toolRegistry.register({
     name: 'get_time',
     description: 'Get current date and time in ISO format',
     parameters: { type: 'object', properties: {} },
     execute: getTime,
-  });
+  })
 }

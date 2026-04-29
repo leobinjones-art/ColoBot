@@ -46,7 +46,7 @@ export class ColoBotError extends Error {
   constructor(
     code: ErrorCode,
     message: string,
-    options?: { details?: Record<string, unknown>; recoverable?: boolean; cause?: Error }
+    options?: { details?: Record<string, unknown>; recoverable?: boolean; cause?: Error },
   ) {
     super(message, { cause: options?.cause })
     this.code = code
@@ -62,7 +62,7 @@ export class ColoBotError extends Error {
 export function createError(
   code: ErrorCode,
   message: string,
-  options?: { details?: Record<string, unknown>; recoverable?: boolean; cause?: Error }
+  options?: { details?: Record<string, unknown>; recoverable?: boolean; cause?: Error },
 ): ColoBotError {
   return new ColoBotError(code, message, options)
 }
@@ -199,7 +199,7 @@ export function formatErrorMessage(error: unknown, locale: 'zh' | 'en' = 'zh'): 
 export async function safeExecute<T>(
   fn: () => Promise<T>,
   fallback: T,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ): Promise<T> {
   try {
     return await fn()
@@ -220,7 +220,7 @@ export async function executeWithRetry<T>(
     maxRetries?: number
     delayMs?: number
     shouldRetry?: (error: Error) => boolean
-  } = {}
+  } = {},
 ): Promise<T> {
   const { maxRetries = 3, delayMs = 1000, shouldRetry } = options
 

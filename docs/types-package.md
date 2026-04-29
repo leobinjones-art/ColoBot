@@ -164,16 +164,16 @@ export type LLMProviderType = 'openai' | 'anthropic' | 'minimax'
 export interface LLMProvider {
   /** Provider 名称 */
   readonly name: LLMProviderType
-  
+
   /** 同步调用 */
   chat(messages: LLMMessage[], options?: ChatOptions): Promise<ChatResponse>
-  
+
   /** 流式调用 */
   chatStream?(messages: LLMMessage[], options?: ChatOptions): AsyncIterable<StreamChunk>
-  
+
   /** 获取可用模型 */
   listModels?(): Promise<ModelInfo[]>
-  
+
   /** 计算 Token 数 */
   countTokens?(text: string): number
 }
@@ -189,7 +189,7 @@ export interface LLMMessage {
 /**
  * LLM 内容块（多模态）
  */
-export type LLMContentBlock = 
+export type LLMContentBlock =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } }
   | { type: 'audio_url'; audio_url: { url: string } }
@@ -278,7 +278,7 @@ export interface ToolDefinition {
  */
 export type ToolHandler = (
   args: Record<string, unknown>,
-  context: ToolContext
+  context: ToolContext,
 ) => Promise<ToolResult>
 
 /**
@@ -390,19 +390,19 @@ export interface ColoBotPlugin {
   version: string
   /** 插件描述 */
   description?: string
-  
+
   /** 注册的工具 */
   tools?: ToolDefinition[]
-  
+
   /** 配置 Schema */
   configSchema?: ConfigSchema | ConfigSchema[]
-  
+
   /** CLI 命令 */
   cliCommands?: CLICommand[]
-  
+
   /** 初始化钩子 */
   onInit?: (context: PluginContext) => void | Promise<void>
-  
+
   /** 销毁钩子 */
   onDestroy?: () => void | Promise<void>
 }
@@ -528,7 +528,10 @@ export interface TaskAnalysis {
   /** 研究目的 */
   researchPurpose?: 'paper' | 'research' | 'learning'
   /** 建议步骤 */
-  suggestedSteps: Omit<SopStep, 'status' | 'userData' | 'subAgentResult' | 'approved' | 'reviewNote' | 'subAgentId'>[]
+  suggestedSteps: Omit<
+    SopStep,
+    'status' | 'userData' | 'subAgentResult' | 'approved' | 'reviewNote' | 'subAgentId'
+  >[]
   /** 信息是否完整 */
   informationComplete: boolean
   /** 缺失信息 */
@@ -551,30 +554,30 @@ export enum ErrorCode {
   NOT_FOUND = 'NOT_FOUND',
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
-  
+
   // LLM
   LLM_ERROR = 'LLM_ERROR',
   LLM_RATE_LIMIT = 'LLM_RATE_LIMIT',
   LLM_CONTEXT_TOO_LONG = 'LLM_CONTEXT_TOO_LONG',
-  
+
   // 数据库
   DB_ERROR = 'DB_ERROR',
   DB_CONNECTION_ERROR = 'DB_CONNECTION_ERROR',
-  
+
   // Agent
   AGENT_NOT_FOUND = 'AGENT_NOT_FOUND',
   SUBAGENT_LIMIT_REACHED = 'SUBAGENT_LIMIT_REACHED',
   SUBAGENT_TIMEOUT = 'SUBAGENT_TIMEOUT',
-  
+
   // SOP
   SOP_NOT_FOUND = 'SOP_NOT_FOUND',
   SOP_INVALID_STATE = 'SOP_INVALID_STATE',
-  
+
   // 工具
   TOOL_EXECUTION_ERROR = 'TOOL_EXECUTION_ERROR',
   TOOL_NOT_FOUND = 'TOOL_NOT_FOUND',
   TOOL_PERMISSION_DENIED = 'TOOL_PERMISSION_DENIED',
-  
+
   // 审批
   APPROVAL_NOT_FOUND = 'APPROVAL_NOT_FOUND',
   APPROVAL_ALREADY_PROCESSED = 'APPROVAL_ALREADY_PROCESSED',
@@ -583,9 +586,7 @@ export enum ErrorCode {
 /**
  * 结果类型（Rust 风格）
  */
-export type Result<T, E = Error> = 
-  | { ok: true; value: T }
-  | { ok: false; error: E }
+export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E }
 
 /**
  * 分页参数
@@ -696,13 +697,7 @@ export * from './common/index.js'
   "peerDependencies": {
     "typescript": ">=5.0.0"
   },
-  "keywords": [
-    "colobot",
-    "types",
-    "typescript",
-    "ai",
-    "agent"
-  ]
+  "keywords": ["colobot", "types", "typescript", "ai", "agent"]
 }
 ```
 
@@ -712,12 +707,7 @@ export * from './common/index.js'
 
 ```typescript
 // @colobot/core
-import type { 
-  AgentConfig, 
-  LLMProvider, 
-  ToolDefinition,
-  ColoBotPlugin 
-} from '@colobot/types'
+import type { AgentConfig, LLMProvider, ToolDefinition, ColoBotPlugin } from '@colobot/types'
 
 // @colobot/sop
 import type { SopState, SopStep, TaskAnalysis } from '@colobot/types'
@@ -741,22 +731,24 @@ export function isTextBlock(block: LLMContentBlock): block is { type: 'text'; te
   return block.type === 'text'
 }
 
-export function isImageBlock(block: LLMContentBlock): block is { type: 'image_url'; image_url: { url: string } } {
+export function isImageBlock(
+  block: LLMContentBlock,
+): block is { type: 'image_url'; image_url: { url: string } } {
   return block.type === 'image_url'
 }
 ```
 
 ## 开发计划
 
-| 阶段 | 内容 | 时间 |
-|------|------|------|
-| Phase 1 | 基础类型（Agent, LLM, Tool） | 0.5 天 |
-| Phase 2 | 配置和插件类型 | 0.5 天 |
-| Phase 3 | SOP 和审批类型 | 0.5 天 |
-| Phase 4 | 错误和通用类型 | 0.5 天 |
-| Phase 5 | 类型守卫和工具函数 | 0.5 天 |
-| Phase 6 | 文档和测试 | 0.5 天 |
-| **总计** | | **3 天** |
+| 阶段     | 内容                         | 时间     |
+| -------- | ---------------------------- | -------- |
+| Phase 1  | 基础类型（Agent, LLM, Tool） | 0.5 天   |
+| Phase 2  | 配置和插件类型               | 0.5 天   |
+| Phase 3  | SOP 和审批类型               | 0.5 天   |
+| Phase 4  | 错误和通用类型               | 0.5 天   |
+| Phase 5  | 类型守卫和工具函数           | 0.5 天   |
+| Phase 6  | 文档和测试                   | 0.5 天   |
+| **总计** |                              | **3 天** |
 
 ## 类型兼容性策略
 
@@ -805,8 +797,8 @@ describe('Type definitions', () => {
       role: 'user',
       content: [
         { type: 'text', text: 'Hello' },
-        { type: 'image_url', image_url: { url: 'https://...' } }
-      ]
+        { type: 'image_url', image_url: { url: 'https://...' } },
+      ],
     }
     expectTypeOf(message).toMatchTypeOf<LLMMessage>()
   })
@@ -814,7 +806,7 @@ describe('Type definitions', () => {
   it('Result type should be discriminated union', () => {
     const success: Result<string> = { ok: true, value: 'test' }
     const failure: Result<string> = { ok: false, error: new Error('fail') }
-    
+
     if (success.ok) {
       expectTypeOf(success.value).toBeString()
     }

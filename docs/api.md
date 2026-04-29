@@ -22,9 +22,7 @@ curl http://localhost:18792/api/agents \
 ```
 
 ```json
-[
-  { "id": "uuid", "name": "MyAgent", "createdAt": "..." }
-]
+[{ "id": "uuid", "name": "MyAgent", "createdAt": "..." }]
 ```
 
 ---
@@ -35,14 +33,14 @@ curl http://localhost:18792/api/agents \
 POST /api/agents
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Agent name |
-| `soul_content` | string | JSON soul definition |
-| `primary_model_id` | string | e.g. `openai:gpt-4o` |
-| `fallback_model_id` | string | Fallback model |
-| `temperature` | number | LLM temperature |
-| `max_tokens` | number | Max response tokens |
+| Field                    | Type   | Description            |
+| ------------------------ | ------ | ---------------------- |
+| `name`                   | string | Agent name             |
+| `soul_content`           | string | JSON soul definition   |
+| `primary_model_id`       | string | e.g. `openai:gpt-4o`   |
+| `fallback_model_id`      | string | Fallback model         |
+| `temperature`            | number | LLM temperature        |
+| `max_tokens`             | number | Max response tokens    |
 | `system_prompt_override` | string | Override system prompt |
 
 ```bash
@@ -98,14 +96,14 @@ POST /api/agents/import
 
 Parse and optionally create from an OpenClaw SOUL.md file.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `markdown` | string | SOUL.md content (mutually exclusive with `url`) |
-| `url` | string | URL to fetch SOUL.md from (mutually exclusive with `markdown`) |
-| `name` | string | Agent name override |
-| `create` | boolean | Whether to create the agent (default: false) |
-| `primary_model_id` | string | Model for created agent |
-| `fallback_model_id` | string | Fallback model for created agent |
+| Field               | Type    | Description                                                    |
+| ------------------- | ------- | -------------------------------------------------------------- |
+| `markdown`          | string  | SOUL.md content (mutually exclusive with `url`)                |
+| `url`               | string  | URL to fetch SOUL.md from (mutually exclusive with `markdown`) |
+| `name`              | string  | Agent name override                                            |
+| `create`            | boolean | Whether to create the agent (default: false)                   |
+| `primary_model_id`  | string  | Model for created agent                                        |
+| `fallback_model_id` | string  | Fallback model for created agent                               |
 
 ```bash
 curl -X POST http://localhost:18792/api/agents/import \
@@ -129,11 +127,11 @@ curl -X POST http://localhost:18792/api/agents/import \
 POST /api/chat
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `agent_id` | string | Target agent ID |
-| `session_key` | string | Conversation session key |
-| `message` | string \| ContentBlock[] | Message content |
+| Field         | Type                     | Description              |
+| ------------- | ------------------------ | ------------------------ |
+| `agent_id`    | string                   | Target agent ID          |
+| `session_key` | string                   | Conversation session key |
+| `message`     | string \| ContentBlock[] | Message content          |
 
 If a Skill is triggered by the message (trigger word match), the Skill executes instead of the Agent. Otherwise, the Agent processes the message.
 
@@ -172,6 +170,7 @@ Send JSON:
 ```
 
 Receive JSON responses:
+
 - `{ "type": "response", "payload": { "response": "..." } }` — final response
 - `{ "type": "error", "payload": { "error": "..." } }` — error
 
@@ -185,10 +184,10 @@ Receive JSON responses:
 POST /api/memory/search
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field      | Type   | Description               |
+| ---------- | ------ | ------------------------- |
 | `agent_id` | string | Agent ID to search within |
-| `query` | string | Semantic search query |
+| `query`    | string | Semantic search query     |
 
 ```bash
 curl -X POST http://localhost:18792/api/memory/search \
@@ -210,11 +209,11 @@ curl -X POST http://localhost:18792/api/memory/search \
 POST /api/search
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `query` | string | Search query |
-| `safe_search` | number | 0=off, 1=moderate, 2=strict |
-| `time_range` | string | `day`, `week`, `month`, `year` |
+| Field         | Type   | Description                    |
+| ------------- | ------ | ------------------------------ |
+| `query`       | string | Search query                   |
+| `safe_search` | number | 0=off, 1=moderate, 2=strict    |
+| `time_range`  | string | `day`, `week`, `month`, `year` |
 
 ```bash
 curl -X POST http://localhost:18792/api/search \
@@ -254,13 +253,13 @@ curl http://localhost:18792/api/skills \
 POST /api/skills
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Skill name |
-| `description` | string | Human-readable description |
-| `markdown_content` | string | Markdown skill definition |
-| `trigger_words` | string[] | Trigger words array |
-| `trigger_config` | object | Trigger configuration |
+| Field              | Type     | Description                |
+| ------------------ | -------- | -------------------------- |
+| `name`             | string   | Skill name                 |
+| `description`      | string   | Human-readable description |
+| `markdown_content` | string   | Markdown skill definition  |
+| `trigger_words`    | string[] | Trigger words array        |
+| `trigger_config`   | object   | Trigger configuration      |
 
 ```bash
 curl -X POST http://localhost:18792/api/skills \
@@ -290,13 +289,13 @@ GET /api/knowledge?category=concept|template|rule
 POST /api/knowledge
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `category` | string | `concept`, `template`, or `rule` |
-| `name` | string | Entry name |
-| `content` | string | Content text |
-| `variables` | string[] | Variable names (for templates) |
-| `related` | string[] | Related entry names |
+| Field       | Type     | Description                      |
+| ----------- | -------- | -------------------------------- |
+| `category`  | string   | `concept`, `template`, or `rule` |
+| `name`      | string   | Entry name                       |
+| `content`   | string   | Content text                     |
+| `variables` | string[] | Variable names (for templates)   |
+| `related`   | string[] | Related entry names              |
 
 ### Search Knowledge
 
@@ -339,10 +338,10 @@ curl -X POST http://localhost:18792/api/knowledge/import \
 POST /api/triggers/fire
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `trigger_id` | string | Trigger ID |
-| `payload` | object | Payload passed to the trigger |
+| Field        | Type   | Description                   |
+| ------------ | ------ | ----------------------------- |
+| `trigger_id` | string | Trigger ID                    |
+| `payload`    | object | Payload passed to the trigger |
 
 ### Fire Condition Trigger
 
@@ -350,10 +349,10 @@ POST /api/triggers/fire
 POST /api/triggers/condition-fire
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `trigger_id` | string | Trigger ID |
-| `context` | object | Context object for condition evaluation |
+| Field        | Type   | Description                             |
+| ------------ | ------ | --------------------------------------- |
+| `trigger_id` | string | Trigger ID                              |
+| `context`    | object | Context object for condition evaluation |
 
 ---
 
@@ -371,10 +370,10 @@ GET /api/approvals?agent_id=<AGENT_ID>
 POST /api/approvals/:id/approve
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `approver` | string | Approver name (default: `system`) |
-| `result` | object | Result data passed to continue execution |
+| Field      | Type   | Description                              |
+| ---------- | ------ | ---------------------------------------- |
+| `approver` | string | Approver name (default: `system`)        |
+| `result`   | object | Result data passed to continue execution |
 
 ### Reject Request
 
@@ -382,10 +381,10 @@ POST /api/approvals/:id/approve
 POST /api/approvals/:id/reject
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `approver` | string | Approver name |
-| `reason` | string | Rejection reason |
+| Field      | Type   | Description      |
+| ---------- | ------ | ---------------- |
+| `approver` | string | Approver name    |
+| `reason`   | string | Rejection reason |
 
 ---
 
@@ -397,13 +396,13 @@ POST /api/approvals/:id/reject
 GET /api/audit?action=&from=&to=&limit=&offset=
 ```
 
-| Param | Type | Description |
-|-------|------|-------------|
-| `action` | string | Filter by action (e.g. `agent.create`) |
-| `from` | ISO date | Start time |
-| `to` | ISO date | End time |
-| `limit` | number | Max results (default: 50) |
-| `offset` | number | Pagination offset |
+| Param    | Type     | Description                            |
+| -------- | -------- | -------------------------------------- |
+| `action` | string   | Filter by action (e.g. `agent.create`) |
+| `from`   | ISO date | Start time                             |
+| `to`     | ISO date | End time                               |
+| `limit`  | number   | Max results (default: 50)              |
+| `offset` | number   | Pagination offset                      |
 
 ---
 
@@ -435,11 +434,11 @@ GET    /api/settings/subagent
 PUT    /api/settings/subagent
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field          | Type     | Description                         |
+| -------------- | -------- | ----------------------------------- |
 | `allowedTools` | string[] | Tool whitelist (null = all allowed) |
-| `blockedTools` | string[] | Tool blacklist |
-| `defaultTtlMs` | number | Default TTL in ms (default: 300000) |
+| `blockedTools` | string[] | Tool blacklist                      |
+| `defaultTtlMs` | number   | Default TTL in ms (default: 300000) |
 
 ### SearXNG Settings
 
@@ -507,13 +506,13 @@ curl http://localhost:18792/health
 
 ## Error Responses
 
-| Status | Meaning |
-|--------|---------|
-| `400` | Bad Request — missing or invalid parameters |
-| `401` | Unauthorized — invalid or missing API key |
-| `404` | Not Found |
-| `429` | Rate Limited — retry after `Retry-After` header |
-| `500` | Internal Server Error |
+| Status | Meaning                                         |
+| ------ | ----------------------------------------------- |
+| `400`  | Bad Request — missing or invalid parameters     |
+| `401`  | Unauthorized — invalid or missing API key       |
+| `404`  | Not Found                                       |
+| `429`  | Rate Limited — retry after `Retry-After` header |
+| `500`  | Internal Server Error                           |
 
 Error body:
 
@@ -525,10 +524,10 @@ Error body:
 
 ## Rate Limits
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| `/api/login` | 5 requests | 60s |
-| `/api/chat` | 30 requests | 60s |
+| Endpoint     | Limit       | Window |
+| ------------ | ----------- | ------ |
+| `/api/login` | 5 requests  | 60s    |
+| `/api/chat`  | 30 requests | 60s    |
 
 Rate limit response includes `Retry-After` and `X-RateLimit-*` headers.
 
