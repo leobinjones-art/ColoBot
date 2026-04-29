@@ -47,8 +47,7 @@ jobs:
         run: npx tsc --noEmit --skipLibCheck
 
       - name: Prettier check
-        run: npx prettier --check .
-        ignore-path: .gitignore
+        run: npx prettier --check . --ignore-path .gitignore
 
       - name: ESLint
         run: npm run lint
