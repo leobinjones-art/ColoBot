@@ -23,6 +23,7 @@ vi.mock('../agents/session.js', () => ({
 }))
 
 vi.mock('../llm/index.js', () => ({
+  chat: vi.fn(),
   agentChat: vi.fn(),
   agentChatStream: vi.fn(),
 }))
@@ -67,6 +68,7 @@ vi.mock('../services/audit.js', () => ({
 
 vi.mock('../memory/vector.js', () => ({
   hybridSearch: vi.fn(),
+  searchMemory: vi.fn(),
 }))
 
 vi.mock('../memory/db.js', () => ({
