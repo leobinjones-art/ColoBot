@@ -4,3 +4,4 @@
 
 export * from './registry.js'
 export * from './builtin.js'
+export * from './python-pyodide.js'

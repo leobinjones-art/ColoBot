@@ -30,6 +30,38 @@ vi.mock('child_process', () => ({
   }),
 }))
 
+// Mock Pyodide - 使用 WASM 沙箱
+vi.mock('pyodide', () => ({
+  loadPyodide: vi.fn(async () => ({
+    runPythonAsync: vi.fn(async (code: string) => {
+      // 简单模拟 Python 执行
+      if (code.includes('print')) {
+        return undefined
+      }
+      if (code.includes('1+1')) {
+        return 2
+      }
+      return 'python output'
+    }),
+    loadPackage: vi.fn(async () => []),
+    runPython: vi.fn((code: string) => 'python output'),
+    globals: {
+      get: vi.fn(),
+      set: vi.fn(),
+    },
+    FS: {
+      writeFile: vi.fn(),
+      readFile: vi.fn(() => ''),
+      mkdir: vi.fn(),
+      rmdir: vi.fn(),
+      unlink: vi.fn(),
+      readdir: vi.fn(() => []),
+    },
+    setStdout: vi.fn(),
+    setStderr: vi.fn(),
+  })),
+}))
+
 // Mock fetch
 global.fetch = vi.fn(async (url: string) => ({
   status: 200,
@@ -103,7 +135,9 @@ describe('Builtin Tools', () => {
     it('should execute python', async () => {
       const tool = toolRegistry.get('python')
       const result = await tool!.execute({ code: 'print(1+1)' }, ctx)
-      expect(result).toBe('python output')
+      // Pyodide 返回 JSON 格式
+      const parsed = JSON.parse(result)
+      expect(parsed.ok).toBe(true)
     })
 
     it('should execute shell', async () => {

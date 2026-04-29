@@ -4,7 +4,7 @@
  * 包含：
  * - 文件操作：read_file, write_file, list_dir, delete_file
  * - 搜索：web_search
- * - 执行：python, shell
+ * - 执行：shell (python 使用 Pyodide WASM 沙箱，见 python-pyodide.ts)
  * - 网络：http_request
  * - 数据：json_parse, csv_parse
  */
@@ -20,6 +20,7 @@ import { registerWorkspaceTools } from './workspace.js'
 import { registerExecCodeTool } from './exec-code.js'
 import { registerAgentTools } from './agent-tools.js'
 import { registerCreateSkillTool } from './create-skill.js'
+import { registerPythonTool } from './python-pyodide.js'
 
 // ── 文件工具 ──────────────────────────────────────────────
 
@@ -134,233 +135,6 @@ async function webSearch(args: Record<string, unknown>, _ctx: ToolContext): Prom
 }
 
 // ── 执行工具 ──────────────────────────────────────────────
-
-/**
- * Python 沙箱配置
- */
-interface PythonSandboxConfig {
-  timeout: number // 执行超时（毫秒）
-  maxMemoryMB: number // 最大内存（MB）
-  maxOutputSize: number // 最大输出字节数
-  allowedModules: string[] // 允许的模块白名单
-  blockedModules: string[] // 禁止的模块黑名单
-  allowedPaths: string[] // 允许访问的路径
-  networkDisabled: boolean // 禁止网络访问
-}
-
-const DEFAULT_SANDBOX_CONFIG: PythonSandboxConfig = {
-  timeout: 30000,
-  maxMemoryMB: 256,
-  maxOutputSize: 10 * 1024 * 1024,
-  allowedModules: [
-    // 标准库安全模块
-    'math',
-    'random',
-    'statistics',
-    'decimal',
-    'fractions',
-    'datetime',
-    'time',
-    'calendar',
-    'json',
-    'csv',
-    're',
-    'string',
-    'collections',
-    'itertools',
-    'functools',
-    'operator',
-    'typing',
-    'dataclasses',
-    'enum',
-    'copy',
-    'pprint',
-    'textwrap',
-    'hashlib',
-    'hmac',
-    'secrets',
-    'base64',
-    'binascii',
-    'struct',
-    'io',
-    'pathlib',
-    'urllib.parse',
-    'uuid',
-  ],
-  blockedModules: [
-    // 危险模块
-    'os',
-    'sys',
-    'subprocess',
-    'socket',
-    'socketserver',
-    'http.server',
-    'http.client',
-    'ftplib',
-    'smtplib',
-    'telnetlib',
-    'poplib',
-    'imaplib',
-    'nntplib',
-    'multiprocessing',
-    'threading',
-    'asyncio',
-    'ctypes',
-    'ctypes.wintypes',
-    'shutil',
-    'tempfile',
-    'glob',
-    'pickle',
-    'shelve',
-    'marshal',
-    'importlib',
-    'pkgutil',
-    'modulefinder',
-    'builtins',
-    '__builtins__',
-    'code',
-    'codeop',
-    'compile',
-    'exec',
-    'eval',
-  ],
-  allowedPaths: [],
-  networkDisabled: true,
-}
-
-/**
- * 生成沙箱化的 Python 代码包装
- */
-function wrapInSandbox(code: string, config: PythonSandboxConfig): string {
-  const blockedList = config.blockedModules.map((m) => `'${m}'`).join(', ')
-  const allowedList = config.allowedModules.map((m) => `'${m}'`).join(', ')
-
-  return `
-# -*- coding: utf-8 -*-
-# ColoBot Python Sandbox v1.0
-
-import sys
-import builtins
-
-# ── 模块导入控制 ─────────────────────────────────────────
-_original_import = builtins.__import__
-_blocked_modules = {${blockedList}}
-_allowed_modules = {${allowedList}}
-
-def _restricted_import(name, globals=None, locals=None, fromlist=(), level=0):
-    module_base = name.split('.')[0]
-
-    # 检查黑名单
-    if module_base in _blocked_modules or name in _blocked_modules:
-        raise ImportError(f"Module '{name}' is blocked for security reasons")
-
-    # 如果白名单非空，检查白名单
-    if _allowed_modules and module_base not in _allowed_modules and name not in _allowed_modules:
-        raise ImportError(f"Module '{name}' is not in allowed list")
-
-    return _original_import(name, globals, locals, fromlist, level)
-
-builtins.__import__ = _restricted_import
-
-# ── 危险函数禁用 ─────────────────────────────────────────
-def _disabled_func(name):
-    def _raise(*args, **kwargs):
-        raise RuntimeError(f"'{name}' is disabled for security reasons")
-    return _raise
-
-# 禁用危险内置函数
-builtins.open = _disabled_func('open')
-builtins.exec = _disabled_func('exec')
-builtins.eval = _disabled_func('eval')
-builtins.compile = _disabled_func('compile')
-builtins.__import__ = _restricted_import
-
-# ── 用户代码执行 ─────────────────────────────────────────
-_user_result = None
-_user_output = []
-
-class _CaptureOutput:
-    def __init__(self):
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
-
-    def write(self, text):
-        self._original_stdout.write(text)
-        _user_output.append(text)
-
-    def flush(self):
-        self._original_stdout.flush()
-
-    def __enter__(self):
-        sys.stdout = self
-        sys.stderr = self
-        return self
-
-    def __exit__(self, *args):
-        sys.stdout = self._original_stdout
-        sys.stderr = self._original_stderr
-
-try:
-    with _CaptureOutput():
-        _user_result = exec('''${code.replace(/'/g, "\\'").replace(/\n/g, '\\n')}''', {'__builtins__': builtins})
-except SystemExit:
-    pass
-except Exception as e:
-    import traceback
-    _user_output.append(f"Error: {type(e).__name__}: {e}")
-finally:
-    # 输出结果
-    if _user_output:
-        print(''.join(_user_output), end='')
-    if _user_result is not None:
-        print(repr(_user_result))
-`
-}
-
-/**
- * Python 执行（沙箱隔离）
- */
-async function pythonExec(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {
-  const code = args.code as string
-  if (!code) throw new Error('code is required')
-
-  const { execSync } = await import('child_process')
-  const config = { ...DEFAULT_SANDBOX_CONFIG }
-
-  // 允许通过参数覆盖部分配置
-  if (args.timeout) config.timeout = Math.min(args.timeout as number, 60000)
-  if (args.maxMemoryMB) config.maxMemoryMB = Math.min(args.maxMemoryMB as number, 512)
-
-  const sandboxedCode = wrapInSandbox(code, config)
-
-  try {
-    // 使用 spawn 以支持更好的资源控制
-    const result = execSync('python3 -c "' + sandboxedCode.replace(/"/g, '\\"') + '"', {
-      encoding: 'utf-8',
-      timeout: config.timeout,
-      maxBuffer: config.maxOutputSize,
-      killSignal: 'SIGKILL',
-      env: {
-        ...process.env,
-        PYTHONIOENCODING: 'utf-8',
-        PYTHONDONTWRITEBYTECODE: '1',
-        PYTHONUNBUFFERED: '1',
-      },
-    })
-    return result || '(no output)'
-  } catch (e: any) {
-    // 超时错误
-    if (e.signal === 'SIGKILL') {
-      return `Error: Execution timed out (${config.timeout}ms)`
-    }
-    // 输出过大
-    if (e.code === 'ENOBUFS' || e.message?.includes('maxBuffer')) {
-      return `Error: Output exceeded maximum size (${config.maxOutputSize} bytes)`
-    }
-    // 其他错误
-    return e.stderr || e.stdout || `Error: ${e.message}`
-  }
-}
 
 /**
  * Shell 执行（受限白名单）
@@ -647,25 +421,8 @@ export function registerBuiltinTools(): void {
     execute: webSearch,
   })
 
-  // 执行工具
-  toolRegistry.register({
-    name: 'python',
-    description:
-      'Execute Python code in a sandboxed environment. Supports safe standard library modules only.',
-    parameters: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', description: 'Python code to execute' },
-        timeout: {
-          type: 'number',
-          description: 'Execution timeout in ms (default: 30000, max: 60000)',
-        },
-        maxMemoryMB: { type: 'number', description: 'Max memory in MB (default: 256, max: 512)' },
-      },
-      required: ['code'],
-    },
-    execute: pythonExec,
-  })
+  // 执行工具 - 使用 Pyodide WASM 沙箱
+  registerPythonTool()
 
   toolRegistry.register({
     name: 'shell',
