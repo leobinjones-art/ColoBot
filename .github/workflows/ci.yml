@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build packages
+        run: npm run build:packages
+
       - name: Initialize database
         run: PGPASSWORD=${{ secrets.CI_DB_PASSWORD || 'colobot123' }} psql -h localhost -U colobot -d colobot -f sql/schema.sql
         env:
