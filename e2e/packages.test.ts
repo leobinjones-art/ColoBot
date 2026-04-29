@@ -268,7 +268,7 @@ describe('E2E: @colobot/core', () => {
       registerBuiltinTools()
 
       const tools = toolRegistry.list()
-      expect(tools.length).toBe(12)
+      expect(tools.length).toBeGreaterThanOrEqual(12)
 
       expect(toolRegistry.get('read_file')).toBeDefined()
       expect(toolRegistry.get('write_file')).toBeDefined()

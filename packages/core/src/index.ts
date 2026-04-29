@@ -138,6 +138,7 @@ export {
   runSubAgentTask,
   setGlobalAllowedTools,
   getGlobalAllowedTools,
+  isToolAllowed,
   type SubAgent,
   type SubAgentConfig,
 } from './subagents/index.js'
