@@ -103,7 +103,7 @@ export {
 // 任务拆解
 // ═══════════════════════════════════════════════════════════════
 
-export { breakdownTask, type DynamicTask } from './task-breakdown/index.js'
+export { breakdownTask } from './task-breakdown/index.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 配置管理
