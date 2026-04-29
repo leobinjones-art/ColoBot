@@ -258,7 +258,6 @@ describe('E2E: @colobot/core', () => {
       expect(stats.successChunks).toBe(2)
     })
   })
-  })
 
   describe('Tools', () => {
     it('should register builtin tools', async () => {
