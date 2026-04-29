@@ -27,6 +27,7 @@
     "llm-guard": "^0.1.8",
     "pg": "^8.13.0",
     "pgvector": "^0.2.0",
+    "sharp": "^0.34.5",
     "ws": "^8.18.0"
   },
   "devDependencies": {

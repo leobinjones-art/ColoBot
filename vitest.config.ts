@@ -6,5 +6,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     testTimeout: 30000,
+    exclude: ['**/node_modules/**', '**/_legacy/**', '**/dist/**', '**/coverage/**'],
+    coverage: {
+      exclude: ['**/node_modules/**', '**/_legacy/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
+    },
   },
 })
