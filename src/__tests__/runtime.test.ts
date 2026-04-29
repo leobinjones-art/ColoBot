@@ -149,11 +149,12 @@ const mockAgent = {
 async function setupHappyPath() {
   const agentRegistry = (await import('../agents/registry.js')).agentRegistry
   const sessionManager = (await import('../agents/session.js')).sessionManager
-  const { agentChat } = await import('../llm/index.js')
+  const { agentChat, chat } = await import('../llm/index.js')
   const { checkAcademicTrigger, checkAcademicResponse, scanInput, scanOutput } =
     await import('../content-policy/index.js')
   const { detectThreat } = await import('../content-policy/threat.js')
   const { writeAudit } = await import('../services/audit.js')
+  const { searchMemory } = await import('../memory/vector.js')
 
   // Reset mocks that setupHappyPath will configure
   ;(agentRegistry.get as any).mockReset()
@@ -161,12 +162,14 @@ async function setupHappyPath() {
   ;(sessionManager.getHistory as any).mockReset()
   ;(sessionManager.appendMessage as any).mockReset()
   ;(agentChat as any).mockReset()
+  ;(chat as any).mockReset()
   ;(writeAudit as any).mockReset()
   ;(checkAcademicTrigger as any).mockReset()
   ;(checkAcademicResponse as any).mockReset()
   ;(scanInput as any).mockReset()
   ;(scanOutput as any).mockReset()
   ;(detectThreat as any).mockReset()
+  ;(searchMemory as any).mockReset()
   // Also reset executor mocks
   mockParseToolCalls.mockReset()
   mockParseToolCalls.mockReturnValue([])
@@ -179,14 +182,16 @@ async function setupHappyPath() {
   ;(sessionManager.getHistory as any).mockResolvedValue([])
   ;(sessionManager.appendMessage as any).mockResolvedValue(undefined)
   ;(agentChat as any).mockResolvedValue({ content: 'Hello from assistant.' })
+  ;(chat as any).mockResolvedValue({ content: '{}' }) // Default empty JSON for SOP analysis
   ;(writeAudit as any).mockResolvedValue(undefined)
   ;(checkAcademicTrigger as any).mockReturnValue({ triggered: false })
   ;(checkAcademicResponse as any).mockReturnValue({ shouldIntercept: false })
   ;(scanInput as any).mockResolvedValue({ safe: true })
   ;(scanOutput as any).mockResolvedValue({ safe: true })
   ;(detectThreat as any).mockReturnValue({ isThreat: false })
+  ;(searchMemory as any).mockResolvedValue([]) // Default empty array for user preference
 
-  return { agentChat, writeAudit }
+  return { agentChat, chat, writeAudit }
 }
 
 // ── 测试 ─────────────────────────────────────────────────────────────────────
