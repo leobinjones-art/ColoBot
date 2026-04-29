@@ -257,7 +257,8 @@ function askInput(prompt: string): Promise<string> {
  * 启动 TUI
  */
 async function startTui(): Promise<void> {
-  // 动态加载 TUI 模块
+  // 动态加载 TUI 模块（可选依赖，运行时加载）
+  // @ts-ignore - tui 是可选依赖，构建时可能不存在
   const { TUI } = await import('@colobot/tui')
   const tui = new TUI()
 
@@ -268,6 +269,7 @@ async function startTui(): Promise<void> {
 
   await tui.start('ColoBot TUI')
   console.log('输入 /help 查看可用命令\n')
+  // @ts-ignore
   await tui.run(async (message) => message)
 }
 
