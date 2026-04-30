@@ -46,8 +46,14 @@ jobs:
           DATABASE_URL: postgresql://colobot:${{ secrets.CI_DB_PASSWORD || 'colobot123' }}@localhost:5432/colobot
           DATABASE_HOST: localhost
 
-      - name: Type check
-        run: npx tsc --noEmit --skipLibCheck
+      - name: Type check packages
+        run: |
+          npx tsc --noEmit --skipLibCheck --project packages/types/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/sentinel/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/core/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/assistant/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/tui/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/sop-academic/tsconfig.json
 
       - name: Prettier check
         run: npx prettier --check . --ignore-path .gitignore
