@@ -21,6 +21,7 @@ ColoBot 是一个基于 TypeScript 的 AI Agent 框架，专注于**个人助理
 ### 核心特点
 
 - 🤖 **多 LLM 支持**: OpenAI、Anthropic、MiniMax、自定义 API
+- 🛡️ **安全守护**: 独立的安全母 Agent，输入输出扫描、进程守护、异常接管
 - 🧠 **子 Agent 协作**: 任务分解、并行执行、工具白名单
 - 🖼️ **多模态**: 文本、图片、音频
 - 🐍 **Python WASM**: Pyodide 沙箱执行，无需系统 Python
@@ -36,6 +37,12 @@ ColoBot 是一个基于 TypeScript 的 AI Agent 框架，专注于**个人助理
 colobot/
 ├── packages/
 │   ├── types/           # 类型定义
+│   ├── sentinel/        # 安全守护母 Agent
+│   │   ├── rule-engine/ # 规则引擎（Trie树敏感词）
+│   │   ├── heartbeat/   # 心跳协议
+│   │   ├── state/       # 状态同步
+│   │   ├── signal/      # 接管信号
+│   │   └── redis/       # 分布式支持
 │   ├── core/            # 核心运行时
 │   │   ├── providers/   # LLM Provider
 │   │   ├── runtime/     # Agent 运行时
@@ -127,6 +134,36 @@ npx colobot tui
 | 上下文压缩 | 超过窗口自动压缩历史 |
 | 子 Agent | 创建、委托、销毁子 Agent |
 | 工具白名单 | 子 Agent 受限权限控制 |
+
+### 🛡️ 安全守护 (@colobot/sentinel)
+
+独立的安全母 Agent，平行链路架构：
+
+| 功能 | 说明 |
+|------|------|
+| **输入扫描** | Trie树敏感词、正则模式、长度/频率限制，<1ms 响应 |
+| **输出扫描** | 异步检测，先放行后撤回 |
+| **心跳监控** | 2秒间隔，3次失联判定 |
+| **状态同步** | 父Agent状态实时同步，接管时有完整上下文 |
+| **超时处理** | 30s警告 → 60s询问 → 120s接管 |
+| **三层防御** | 规则引擎 → 本地模型 → LLM接管 |
+| **分布式** | Redis 共享状态、Pub/Sub 信号 |
+
+```typescript
+import { Sentinel } from '@colobot/sentinel'
+
+const sentinel = new Sentinel()
+sentinel.start()
+
+// 输入扫描
+const result = sentinel.scanInput(userMessage, sessionId)
+if (!result.pass) {
+  return sentinel.scanInputWithTakeover(userMessage, sessionId).response
+}
+
+// 超时监控
+sentinel.startSessionTimeout(sessionId, agentId)
+```
 
 ### 🐍 Python WASM 沙箱
 
@@ -323,12 +360,12 @@ export function registerMyTool(): void {
 
 | 指标 | 数值 |
 |------|------|
-| 总代码量 | ~23,000 行 TypeScript |
-| 源文件数 | 131 个 |
-| 包数量 | 6 个 |
+| 总代码量 | ~26,000 行 TypeScript |
+| 源文件数 | 143 个 |
+| 包数量 | 7 个 |
 | 助理模块 | 18 个 |
-| 测试用例 | 292 个 |
-| 测试覆盖率 | 45% |
+| 测试用例 | 382 个 |
+| 测试覆盖率 | 50%+ |
 
 ---
 
