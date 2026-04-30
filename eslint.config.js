@@ -5,7 +5,7 @@ import tsParser from '@typescript-eslint/parser'
 export default [
   js.configs.recommended,
   {
-    files: ['src/**/*.ts'],
+    files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -41,6 +41,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
+      'preserve-caught-error': 'off',
       '@typescript-eslint/preserve-caught-error': 'off',
       'no-console': 'off',
       'no-unused-vars': 'off',
@@ -48,6 +49,8 @@ export default [
       'no-useless-assignment': 'off',
       'no-case-declarations': 'off',
       'no-undef': 'off',
+      'no-self-assign': 'off',
+      'no-useless-escape': 'off',
       '@typescript-eslint/no-undef': 'off',
       '@typescript-eslint/no-empty': 'off',
       '@typescript-eslint/no-useless-assignment': 'off',
@@ -55,7 +58,7 @@ export default [
     },
   },
   {
-    files: ['src/__tests__/**/*.ts'],
+    files: ['**/__tests__/**/*.ts'],
     languageOptions: {
       globals: {
         describe: 'readonly',
@@ -69,6 +72,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '_legacy/**'],
   },
 ]

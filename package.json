@@ -17,7 +17,7 @@
     "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src/ --max-warnings 200",
+    "lint": "eslint packages/*/src/**/*.ts --max-warnings 200",
     "test:e2e": "vitest run e2e/",
     "test:e2e:watch": "vitest e2e/"
   },
