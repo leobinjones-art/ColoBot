@@ -322,7 +322,7 @@ describe('LLM Providers', () => {
       const chunks: string[] = []
       for await (const chunk of provider.chatStream([{ role: 'user', content: 'Hi' }])) {
         if (chunk.type === 'text') {
-          chunks.push(chunk.content)
+          chunks.push(chunk.content!)
         }
       }
 

@@ -14,7 +14,7 @@ const createMockLLM = (): LLMProvider => ({
     content: 'Mock response',
   })),
   chatStream: vi.fn(async function* () {
-    yield { type: 'text', content: 'Mock' }
+    yield { type: 'text' as const, content: 'Mock' }
   }),
 })
 
@@ -120,10 +120,10 @@ describe('AgentRuntime', () => {
 
     it('should handle tool calls', async () => {
       const toolCalls: ToolCall[] = [
-        { name: 'test_tool', arguments: { arg: 'value' }, id: 'call-1' },
+        { name: 'test_tool', args: { arg: 'value' }, id: 'call-1', type: 'function', function: { name: 'test_tool', arguments: '{}' } },
       ]
       const toolResults: ToolResult[] = [
-        { name: 'test_tool', result: 'tool result', success: true },
+        { toolCallId: 'call-1', name: 'test_tool', result: 'tool result' },
       ]
 
       vi.mocked(mockLLM.chat).mockResolvedValueOnce({
@@ -150,10 +150,10 @@ describe('AgentRuntime', () => {
       // 每次都返回工具调用
       vi.mocked(mockLLM.chat).mockResolvedValue({
         content: 'Using tool',
-        toolCalls: [{ name: 'tool', arguments: {}, id: '1' }],
+        toolCalls: [{ name: 'tool', args: {}, id: '1', type: 'function', function: { name: 'tool', arguments: '{}' } }],
       })
-      vi.mocked(mockTools.parse).mockReturnValue([{ name: 'tool', arguments: {}, id: '1' }])
-      vi.mocked(mockTools.execute).mockResolvedValue([{ name: 'tool', result: 'ok', success: true }])
+      vi.mocked(mockTools.parse).mockReturnValue([{ name: 'tool', args: {}, id: '1', type: 'function', function: { name: 'tool', arguments: '{}' } }])
+      vi.mocked(mockTools.execute).mockResolvedValue([{ toolCallId: '1', name: 'tool', result: 'ok' }])
 
       const result = await runtime.run({
         agentId: 'test-agent',
