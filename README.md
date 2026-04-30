@@ -331,25 +331,110 @@ const intent = parseIntent('添加待办 完成报告')
 
 ## SOP 开源生态
 
-ColoBot 支持可插拔的 SOP (Standard Operating Procedure) 流程模块。
+ColoBot 支持可插拔的 SOP (Standard Operating Procedure) 流程模块，用于封装复杂的多步骤任务。
 
 ### 架构
 
 ```
-@colobot/sop-base          # 基础接口 + 注册器（官方）
+@colobot/sop-base          # 流程引擎基类（官方）
 @colobot/sop-academic      # 学术研究流程（官方示例）
 colobot-sop-*              # 社区贡献（npm 发布）
 ```
 
 ### 官方 SOP 模块
 
-| 模块                    | 场景               | 状态      |
-| ----------------------- | ------------------ | --------- |
+| 模块 | 场景 | 状态 |
+|------|------|------|
+| `@colobot/sop-base` | 流程引擎基类 | ✅ 已实现 |
 | `@colobot/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
-| `@colobot/sop-writing`  | 长文写作、报告生成 | 📋 规划中 |
-| `@colobot/sop-coding`   | 项目开发、代码重构 | 📋 规划中 |
+| `@colobot/sop-writing` | 长文写作、报告生成 | 📋 规划中 |
+| `@colobot/sop-coding` | 项目开发、代码重构 | 📋 规划中 |
 
-### 开发一个 SOP：3 步搞定
+### @colobot/sop-base 核心概念
+
+#### 类型定义
+
+```typescript
+// 任务状态
+type SopTaskStatus = 'created' | 'analyzing' | 'ready' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
+
+// 步骤定义
+interface SopStep {
+  id: string
+  name: string
+  description: string
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped'
+  dependencies?: string[]      // 依赖的步骤 ID
+  data?: Record<string, unknown>
+}
+
+// 任务定义
+interface SopTask {
+  id: string
+  type: string
+  description: string
+  status: SopTaskStatus
+  steps: SopStep[]
+  currentStepIndex: number
+  context: Record<string, unknown>
+  output?: string
+}
+```
+
+#### SopEngine 基类
+
+```typescript
+import { SopEngine } from '@colobot/sop-base'
+
+class MySopEngine extends SopEngine {
+  // 必须实现：分析用户请求，返回步骤列表
+  async analyzeTask(userMessage: string, context?: Record<string, unknown>): Promise<TaskAnalysis> {
+    return {
+      type: 'my-task',
+      description: '任务描述',
+      steps: [
+        { name: 'step-1', description: '第一步' },
+        { name: 'step-2', description: '第二步', dependencies: ['step-1'] },
+      ],
+    }
+  }
+}
+
+// 使用
+const engine = new MySopEngine({ name: 'my-sop', version: '1.0.0' })
+const task = await engine.createTask('用户请求')
+await engine.startTask(task.id)
+```
+
+#### 核心方法
+
+| 方法 | 说明 |
+|------|------|
+| `createTask(message, context)` | 创建任务 |
+| `startTask(taskId)` | 启动任务 |
+| `pauseTask(taskId)` | 暂停任务 |
+| `resumeTask(taskId)` | 恢复任务 |
+| `cancelTask(taskId)` | 取消任务 |
+| `getCurrentStep(taskId)` | 获取当前步骤 |
+| `advanceStep(taskId)` | 推进到下一步 |
+| `submitStepData(taskId, stepId, data)` | 提交步骤数据 |
+| `generateOutput(taskId)` | 生成最终输出 |
+
+#### 事件系统
+
+```typescript
+const engine = new MySopEngine(
+  { name: 'my-sop', version: '1.0.0' },
+  {
+    onTaskCreated: (task) => console.log('任务创建:', task.id),
+    onStepStarted: (task, step) => console.log('步骤开始:', step.name),
+    onStepCompleted: (task, step) => console.log('步骤完成:', step.name),
+    onTaskCompleted: (task) => console.log('任务完成:', task.output),
+  }
+)
+```
+
+### 开发一个 SOP 包
 
 #### 1. 创建包结构
 
@@ -358,41 +443,133 @@ colobot-sop-my-domain/
 ├── package.json
 ├── tsconfig.json
 └── src/
-    ├── index.ts      # SopModule 实现
-    └── steps.ts      # 步骤逻辑
+    ├── index.ts          # 导出引擎
+    ├── engine.ts         # 引擎实现
+    ├── prompts.ts        # Prompt 模板（可选）
+    └── __tests__/
+        └── index.test.ts
 ```
 
-#### 2. 实现 SopModule 接口
+#### 2. package.json
 
-```typescript
-import type { SopModule } from '@colobot/sop-base'
-
-export const mySop: SopModule = {
-  name: 'my-domain',
-  version: '1.0.0',
-  description: '处理我的专属领域任务',
-
-  detectIntent(message) {
-    return /帮我做某事/.test(message)
-  },
-
-  async analyzeTask(message, runtime) {
-    return {
-      steps: [
-        { name: '搜索信息', tool: 'web_search', prompt: '搜索: $query' },
-        { name: '生成报告', tool: 'write_file', prompt: '将结果整理为报告' },
-      ],
-      context: { query: extractQuery(message) },
-    }
-  },
+```json
+{
+  "name": "@your-org/sop-my-domain",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@colobot/sop-base": "^0.1.0",
+    "@colobot/core": "^0.3.0"
+  }
 }
 ```
 
-#### 3. 安装并测试
+#### 3. 实现引擎
+
+```typescript
+// src/engine.ts
+import { SopEngine, type TaskAnalysis } from '@colobot/sop-base'
+
+export class MyDomainSopEngine extends SopEngine {
+  constructor() {
+    super({ name: 'my-domain', version: '1.0.0' })
+  }
+
+  async analyzeTask(userMessage: string, context?: Record<string, unknown>): Promise<TaskAnalysis> {
+    // 1. 分析用户意图
+    const intent = await this.detectIntent(userMessage)
+    
+    // 2. 生成步骤列表
+    return {
+      type: intent.type,
+      description: userMessage,
+      steps: [
+        { name: 'analyze', description: '分析需求' },
+        { name: 'collect', description: '收集信息', dependencies: ['analyze'] },
+        { name: 'generate', description: '生成结果', dependencies: ['collect'] },
+      ],
+      requiredTools: ['web_search', 'read_file', 'write_file'],
+      estimatedTime: 10,
+      complexity: 5,
+    }
+  }
+
+  private async detectIntent(message: string): Promise<{ type: string }> {
+    // 实现意图检测逻辑
+    return { type: 'my-domain-task' }
+  }
+}
+```
+
+#### 4. 导出
+
+```typescript
+// src/index.ts
+export { MyDomainSopEngine } from './engine.js'
+```
+
+#### 5. 注册步骤执行器（可选）
+
+```typescript
+// 自定义步骤执行逻辑
+engine.registerStepExecutor('analyze', async (step, task, context) => {
+  // 执行分析逻辑
+  const result = await doAnalysis(task.context)
+  return { analysisResult: result }
+})
+
+engine.registerStepExecutor('collect', async (step, task, context) => {
+  // 基于上一步结果收集信息
+  const analysis = task.steps.find(s => s.id === 'analyze')?.data?.analysisResult
+  const info = await collectInfo(analysis)
+  return { collectedInfo: info }
+})
+```
+
+### Prompt 模板
+
+sop-base 提供了内置的 Prompt 模板：
+
+```typescript
+import { 
+  TASK_ANALYSIS_PROMPT, 
+  STEP_EXECUTION_PROMPT, 
+  OUTPUT_GENERATION_PROMPT,
+  buildPrompt 
+} from '@colobot/sop-base'
+
+// 使用模板
+const prompt = buildPrompt(TASK_ANALYSIS_PROMPT, {
+  userMessage: '帮我写一篇论文',
+  context: JSON.stringify({ field: 'AI' }),
+  maxSteps: 10,
+})
+```
+
+### 发布到 npm
 
 ```bash
-npm install ./colobot-sop-my-domain
-npx colobot sop test "帮我做某事"
+# 构建
+npm run build
+
+# 发布
+npm publish --access public
+```
+
+### 使用社区 SOP
+
+```bash
+npm install @community/sop-xxx
+```
+
+```typescript
+import { XxxSopEngine } from '@community/sop-xxx'
+
+const engine = new XxxSopEngine()
+const task = await engine.createTask('用户请求')
+await engine.startTask(task.id)
 ```
 
 ---
