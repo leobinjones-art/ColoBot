@@ -197,7 +197,13 @@ describe('Sentinel', () => {
     })
 
     it('should trigger takeover for different reasons', () => {
-      const reasons = ['timeout', 'parent_unresponsive', 'input_blocked', 'output_blocked', 'rate_limit'] as const
+      const reasons = [
+        'timeout',
+        'parent_unresponsive',
+        'input_blocked',
+        'output_blocked',
+        'rate_limit',
+      ] as const
 
       for (const reason of reasons) {
         const message = sentinel.triggerTakeover(`session-${reason}`, reason)

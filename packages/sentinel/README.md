@@ -26,6 +26,7 @@
 ```
 
 **问题：**
+
 - 安全检查和业务逻辑耦合，互相影响
 - 父 Agent 崩溃时，安全机制也随之失效
 - 无法独立监控父 Agent 的健康状态
@@ -57,6 +58,7 @@
 ```
 
 **优势：**
+
 - **独立监控** - 母 Agent 独立于业务链路，不受父 Agent 崩溃影响
 - **异常接管** - 父 Agent 失联时自动接管，用户无感知
 - **上下文保留** - 持续同步状态，接管时有完整上下文
@@ -132,7 +134,7 @@ const scanner = new OutputScanner(sentinel, {
   recallCallback: (sessionId, original, replacement) => {
     // 撤回并替换
     pusher.pushReplacement(sessionId, replacement)
-  }
+  },
 })
 
 // 先放行，异步检测
@@ -225,13 +227,13 @@ await manager.trigger('session-1', 'timeout')
 
 ## 接管场景
 
-| 场景 | 检测方式 | 母 Agent 响应 |
-|------|----------|---------------|
+| 场景        | 检测方式 | 母 Agent 响应                        |
+| ----------- | -------- | ------------------------------------ |
 | Prompt 注入 | 输入扫描 | "检测到异常输入，请重新描述您的需求" |
-| 有害输出 | 输出扫描 | 拦截并替换为安全提示 |
-| Agent 崩溃 | 心跳监控 | "系统遇到问题，正在恢复..." |
-| 长期无响应 | 超时检测 | "任务执行时间过长，是否继续？" |
-| 请求过快 | 频率限制 | "您的请求过于频繁，请稍后再试" |
+| 有害输出    | 输出扫描 | 拦截并替换为安全提示                 |
+| Agent 崩溃  | 心跳监控 | "系统遇到问题，正在恢复..."          |
+| 长期无响应  | 超时检测 | "任务执行时间过长，是否继续？"       |
+| 请求过快    | 频率限制 | "您的请求过于频繁，请稍后再试"       |
 
 ## 安装
 
@@ -283,24 +285,24 @@ sentinel.endSessionTimeout(sessionId)
 
 主类，整合所有安全守护功能。
 
-| 方法 | 说明 |
-|------|------|
-| `start()` | 启动守护 |
-| `stop()` | 停止守护 |
-| `scanInput(message, sessionId)` | 扫描输入（同步） |
+| 方法                                        | 说明                   |
+| ------------------------------------------- | ---------------------- |
+| `start()`                                   | 启动守护               |
+| `stop()`                                    | 停止守护               |
+| `scanInput(message, sessionId)`             | 扫描输入（同步）       |
 | `scanInputWithTakeover(message, sessionId)` | 扫描输入并返回兜底话术 |
-| `scanOutput(response)` | 扫描输出（同步） |
-| `startSessionTimeout(sessionId, agentId)` | 开始超时监控 |
-| `touchSession(sessionId)` | 重置超时计时 |
-| `endSessionTimeout(sessionId)` | 结束超时监控 |
-| `getTimeoutMessages()` | 获取超时消息 |
-| `createStateUpdater(agentId)` | 创建状态更新器 |
-| `getSessionState(sessionId)` | 获取会话状态 |
-| `triggerTakeover(sessionId, reason)` | 触发接管 |
-| `createSignalReceiver(agentId)` | 创建信号接收器 |
-| `beat()` | 更新自身心跳 |
-| `getSelfHealthStatus()` | 获取自身健康状态 |
-| `externalCheck()` | 外部检查接口 |
+| `scanOutput(response)`                      | 扫描输出（同步）       |
+| `startSessionTimeout(sessionId, agentId)`   | 开始超时监控           |
+| `touchSession(sessionId)`                   | 重置超时计时           |
+| `endSessionTimeout(sessionId)`              | 结束超时监控           |
+| `getTimeoutMessages()`                      | 获取超时消息           |
+| `createStateUpdater(agentId)`               | 创建状态更新器         |
+| `getSessionState(sessionId)`                | 获取会话状态           |
+| `triggerTakeover(sessionId, reason)`        | 触发接管               |
+| `createSignalReceiver(agentId)`             | 创建信号接收器         |
+| `beat()`                                    | 更新自身心跳           |
+| `getSelfHealthStatus()`                     | 获取自身健康状态       |
+| `externalCheck()`                           | 外部检查接口           |
 
 ## License
 

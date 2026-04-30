@@ -63,18 +63,22 @@ describe('LLM Providers', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          choices: [{
-            message: {
-              content: null,
-              tool_calls: [{
-                id: 'call-123',
-                function: {
-                  name: 'get_weather',
-                  arguments: '{"location": "Beijing"}',
-                },
-              }],
+          choices: [
+            {
+              message: {
+                content: null,
+                tool_calls: [
+                  {
+                    id: 'call-123',
+                    function: {
+                      name: 'get_weather',
+                      arguments: '{"location": "Beijing"}',
+                    },
+                  },
+                ],
+              },
             },
-          }],
+          ],
         }),
       } as Response)
 
@@ -121,7 +125,9 @@ describe('LLM Providers', () => {
         apiKey: 'test-key',
       })
 
-      await expect(provider.chat([{ role: 'user', content: 'Hi' }])).rejects.toThrow('OpenAI API error')
+      await expect(provider.chat([{ role: 'user', content: 'Hi' }])).rejects.toThrow(
+        'OpenAI API error',
+      )
     })
 
     it('should pass options to API call', async () => {
@@ -138,10 +144,11 @@ describe('LLM Providers', () => {
         apiKey: 'test-key',
       })
 
-      await provider.chat(
-        [{ role: 'user', content: 'Hi' }],
-        { model: 'gpt-4o-mini', temperature: 0.5, maxTokens: 100 }
-      )
+      await provider.chat([{ role: 'user', content: 'Hi' }], {
+        model: 'gpt-4o-mini',
+        temperature: 0.5,
+        maxTokens: 100,
+      })
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1]?.body as string)
       expect(callBody.model).toBe('gpt-4o-mini')
@@ -254,7 +261,9 @@ describe('LLM Providers', () => {
         apiKey: 'test-key',
       })
 
-      await expect(provider.chat([{ role: 'user', content: 'Hi' }])).rejects.toThrow('Anthropic API error')
+      await expect(provider.chat([{ role: 'user', content: 'Hi' }])).rejects.toThrow(
+        'Anthropic API error',
+      )
     })
 
     it('should have chatStream method', async () => {
@@ -383,11 +392,10 @@ describe('LLM Providers', () => {
 
       const providers = new Map([['mock', mockProvider as any]])
 
-      const result = await chatWithFallback(
-        [{ role: 'user', content: 'Hi' }],
-        providers,
-        { provider: mockProvider as any, modelId: 'mock-model' }
-      )
+      const result = await chatWithFallback([{ role: 'user', content: 'Hi' }], providers, {
+        provider: mockProvider as any,
+        modelId: 'mock-model',
+      })
 
       expect(result.content).toBe('Success')
       expect(mockProvider.chat).toHaveBeenCalledTimes(1)
@@ -398,7 +406,9 @@ describe('LLM Providers', () => {
 
       const failingProvider = {
         name: 'failing',
-        chat: vi.fn(async () => { throw new Error('API Error') }),
+        chat: vi.fn(async () => {
+          throw new Error('API Error')
+        }),
         chatStream: vi.fn(),
       }
 
@@ -413,15 +423,11 @@ describe('LLM Providers', () => {
         ['working', workingProvider as any],
       ])
 
-      const result = await chatWithFallback(
-        [{ role: 'user', content: 'Hi' }],
-        providers,
-        {
-          provider: failingProvider as any,
-          modelId: 'fail-model',
-          fallbackChain: ['working:work-model'],
-        }
-      )
+      const result = await chatWithFallback([{ role: 'user', content: 'Hi' }], providers, {
+        provider: failingProvider as any,
+        modelId: 'fail-model',
+        fallbackChain: ['working:work-model'],
+      })
 
       expect(result.content).toBe('Fallback success')
       expect(failingProvider.chat).toHaveBeenCalled()
@@ -433,17 +439,20 @@ describe('LLM Providers', () => {
 
       const failingProvider = {
         name: 'failing',
-        chat: vi.fn(async () => { throw new Error('API Error') }),
+        chat: vi.fn(async () => {
+          throw new Error('API Error')
+        }),
         chatStream: vi.fn(),
       }
 
       const providers = new Map([['failing', failingProvider as any]])
 
-      await expect(chatWithFallback(
-        [{ role: 'user', content: 'Hi' }],
-        providers,
-        { provider: failingProvider as any, modelId: 'mock-model' }
-      )).rejects.toThrow('API Error')
+      await expect(
+        chatWithFallback([{ role: 'user', content: 'Hi' }], providers, {
+          provider: failingProvider as any,
+          modelId: 'mock-model',
+        }),
+      ).rejects.toThrow('API Error')
     })
   })
 })

@@ -8,7 +8,12 @@
 // 信号类型定义
 // ═══════════════════════════════════════════════════════════════
 
-export type TakeoverReason = 'timeout' | 'input_blocked' | 'output_blocked' | 'parent_unresponsive' | 'rate_limit'
+export type TakeoverReason =
+  | 'timeout'
+  | 'input_blocked'
+  | 'output_blocked'
+  | 'parent_unresponsive'
+  | 'rate_limit'
 export type TakeoverAction = 'suspend' | 'terminate'
 
 export interface TakeoverSignal {
@@ -128,7 +133,7 @@ export class SignalBus {
 
 export class TakeoverManager {
   private bus: SignalBus
-  private onTakeover?: (signal: TakeoverSignal) => string  // 返回接管话术
+  private onTakeover?: (signal: TakeoverSignal) => string // 返回接管话术
   private onResume?: (signal: ResumeSignal) => void
 
   constructor(bus: SignalBus) {

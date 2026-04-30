@@ -10,8 +10,8 @@ describe('SentinelSelfHeartbeat', () => {
 
   beforeEach(() => {
     heartbeat = new SentinelSelfHeartbeat({
-      interval: 500,    // 500ms 自检
-      threshold: 2000,  // 2s 无更新判定异常
+      interval: 500, // 500ms 自检
+      threshold: 2000, // 2s 无更新判定异常
     })
   })
 

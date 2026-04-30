@@ -97,5 +97,5 @@ export interface RuntimeDeps {
   tools: ToolExecutor
   audit: AuditLogger
   pusher: ResultPusher
-  sentinel?: Sentinel  // 可选：安全守护母 Agent
+  sentinel?: Sentinel // 可选：安全守护母 Agent
 }

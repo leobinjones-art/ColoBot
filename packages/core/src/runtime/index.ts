@@ -94,9 +94,10 @@ export class AgentRuntime {
     } = opts
 
     const sentinel = this.deps.sentinel
-    const messageText = typeof userMessage === 'string'
-      ? userMessage
-      : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
+    const messageText =
+      typeof userMessage === 'string'
+        ? userMessage
+        : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
 
     // ─── 输入扫描（同步） ─────────────────────────────────────
     if (sentinel) {
@@ -146,7 +147,11 @@ export class AgentRuntime {
     for (let round = 0; round < maxRounds; round++) {
       // 状态同步：更新进度
       if (stateUpdater) {
-        stateUpdater.updateProgress(sessionKey, `Processing round ${round + 1}`, (round / maxRounds) * 80)
+        stateUpdater.updateProgress(
+          sessionKey,
+          `Processing round ${round + 1}`,
+          (round / maxRounds) * 80,
+        )
       }
 
       // 构建 system prompt
@@ -235,9 +240,10 @@ export class AgentRuntime {
     } = opts
 
     const sentinel = this.deps.sentinel
-    const messageText = typeof userMessage === 'string'
-      ? userMessage
-      : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
+    const messageText =
+      typeof userMessage === 'string'
+        ? userMessage
+        : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
 
     // ─── 输入扫描（同步） ─────────────────────────────────────
     if (sentinel) {

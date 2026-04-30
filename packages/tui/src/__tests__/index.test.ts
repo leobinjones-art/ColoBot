@@ -113,7 +113,13 @@ describe('@colobot/tui', () => {
 
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
-      printTable(['Name', 'Value'], [['Item1', '100'], ['Item2', '200']])
+      printTable(
+        ['Name', 'Value'],
+        [
+          ['Item1', '100'],
+          ['Item2', '200'],
+        ],
+      )
       expect(logSpy).toHaveBeenCalled()
 
       logSpy.mockRestore()

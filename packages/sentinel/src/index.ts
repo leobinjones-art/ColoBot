@@ -37,13 +37,7 @@ export {
 } from './heartbeat.js'
 
 // 状态同步
-export {
-  SessionState,
-  StateStore,
-  StateUpdater,
-  getStateStore,
-  resetStateStore,
-} from './state.js'
+export { SessionState, StateStore, StateUpdater, getStateStore, resetStateStore } from './state.js'
 
 // 接管信号
 export {
@@ -60,11 +54,7 @@ export {
 } from './signal.js'
 
 // 输出异步扫描
-export {
-  OutputScanner,
-  OutputScanResult,
-  OutputScanConfig,
-} from './output-scanner.js'
+export { OutputScanner, OutputScanResult, OutputScanConfig } from './output-scanner.js'
 
 // 会话超时监控
 export {
@@ -124,12 +114,7 @@ export {
 
 import { RuleEngine, getRuleEngine, RuleScanResult } from './rule-engine.js'
 import { FallbackMessages, getFallbackMessages, FallbackType } from './fallback.js'
-import {
-  HeartbeatMonitor,
-  HeartbeatSender,
-  Heartbeat,
-  SentinelSelfHeartbeat,
-} from './heartbeat.js'
+import { HeartbeatMonitor, HeartbeatSender, Heartbeat, SentinelSelfHeartbeat } from './heartbeat.js'
 import { StateStore, StateUpdater, SessionState } from './state.js'
 import { SignalBus, TakeoverManager, TakeoverSignal, TakeoverReason } from './signal.js'
 import {
@@ -387,13 +372,10 @@ export class Sentinel {
     const state = this.stateStore.get(signal.sessionId)
 
     if (state) {
-      return this.fallbacks.getWithContext(
-        this.mapReasonToFallbackType(signal.reason),
-        {
-          task: state.currentTask,
-          lastMessage: state.lastUserMessage,
-        }
-      )
+      return this.fallbacks.getWithContext(this.mapReasonToFallbackType(signal.reason), {
+        task: state.currentTask,
+        lastMessage: state.lastUserMessage,
+      })
     }
 
     return this.fallbacks.get(this.mapReasonToFallbackType(signal.reason))

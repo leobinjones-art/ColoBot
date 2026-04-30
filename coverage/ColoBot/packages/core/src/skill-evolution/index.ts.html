@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.6% </span>
+                <span class="strong">1.7% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/125</span>
+                <span class='fraction'>2/117</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">1.6% </span>
+                <span class="strong">1.7% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/125</span>
+                <span class='fraction'>2/117</span>
             </div>
         
             
@@ -297,9 +297,7 @@
 <a name='L232'></a><a href='#L232'>232</a>
 <a name='L233'></a><a href='#L233'>233</a>
 <a name='L234'></a><a href='#L234'>234</a>
-<a name='L235'></a><a href='#L235'>235</a>
-<a name='L236'></a><a href='#L236'>236</a>
-<a name='L237'></a><a href='#L237'>237</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L235'></a><a href='#L235'>235</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -484,18 +482,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -716,24 +712,22 @@ export <span class="fstat-no" title="function not covered" >function generateSki
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!pending) throw new Error(`Pending skill not found: ${name}`)</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const { safeUpsertSkill } = await import('../services/safe-write.js')</span>
 <span class="cstat-no" title="statement not covered" >  const triggerWords =</span>
 <span class="cstat-no" title="statement not covered" >    typeof pending.trigger_words === 'string'</span>
 <span class="cstat-no" title="statement not covered" >      ? JSON.parse(pending.trigger_words)</span>
 <span class="cstat-no" title="statement not covered" >      : pending.trigger_words</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const result = await safeUpsertSkill(</span>
-<span class="cstat-no" title="statement not covered" >    name,</span>
-<span class="cstat-no" title="statement not covered" >    pending.markdown_content,</span>
-<span class="cstat-no" title="statement not covered" >    triggerWords || [name.toLowerCase()],</span>
-<span class="cstat-no" title="statement not covered" >    {},</span>
-<span class="cstat-no" title="statement not covered" >    pending.agent_id || 'system',</span>
-<span class="cstat-no" title="statement not covered" >    { type: 'user_input', timestamp: new Date().toISOString() },</span>
+  // 直接写入 skills 表（安全检查由安全守护母 Agent 负责）
+<span class="cstat-no" title="statement not covered" >  await query(</span>
+<span class="cstat-no" title="statement not covered" >    `INSERT INTO skills (name, markdown_content, trigger_words, trigger_config)</span>
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (name) DO UPDATE SET
+       markdown_content = EXCLUDED.markdown_content,
+       trigger_words = EXCLUDED.trigger_words,
+       trigger_config = EXCLUDED.trigger_config,
+       updated_at = NOW()`,
+<span class="cstat-no" title="statement not covered" >    [name, pending.markdown_content, JSON.stringify(triggerWords || [name.toLowerCase()]), '{}'],</span>
 <span class="cstat-no" title="statement not covered" >  )</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >  if (!result.success) {</span>
-<span class="cstat-no" title="statement not covered" >    throw new Error(`Failed to write skill: ${result.reason}`)</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  await query('UPDATE pending_skills SET status = $1 WHERE id = $2', ['approved', pending.id])</span>
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -778,7 +772,7 @@ export <span class="fstat-no" title="function not covered" >function generateSki
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-29T04:47:01.781Z
+                at 2026-04-30T03:27:44.937Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

@@ -28,10 +28,7 @@ const DEFAULT_FALLBACKS: Record<FallbackType, string[]> = {
     '您的请求无法处理，请换一种方式表达。',
   ],
 
-  output_blocked: [
-    '生成的内容需要调整，请稍后重试。',
-    '回复内容已拦截，请重新提问。',
-  ],
+  output_blocked: ['生成的内容需要调整，请稍后重试。', '回复内容已拦截，请重新提问。'],
 
   timeout: [
     '任务执行时间过长，已为您终止。您可以稍后重试或简化任务。',
@@ -43,20 +40,11 @@ const DEFAULT_FALLBACKS: Record<FallbackType, string[]> = {
     '服务暂时不可用，我们正在处理，请稍后再试。',
   ],
 
-  rate_limit: [
-    '您的请求过于频繁，请稍后再试。',
-    '已达到请求限制，请等待一分钟后重试。',
-  ],
+  rate_limit: ['您的请求过于频繁，请稍后再试。', '已达到请求限制，请等待一分钟后重试。'],
 
-  system_busy: [
-    '系统繁忙，请稍后重试。',
-    '服务负载较高，请稍后再试。',
-  ],
+  system_busy: ['系统繁忙，请稍后重试。', '服务负载较高，请稍后再试。'],
 
-  unknown_error: [
-    '系统遇到未知错误，请稍后重试。',
-    '处理您的请求时出现问题，请重试。',
-  ],
+  unknown_error: ['系统遇到未知错误，请稍后重试。', '处理您的请求时出现问题，请重试。'],
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -88,11 +76,14 @@ export class FallbackMessages {
   /**
    * 获取带上下文的话术
    */
-  getWithContext(type: FallbackType, context?: {
-    task?: string
-    lastMessage?: string
-    reason?: string
-  }): string {
+  getWithContext(
+    type: FallbackType,
+    context?: {
+      task?: string
+      lastMessage?: string
+      reason?: string
+    },
+  ): string {
     const base = this.get(type)
 
     if (!context) return base
@@ -134,14 +125,18 @@ export class FallbackMessages {
 
 let defaultFallbacks: FallbackMessages | null = null
 
-export function getFallbackMessages(customMessages?: Partial<Record<FallbackType, string[]>>): FallbackMessages {
+export function getFallbackMessages(
+  customMessages?: Partial<Record<FallbackType, string[]>>,
+): FallbackMessages {
   if (!defaultFallbacks) {
     defaultFallbacks = new FallbackMessages(customMessages)
   }
   return defaultFallbacks
 }
 
-export function resetFallbackMessages(customMessages?: Partial<Record<FallbackType, string[]>>): FallbackMessages {
+export function resetFallbackMessages(
+  customMessages?: Partial<Record<FallbackType, string[]>>,
+): FallbackMessages {
   defaultFallbacks = new FallbackMessages(customMessages)
   return defaultFallbacks
 }

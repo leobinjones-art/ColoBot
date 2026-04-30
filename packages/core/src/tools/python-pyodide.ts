@@ -154,10 +154,7 @@ class PyodideRuntime {
 
     try {
       // 执行代码（带超时）
-      const result = await this.runWithTimeout(
-        pyodide.runPythonAsync(code),
-        this.config.timeout
-      )
+      const result = await this.runWithTimeout(pyodide.runPythonAsync(code), this.config.timeout)
 
       // 处理返回值
       if (result !== undefined && result !== null) {

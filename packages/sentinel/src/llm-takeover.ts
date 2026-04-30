@@ -16,7 +16,7 @@ import { getFallbackMessages } from './fallback.js'
 
 export interface LLMTakeoverConfig {
   enabled: boolean
-  timeout: number  // 超时时间（毫秒）
+  timeout: number // 超时时间（毫秒）
   maxRetries: number
 }
 
@@ -56,9 +56,12 @@ export class LLMTakeoverGenerator implements ILLMTakeoverGenerator {
     chat: (messages: Array<{ role: string; content: string }>) => Promise<string>
   }
 
-  constructor(config?: Partial<LLMTakeoverConfig>, llmClient?: {
-    chat: (messages: Array<{ role: string; content: string }>) => Promise<string>
-  }) {
+  constructor(
+    config?: Partial<LLMTakeoverConfig>,
+    llmClient?: {
+      chat: (messages: Array<{ role: string; content: string }>) => Promise<string>
+    },
+  ) {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.llmClient = llmClient
   }
@@ -66,7 +69,9 @@ export class LLMTakeoverGenerator implements ILLMTakeoverGenerator {
   /**
    * 设置 LLM 客户端
    */
-  setLLMClient(client: { chat: (messages: Array<{ role: string; content: string }>) => Promise<string> }): void {
+  setLLMClient(client: {
+    chat: (messages: Array<{ role: string; content: string }>) => Promise<string>
+  }): void {
     this.llmClient = client
   }
 
@@ -261,14 +266,18 @@ export class TakeoverMessageManager {
 
 let defaultManager: TakeoverMessageManager | null = null
 
-export function getTakeoverMessageManager(generator?: ILLMTakeoverGenerator): TakeoverMessageManager {
+export function getTakeoverMessageManager(
+  generator?: ILLMTakeoverGenerator,
+): TakeoverMessageManager {
   if (!defaultManager) {
     defaultManager = new TakeoverMessageManager(generator)
   }
   return defaultManager
 }
 
-export function resetTakeoverMessageManager(generator?: ILLMTakeoverGenerator): TakeoverMessageManager {
+export function resetTakeoverMessageManager(
+  generator?: ILLMTakeoverGenerator,
+): TakeoverMessageManager {
   defaultManager = new TakeoverMessageManager(generator)
   return defaultManager
 }

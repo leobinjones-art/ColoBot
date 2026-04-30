@@ -11,12 +11,12 @@
 // ═══════════════════════════════════════════════════════════════
 
 export type ContentCategory =
-  | 'hate'        // 仇恨言论
-  | 'sexual'      // 色情内容
-  | 'violence'    // 暴力内容
-  | 'self_harm'   // 自残
-  | 'jailbreak'   // 越狱尝试
-  | 'safe'        // 安全
+  | 'hate' // 仇恨言论
+  | 'sexual' // 色情内容
+  | 'violence' // 暴力内容
+  | 'self_harm' // 自残
+  | 'jailbreak' // 越狱尝试
+  | 'safe' // 安全
 
 export interface ClassificationResult {
   category: ContentCategory
@@ -28,14 +28,14 @@ export interface ClassificationResult {
 export interface LocalModelConfig {
   enabled: boolean
   modelPath?: string
-  threshold: number  // 置信度阈值
-  timeout: number    // 超时时间（毫秒）
+  threshold: number // 置信度阈值
+  timeout: number // 超时时间（毫秒）
 }
 
 const DEFAULT_CONFIG: LocalModelConfig = {
   enabled: true,
   threshold: 0.7,
-  timeout: 50,  // 50ms 超时
+  timeout: 50, // 50ms 超时
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -72,11 +72,7 @@ export class MockClassifier implements IClassifier {
     {
       category: 'jailbreak',
       keywords: ['忽略之前的指令', 'ignore previous instructions', 'system prompt', '你现在是'],
-      patterns: [
-        /ignore\s+all\s+previous/i,
-        /forget\s+everything/i,
-        /you\s+are\s+now/i,
-      ],
+      patterns: [/ignore\s+all\s+previous/i, /forget\s+everything/i, /you\s+are\s+now/i],
     },
     {
       category: 'hate',

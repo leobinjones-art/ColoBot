@@ -14,7 +14,7 @@ export interface SessionState {
   lastUserMessage: string
   lastParentResponse: string | null
   currentTask: string
-  taskProgress: number  // 0-100
+  taskProgress: number // 0-100
   lastCheckpoint: {
     round: number
     summary: string
@@ -29,16 +29,20 @@ export interface SessionState {
 
 export class StateStore {
   private states: Map<string, SessionState> = new Map()
-  private ttl: number  // 状态过期时间（毫秒）
+  private ttl: number // 状态过期时间（毫秒）
 
-  constructor(ttlMs: number = 30 * 60 * 1000) { // 默认 30 分钟
+  constructor(ttlMs: number = 30 * 60 * 1000) {
+    // 默认 30 分钟
     this.ttl = ttlMs
   }
 
   /**
    * 更新会话状态
    */
-  update(sessionId: string, update: Partial<Omit<SessionState, 'sessionId' | 'updatedAt'>>): SessionState {
+  update(
+    sessionId: string,
+    update: Partial<Omit<SessionState, 'sessionId' | 'updatedAt'>>,
+  ): SessionState {
     const existing = this.states.get(sessionId)
     const now = Date.now()
 

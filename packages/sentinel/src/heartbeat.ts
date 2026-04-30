@@ -20,7 +20,7 @@ export interface Heartbeat {
 }
 
 export interface HeartbeatConfig {
-  interval: number        // 心跳间隔（毫秒）
+  interval: number // 心跳间隔（毫秒）
   missedThreshold: number // 连续多少次无响应判定失联
 }
 
@@ -236,9 +236,10 @@ export class HeartbeatSender {
    * 发送心跳
    */
   private sendHeartbeat(): void {
-    const avgResponseTime = this.responseTimes.length > 0
-      ? this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length
-      : undefined
+    const avgResponseTime =
+      this.responseTimes.length > 0
+        ? this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length
+        : undefined
 
     const heartbeat: Heartbeat = {
       type: 'heartbeat',
@@ -261,13 +262,13 @@ export class HeartbeatSender {
 // ═══════════════════════════════════════════════════════════════
 
 export interface SentinelSelfCheckConfig {
-  interval: number       // 自检间隔（毫秒）
-  threshold: number      // 超过多少毫秒无更新判定异常
+  interval: number // 自检间隔（毫秒）
+  threshold: number // 超过多少毫秒无更新判定异常
 }
 
 const DEFAULT_SELF_CHECK_CONFIG: SentinelSelfCheckConfig = {
-  interval: 1000,        // 每秒自检
-  threshold: 5000,       // 5秒无更新判定异常
+  interval: 1000, // 每秒自检
+  threshold: 5000, // 5秒无更新判定异常
 }
 
 export type SentinelHealthStatus = 'healthy' | 'degraded' | 'dead'

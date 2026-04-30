@@ -8,9 +8,9 @@
  */
 
 export interface SessionTimeoutConfig {
-  warningMs: number      // 警告时间（默认 30s）
-  promptMs: number       // 提示时间（默认 60s）
-  takeoverMs: number     // 接管时间（默认 120s）
+  warningMs: number // 警告时间（默认 30s）
+  promptMs: number // 提示时间（默认 60s）
+  takeoverMs: number // 接管时间（默认 120s）
   checkIntervalMs: number // 检查间隔（默认 5s）
 }
 
@@ -157,9 +157,7 @@ export class SessionTimeoutMonitor {
    * 获取所有超时会话
    */
   getTimeoutSessions(): SessionTimeoutState[] {
-    return Array.from(this.sessions.values()).filter(
-      (s) => s.stage !== 'normal'
-    )
+    return Array.from(this.sessions.values()).filter((s) => s.stage !== 'normal')
   }
 
   /**

@@ -18,14 +18,14 @@ export interface RedisConfig {
   password?: string
   db?: number
   keyPrefix?: string
-  ttl?: number  // 默认 TTL（秒）
+  ttl?: number // 默认 TTL（秒）
 }
 
 const DEFAULT_CONFIG: RedisConfig = {
   host: 'localhost',
   port: 6379,
   keyPrefix: 'colobot:',
-  ttl: 3600,  // 1 小时
+  ttl: 3600, // 1 小时
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -297,19 +297,29 @@ export async function createRedisClient(config?: Partial<RedisConfig>): Promise<
             await client.set(key, value)
           }
         },
-        del: async (key: string) => { await client.del(key) },
+        del: async (key: string) => {
+          await client.del(key)
+        },
         keys: async (pattern: string) => client.keys(pattern),
-        expire: async (key: string, ttl: number) => { await client.expire(key, ttl) },
+        expire: async (key: string, ttl: number) => {
+          await client.expire(key, ttl)
+        },
         ttl: async (key: string) => client.ttl(key),
-        publish: async (channel: string, message: string) => { await client.publish(channel, message) },
+        publish: async (channel: string, message: string) => {
+          await client.publish(channel, message)
+        },
         subscribe: async (channel: string, callback: (msg: string) => void) => {
           client.subscribe(channel)
           client.on('message', (ch: string, msg: string) => {
             if (ch === channel) callback(msg)
           })
         },
-        unsubscribe: async (channel: string) => { await client.unsubscribe(channel) },
-        quit: async () => { await client.quit() },
+        unsubscribe: async (channel: string) => {
+          await client.unsubscribe(channel)
+        },
+        quit: async () => {
+          await client.quit()
+        },
       }
     }
   } catch (error) {

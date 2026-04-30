@@ -274,7 +274,10 @@ describe('E2E: Tool Execution', () => {
       registerBuiltinTools()
 
       const tool = toolRegistry.get('echo')
-      const result = await tool!.execute({ message: 'Hello World' }, { agentId: 'test', sessionKey: 'test' })
+      const result = await tool!.execute(
+        { message: 'Hello World' },
+        { agentId: 'test', sessionKey: 'test' },
+      )
 
       expect(result).toBe('Hello World')
 
@@ -289,13 +292,22 @@ describe('E2E: Tool Execution', () => {
 
       const tool = toolRegistry.get('calculate')
 
-      const result1 = await tool!.execute({ expression: '2+2' }, { agentId: 'test', sessionKey: 'test' })
+      const result1 = await tool!.execute(
+        { expression: '2+2' },
+        { agentId: 'test', sessionKey: 'test' },
+      )
       expect(result1).toBe('4')
 
-      const result2 = await tool!.execute({ expression: 'Math.sqrt(16)' }, { agentId: 'test', sessionKey: 'test' })
+      const result2 = await tool!.execute(
+        { expression: 'Math.sqrt(16)' },
+        { agentId: 'test', sessionKey: 'test' },
+      )
       expect(result2).toBe('4')
 
-      const result3 = await tool!.execute({ expression: 'Math.PI' }, { agentId: 'test', sessionKey: 'test' })
+      const result3 = await tool!.execute(
+        { expression: 'Math.PI' },
+        { agentId: 'test', sessionKey: 'test' },
+      )
       expect(parseFloat(result3)).toBeCloseTo(3.14159, 4)
 
       toolRegistry.clear()
@@ -308,7 +320,10 @@ describe('E2E: Tool Execution', () => {
       registerBuiltinTools()
 
       const tool = toolRegistry.get('json_parse')
-      const result = await tool!.execute({ text: '{"name":"test","value":123}' }, { agentId: 'test', sessionKey: 'test' })
+      const result = await tool!.execute(
+        { text: '{"name":"test","value":123}' },
+        { agentId: 'test', sessionKey: 'test' },
+      )
 
       const parsed = JSON.parse(result)
       expect(parsed.name).toBe('test')
@@ -326,7 +341,7 @@ describe('E2E: Tool Execution', () => {
       const tool = toolRegistry.get('csv_parse')
       const result = await tool!.execute(
         { text: 'name,age\nAlice,30\nBob,25' },
-        { agentId: 'test', sessionKey: 'test' }
+        { agentId: 'test', sessionKey: 'test' },
       )
 
       const parsed = JSON.parse(result)
@@ -512,7 +527,8 @@ describe('E2E: SubAgent System', () => {
   })
 
   it('should manage agent lifecycle', async () => {
-    const { spawnSubAgent, getSubAgent, destroySubAgent, clearSubAgents } = await import('@colobot/core')
+    const { spawnSubAgent, getSubAgent, destroySubAgent, clearSubAgents } =
+      await import('@colobot/core')
 
     const agent = spawnSubAgent({
       name: 'test-agent',

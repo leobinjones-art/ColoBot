@@ -4,15 +4,24 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AgentRuntime } from '../runtime/index.js'
-import type { LLMProvider, LLMResponse, MemoryStore, ToolExecutor, AuditLogger, ResultPusher } from '../runtime/types.js'
+import type {
+  LLMProvider,
+  LLMResponse,
+  MemoryStore,
+  ToolExecutor,
+  AuditLogger,
+  ResultPusher,
+} from '../runtime/types.js'
 import type { LLMMessage, ToolCall, ToolResult, ToolContext } from '@colobot/types'
 
 // Mock LLM Provider
 const createMockLLM = (): LLMProvider => ({
   name: 'mock',
-  chat: vi.fn(async (messages: LLMMessage[]): Promise<LLMResponse> => ({
-    content: 'Mock response',
-  })),
+  chat: vi.fn(
+    async (messages: LLMMessage[]): Promise<LLMResponse> => ({
+      content: 'Mock response',
+    }),
+  ),
   chatStream: vi.fn(async function* () {
     yield { type: 'text' as const, content: 'Mock' }
   }),
@@ -95,12 +104,7 @@ describe('AgentRuntime', () => {
         userMessage: 'Hello',
       })
 
-      expect(mockMemory.append).toHaveBeenCalledWith(
-        'test-agent',
-        'test-session',
-        'user',
-        'Hello'
-      )
+      expect(mockMemory.append).toHaveBeenCalledWith('test-agent', 'test-session', 'user', 'Hello')
     })
 
     it('should save assistant response to memory', async () => {
@@ -114,13 +118,19 @@ describe('AgentRuntime', () => {
         'test-agent',
         'test-session',
         'assistant',
-        expect.anything()
+        expect.anything(),
       )
     })
 
     it('should handle tool calls', async () => {
       const toolCalls: ToolCall[] = [
-        { name: 'test_tool', args: { arg: 'value' }, id: 'call-1', type: 'function', function: { name: 'test_tool', arguments: '{}' } },
+        {
+          name: 'test_tool',
+          args: { arg: 'value' },
+          id: 'call-1',
+          type: 'function',
+          function: { name: 'test_tool', arguments: '{}' },
+        },
       ]
       const toolResults: ToolResult[] = [
         { toolCallId: 'call-1', name: 'test_tool', result: 'tool result' },
@@ -150,10 +160,28 @@ describe('AgentRuntime', () => {
       // 每次都返回工具调用
       vi.mocked(mockLLM.chat).mockResolvedValue({
         content: 'Using tool',
-        toolCalls: [{ name: 'tool', args: {}, id: '1', type: 'function', function: { name: 'tool', arguments: '{}' } }],
+        toolCalls: [
+          {
+            name: 'tool',
+            args: {},
+            id: '1',
+            type: 'function',
+            function: { name: 'tool', arguments: '{}' },
+          },
+        ],
       })
-      vi.mocked(mockTools.parse).mockReturnValue([{ name: 'tool', args: {}, id: '1', type: 'function', function: { name: 'tool', arguments: '{}' } }])
-      vi.mocked(mockTools.execute).mockResolvedValue([{ toolCallId: '1', name: 'tool', result: 'ok' }])
+      vi.mocked(mockTools.parse).mockReturnValue([
+        {
+          name: 'tool',
+          args: {},
+          id: '1',
+          type: 'function',
+          function: { name: 'tool', arguments: '{}' },
+        },
+      ])
+      vi.mocked(mockTools.execute).mockResolvedValue([
+        { toolCallId: '1', name: 'tool', result: 'ok' },
+      ])
 
       const result = await runtime.run({
         agentId: 'test-agent',
@@ -283,10 +311,12 @@ describe('AgentRuntime', () => {
     it('should compress when context exceeds threshold', async () => {
       // 返回长历史
       vi.mocked(mockMemory.getHistory).mockResolvedValue(
-        Array(100).fill(null).map((_, i) => ({
-          role: 'user' as const,
-          content: `Message ${i}`,
-        }))
+        Array(100)
+          .fill(null)
+          .map((_, i) => ({
+            role: 'user' as const,
+            content: `Message ${i}`,
+          })),
       )
 
       await runtime.run({

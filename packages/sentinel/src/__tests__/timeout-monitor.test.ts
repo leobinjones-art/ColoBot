@@ -15,9 +15,9 @@ describe('SessionTimeoutMonitor', () => {
 
   beforeEach(() => {
     monitor = new SessionTimeoutMonitor({
-      warningMs: 1000,    // 1s 警告
-      promptMs: 2000,     // 2s 提示
-      takeoverMs: 3000,   // 3s 接管
+      warningMs: 1000, // 1s 警告
+      promptMs: 2000, // 2s 提示
+      takeoverMs: 3000, // 3s 接管
       checkIntervalMs: 500, // 500ms 检查
     })
   })
