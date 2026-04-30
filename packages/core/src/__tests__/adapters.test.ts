@@ -111,14 +111,4 @@ describe('Adapters Module', () => {
       expect(fs.delete).toBeDefined()
     })
   })
-
-  describe('NoOpScanner', () => {
-    it('should return safe result', async () => {
-      const { NoOpScanner } = await import('../adapters/scanner.js')
-      const scanner = new NoOpScanner()
-
-      const result = await scanner.scanInput('test content')
-      expect(result.safe).toBe(true)
-    })
-  })
 })

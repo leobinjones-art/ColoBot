@@ -3,7 +3,7 @@
  */
 
 import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@colobot/types'
-import type { RuntimeDeps, LLMResponse, ScanResult } from './types.js'
+import type { RuntimeDeps, LLMResponse } from './types.js'
 import { compressMessages, estimateMessagesTokens } from '../compression.js'
 
 // 导出接口和实现
@@ -85,19 +85,6 @@ export class AgentRuntime {
     // 追加用户消息
     await this.deps.memory.append(agentId, sessionKey, 'user', userMessage)
 
-    // 输入扫描
-    const messageText =
-      typeof userMessage === 'string'
-        ? userMessage
-        : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
-
-    const inputScan = await this.deps.scanner.scanInput(messageText)
-    if (!inputScan.safe) {
-      const blocked = `[Message blocked: ${inputScan.reason}]`
-      await this.deps.memory.append(agentId, sessionKey, 'assistant', blocked)
-      return { response: blocked, toolCalls: [], finished: true }
-    }
-
     // Context Compression：超过 80% context window 时压缩
     const totalTokens = estimateMessagesTokens(messages)
     if (totalTokens > contextWindowSize * 0.8) {
@@ -158,15 +145,6 @@ export class AgentRuntime {
     // 保存助手回复
     await this.deps.memory.append(agentId, sessionKey, 'assistant', finalContent)
 
-    // 输出扫描
-    const responseText = typeof finalContent === 'string' ? finalContent : ''
-    const outputScan = await this.deps.scanner.scanOutput(responseText)
-    if (!outputScan.safe) {
-      const blocked = `[Output blocked: ${outputScan.reason}]`
-      await this.deps.memory.append(agentId, sessionKey, 'assistant', blocked)
-      return { response: blocked, toolCalls: [], finished: true }
-    }
-
     return {
       response: finalContent || '(no response)',
       toolCalls: toolCallNames,
@@ -195,17 +173,6 @@ export class AgentRuntime {
     let messages: LLMMessage[] = [...history, { role: 'user', content: userMessage }]
 
     await this.deps.memory.append(agentId, sessionKey, 'user', userMessage)
-
-    const messageText =
-      typeof userMessage === 'string'
-        ? userMessage
-        : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
-
-    const inputScan = await this.deps.scanner.scanInput(messageText)
-    if (!inputScan.safe) {
-      yield `[Message blocked: ${inputScan.reason}]`
-      return
-    }
 
     // Context Compression
     const totalTokens = estimateMessagesTokens(messages)

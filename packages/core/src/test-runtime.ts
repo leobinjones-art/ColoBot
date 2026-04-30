@@ -7,7 +7,6 @@ import {
   ToolRegistry,
   registerAllTools,
   InMemoryStore,
-  NoOpScanner,
   ConsoleAudit,
   ConsolePusher,
 } from './index.js'
@@ -38,7 +37,6 @@ async function test() {
     llm: mockLlm,
     memory: new InMemoryStore(),
     tools: toolExecutor,
-    scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
   })

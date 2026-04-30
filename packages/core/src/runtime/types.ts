@@ -59,20 +59,6 @@ export interface ToolExecutor {
 }
 
 /**
- * 内容扫描器接口
- */
-export interface ContentScanner {
-  scanInput(content: string): Promise<ScanResult>
-  scanOutput(content: string): Promise<ScanResult>
-}
-
-export interface ScanResult {
-  safe: boolean
-  reason?: string
-  scanner?: string
-}
-
-/**
  * 审计日志接口
  */
 export interface AuditLogger {
@@ -108,7 +94,6 @@ export interface RuntimeDeps {
   llm: LLMProvider
   memory: MemoryStore
   tools: ToolExecutor
-  scanner: ContentScanner
   audit: AuditLogger
   pusher: ResultPusher
 }

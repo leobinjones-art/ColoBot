@@ -179,24 +179,22 @@ export async function approveSkill(name: string, _approver: string): Promise<voi
 
   if (!pending) throw new Error(`Pending skill not found: ${name}`)
 
-  const { safeUpsertSkill } = await import('../services/safe-write.js')
   const triggerWords =
     typeof pending.trigger_words === 'string'
       ? JSON.parse(pending.trigger_words)
       : pending.trigger_words
 
-  const result = await safeUpsertSkill(
-    name,
-    pending.markdown_content,
-    triggerWords || [name.toLowerCase()],
-    {},
-    pending.agent_id || 'system',
-    { type: 'user_input', timestamp: new Date().toISOString() },
+  // 直接写入 skills 表（安全检查由安全守护母 Agent 负责）
+  await query(
+    `INSERT INTO skills (name, markdown_content, trigger_words, trigger_config)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (name) DO UPDATE SET
+       markdown_content = EXCLUDED.markdown_content,
+       trigger_words = EXCLUDED.trigger_words,
+       trigger_config = EXCLUDED.trigger_config,
+       updated_at = NOW()`,
+    [name, pending.markdown_content, JSON.stringify(triggerWords || [name.toLowerCase()]), '{}'],
   )
-
-  if (!result.success) {
-    throw new Error(`Failed to write skill: ${result.reason}`)
-  }
 
   await query('UPDATE pending_skills SET status = $1 WHERE id = $2', ['approved', pending.id])
 }

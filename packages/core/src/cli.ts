@@ -10,7 +10,6 @@ import { AgentRuntime, registerAllTools, createCliLogger, type Logger } from './
 import { OpenAIProvider, AnthropicProvider } from './providers/index.js'
 import { SQLiteStore } from './adapters/sqlite-store.js'
 import { ToolExecutorImpl } from './adapters/tools.js'
-import { NoOpScanner } from './adapters/scanner.js'
 import { ConsoleAudit } from './adapters/audit.js'
 import { ConsolePusher } from './adapters/pusher.js'
 import { initConfig } from './config/index.js'
@@ -331,7 +330,6 @@ async function startCli(): Promise<void> {
     llm,
     memory,
     tools: new ToolExecutorImpl(toolRegistry),
-    scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
   })

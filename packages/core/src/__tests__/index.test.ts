@@ -261,48 +261,6 @@ describe('@colobot/core', () => {
       expect(result.toolCalls).toHaveLength(0)
       expect(result.finished).toBe(true)
     })
-
-    it('should block unsafe input', async () => {
-      const deps = {
-        llm: {
-          name: 'test',
-          chat: vi.fn(async () => ({ content: 'response' })),
-          chatStream: vi.fn(),
-        },
-        memory: {
-          append: vi.fn(async () => {}),
-          getHistory: vi.fn(async () => []),
-          clear: vi.fn(async () => {}),
-        },
-        tools: {
-          parse: vi.fn(() => []),
-          execute: vi.fn(async () => []),
-          format: vi.fn(() => ''),
-        },
-        scanner: {
-          scanInput: vi.fn(async () => ({ safe: false, reason: 'blocked' })),
-          scanOutput: vi.fn(async () => ({ safe: true })),
-        },
-        audit: {
-          write: vi.fn(async () => {}),
-        },
-        pusher: {
-          pushResult: vi.fn(),
-          pushChunk: vi.fn(),
-          pushDone: vi.fn(),
-        },
-      }
-
-      const runtime = new AgentRuntime(deps)
-
-      const result = await runtime.run({
-        agentId: 'agent-1',
-        sessionKey: 'session-1',
-        userMessage: 'Bad message',
-      })
-
-      expect(result.response).toContain('blocked')
-    })
   })
 
   describe('Providers', () => {
@@ -339,20 +297,6 @@ describe('@colobot/core', () => {
       const history = await store.getHistory('agent-1', 'session-1')
       expect(history).toHaveLength(1)
       expect(history[0].content).toBe('hello')
-    })
-
-    it('should create SimpleContentScanner', async () => {
-      const { SimpleContentScanner } = await import('../adapters/scanner.js')
-
-      const scanner = new SimpleContentScanner({
-        blockedWords: ['bad', 'evil'],
-      })
-
-      const safeResult = await scanner.scanInput('hello world')
-      expect(safeResult.safe).toBe(true)
-
-      const unsafeResult = await scanner.scanInput('this is bad')
-      expect(unsafeResult.safe).toBe(false)
     })
 
     it('should create InMemoryAudit', async () => {

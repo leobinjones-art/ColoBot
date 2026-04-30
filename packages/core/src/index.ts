@@ -23,10 +23,8 @@ export {
   type LLMStreamChunk,
   type MemoryStore,
   type ToolExecutor,
-  type ContentScanner,
   type AuditLogger,
   type ResultPusher,
-  type ScanResult,
   type AuditEntry,
   // 新接口
   type ColoBotRuntime,
@@ -68,7 +66,6 @@ export { MockProvider, type MockConfig } from './providers/mock.js'
 export { InMemoryStore } from './adapters/memory.js'
 export { DatabaseStore, type DatabaseStoreConfig } from './adapters/database-store.js'
 export { SQLiteStore, createAutoStore, type SQLiteStoreConfig } from './adapters/sqlite-store.js'
-export { NoOpScanner } from './adapters/scanner.js'
 export { ConsoleAudit, ConsolePusher, ToolExecutorImpl } from './adapters/index.js'
 export { InMemoryStateStore, type StateStore } from './adapters/state.js'
 export { LocalFileSystemAdapter, type FileSystemAdapter } from './adapters/filesystem.js'
