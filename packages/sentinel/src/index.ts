@@ -31,6 +31,9 @@ export {
   HeartbeatMonitor,
   HeartbeatSender,
   AgentHealthStatus,
+  SentinelSelfHeartbeat,
+  SentinelSelfCheckConfig,
+  SentinelHealthStatus,
 } from './heartbeat.js'
 
 // 状态同步
@@ -56,21 +59,93 @@ export {
   resetSignalBus,
 } from './signal.js'
 
+// 输出异步扫描
+export {
+  OutputScanner,
+  OutputScanResult,
+  OutputScanConfig,
+} from './output-scanner.js'
+
+// 会话超时监控
+export {
+  SessionTimeoutMonitor,
+  SessionTimeoutConfig,
+  SessionTimeoutState,
+  TimeoutStage,
+  TimeoutCallback,
+  defaultTimeoutMessages,
+} from './timeout-monitor.js'
+
+// 本地分类模型
+export {
+  LocalModelManager,
+  LocalModelConfig,
+  ClassificationResult,
+  ContentCategory,
+  IClassifier,
+  MockClassifier,
+  ONNXClassifier,
+  getLocalModelManager,
+  resetLocalModelManager,
+} from './local-model.js'
+
+// LLM 接管回复
+export {
+  LLMTakeoverGenerator,
+  LLMTakeoverConfig,
+  TakeoverContext,
+  TakeoverMessageManager,
+  MockLLMGenerator,
+  ILLMTakeoverGenerator,
+  getTakeoverMessageManager,
+  resetTakeoverMessageManager,
+} from './llm-takeover.js'
+
+// Redis 共享状态
+export {
+  RedisConfig,
+  RedisStateStore,
+  MockRedisClient,
+  IRedisClient,
+  createRedisClient,
+} from './redis-store.js'
+
+// Redis Pub/Sub
+export {
+  RedisSignalBus,
+  RedisSignalBusConfig,
+  RedisTakeoverManager,
+  RedisSignalReceiver,
+} from './redis-signal.js'
+
 // ═══════════════════════════════════════════════════════════════
 // 安全守护母 Agent 主类
 // ═══════════════════════════════════════════════════════════════
 
 import { RuleEngine, getRuleEngine, RuleScanResult } from './rule-engine.js'
 import { FallbackMessages, getFallbackMessages, FallbackType } from './fallback.js'
-import { HeartbeatMonitor, HeartbeatSender, Heartbeat } from './heartbeat.js'
+import {
+  HeartbeatMonitor,
+  HeartbeatSender,
+  Heartbeat,
+  SentinelSelfHeartbeat,
+} from './heartbeat.js'
 import { StateStore, StateUpdater, SessionState } from './state.js'
 import { SignalBus, TakeoverManager, TakeoverSignal, TakeoverReason } from './signal.js'
+import {
+  SessionTimeoutMonitor,
+  SessionTimeoutConfig,
+  defaultTimeoutMessages,
+} from './timeout-monitor.js'
 
 export interface SentinelConfig {
   ruleEngine?: RuleEngine
   fallbackMessages?: FallbackMessages
   heartbeatInterval?: number
   missedBeatsThreshold?: number
+  timeoutConfig?: Partial<SessionTimeoutConfig>
+  selfCheckInterval?: number
+  selfCheckThreshold?: number
 }
 
 export class Sentinel {
@@ -80,6 +155,8 @@ export class Sentinel {
   private stateStore: StateStore
   private signalBus: SignalBus
   private takeoverManager: TakeoverManager
+  private timeoutMonitor: SessionTimeoutMonitor
+  private selfHeartbeat: SentinelSelfHeartbeat
 
   constructor(config?: SentinelConfig) {
     this.ruleEngine = config?.ruleEngine ?? getRuleEngine()
@@ -94,6 +171,17 @@ export class Sentinel {
     this.signalBus = new SignalBus()
     this.takeoverManager = new TakeoverManager(this.signalBus)
 
+    // 超时监控
+    this.timeoutMonitor = new SessionTimeoutMonitor(config?.timeoutConfig)
+    this.timeoutMonitor.setCallbacks({
+      onWarning: defaultTimeoutMessages.onWarning,
+      onPrompt: defaultTimeoutMessages.onPrompt,
+      onTakeover: (sessionId) => {
+        this.triggerTakeover(sessionId, 'timeout')
+        return defaultTimeoutMessages.onTakeover(sessionId, 120000)
+      },
+    })
+
     // 设置失联回调
     this.heartbeatMonitor.setOnAgentDead((agentId) => {
       this.handleAgentDead(agentId)
@@ -103,6 +191,15 @@ export class Sentinel {
     this.takeoverManager.setOnTakeover((signal) => {
       return this.generateTakeoverMessage(signal)
     })
+
+    // 自身心跳
+    this.selfHeartbeat = new SentinelSelfHeartbeat({
+      interval: config?.selfCheckInterval ?? 1000,
+      threshold: config?.selfCheckThreshold ?? 5000,
+    })
+    this.selfHeartbeat.setOnStatusChange((status) => {
+      console.log(`[Sentinel] Self health status: ${status}`)
+    })
   }
 
   /**
@@ -110,6 +207,8 @@ export class Sentinel {
    */
   start(): void {
     this.heartbeatMonitor.start()
+    this.timeoutMonitor.start()
+    this.selfHeartbeat.start()
   }
 
   /**
@@ -117,6 +216,33 @@ export class Sentinel {
    */
   stop(): void {
     this.heartbeatMonitor.stop()
+    this.timeoutMonitor.stop()
+    this.selfHeartbeat.stop()
+  }
+
+  /**
+   * 更新自身心跳（每个事件循环调用）
+   */
+  beat(): void {
+    this.selfHeartbeat.beat()
+  }
+
+  /**
+   * 获取自身健康状态
+   */
+  getSelfHealthStatus() {
+    return {
+      status: this.selfHeartbeat.getStatus(),
+      lastBeat: this.selfHeartbeat.getLastBeat(),
+      eventLoopLag: this.selfHeartbeat.getEventLoopLag(),
+    }
+  }
+
+  /**
+   * 外部检查接口（供守护进程调用）
+   */
+  externalCheck(): 'alive' | 'dead' {
+    return this.selfHeartbeat.externalCheck()
   }
 
   // ─── 输入扫描 ───────────────────────────────────────────────
@@ -198,6 +324,43 @@ export class Sentinel {
    */
   createSignalReceiver(agentId: string) {
     return new SignalReceiver(this.signalBus, agentId)
+  }
+
+  // ─── 会话超时监控 ───────────────────────────────────────────
+
+  /**
+   * 开始监控会话超时
+   */
+  startSessionTimeout(sessionId: string, agentId: string): void {
+    this.timeoutMonitor.startSession(sessionId, agentId)
+  }
+
+  /**
+   * 更新会话活动（重置超时计时）
+   */
+  touchSession(sessionId: string): void {
+    this.timeoutMonitor.touchSession(sessionId)
+  }
+
+  /**
+   * 结束会话超时监控
+   */
+  endSessionTimeout(sessionId: string): void {
+    this.timeoutMonitor.endSession(sessionId)
+  }
+
+  /**
+   * 获取超时会话的待发送消息
+   */
+  getTimeoutMessages(): Array<{ sessionId: string; stage: string; message: string }> {
+    return this.timeoutMonitor.getPendingMessages()
+  }
+
+  /**
+   * 获取会话超时状态
+   */
+  getSessionTimeoutState(sessionId: string) {
+    return this.timeoutMonitor.getSessionState(sessionId)
   }
 
   // ─── 内部方法 ───────────────────────────────────────────────

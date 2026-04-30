@@ -4,6 +4,8 @@
 
 import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@colobot/types'
 import type { RuntimeDeps, LLMResponse } from './types.js'
+import type { StateUpdater, OutputScanner, OutputScanConfig } from '@colobot/sentinel'
+import { Sentinel, OutputScanner as OutputScannerClass } from '@colobot/sentinel'
 import { compressMessages, estimateMessagesTokens } from '../compression.js'
 
 // 导出接口和实现
@@ -32,6 +34,8 @@ export interface RunResult {
   response: string | ContentBlock[]
   toolCalls: string[]
   finished: boolean
+  blocked?: boolean
+  blockedReason?: string
 }
 
 /** 待继续状态（危险工具审批中暂存） */
@@ -60,7 +64,20 @@ const DEFAULT_CONTEXT_WINDOW = 128_000
  * Agent 运行时
  */
 export class AgentRuntime {
-  constructor(private deps: RuntimeDeps) {}
+  private outputScanner?: OutputScannerClass
+
+  constructor(private deps: RuntimeDeps) {
+    // 初始化输出扫描器
+    if (deps.sentinel) {
+      this.outputScanner = new OutputScannerClass(deps.sentinel, {
+        enabled: true,
+        recallCallback: (sessionId, original, replacement) => {
+          // 异步撤回回调 - 可通过 pusher 通知前端
+          console.log(`[OutputScanner] Session ${sessionId} output recalled`)
+        },
+      })
+    }
+  }
 
   async run(opts: RunOptions): Promise<RunResult> {
     const {
@@ -75,6 +92,36 @@ export class AgentRuntime {
       soul,
       contextWindowSize = DEFAULT_CONTEXT_WINDOW,
     } = opts
+
+    const sentinel = this.deps.sentinel
+    const messageText = typeof userMessage === 'string'
+      ? userMessage
+      : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
+
+    // ─── 输入扫描（同步） ─────────────────────────────────────
+    if (sentinel) {
+      const scanResult = sentinel.scanInput(messageText, sessionKey)
+      if (!scanResult.pass) {
+        // 输入被拦截
+        const fallbackResponse = sentinel.scanInputWithTakeover(messageText, sessionKey)
+        await this.deps.memory.append(agentId, sessionKey, 'user', userMessage)
+        await this.deps.memory.append(agentId, sessionKey, 'assistant', fallbackResponse.response)
+        return {
+          response: fallbackResponse.response!,
+          toolCalls: [],
+          finished: true,
+          blocked: true,
+          blockedReason: scanResult.reason,
+        }
+      }
+    }
+
+    // ─── 状态同步：开始处理 ─────────────────────────────────────
+    let stateUpdater: StateUpdater | undefined
+    if (sentinel) {
+      stateUpdater = sentinel.createStateUpdater(agentId)
+      stateUpdater.startProcessing(sessionKey, messageText)
+    }
 
     // 获取历史
     const history = await this.deps.memory.getHistory(agentId, sessionKey)
@@ -97,6 +144,11 @@ export class AgentRuntime {
 
     // LLM 循环
     for (let round = 0; round < maxRounds; round++) {
+      // 状态同步：更新进度
+      if (stateUpdater) {
+        stateUpdater.updateProgress(sessionKey, `Processing round ${round + 1}`, (round / maxRounds) * 80)
+      }
+
       // 构建 system prompt
       const fullMessages = this.buildMessagesWithSystem(messages, soul, systemPrompt)
 
@@ -145,8 +197,21 @@ export class AgentRuntime {
     // 保存助手回复
     await this.deps.memory.append(agentId, sessionKey, 'assistant', finalContent)
 
+    // ─── 输出扫描（异步） ─────────────────────────────────────
+    let responseToReturn = finalContent
+    if (this.outputScanner && typeof finalContent === 'string') {
+      // 异步扫描，先返回原始内容
+      responseToReturn = this.outputScanner.scanAsync(finalContent, sessionKey)
+    }
+
+    // ─── 状态同步：完成处理 ─────────────────────────────────────
+    if (stateUpdater) {
+      const responseText = typeof finalContent === 'string' ? finalContent : ''
+      stateUpdater.finishProcessing(sessionKey, responseText)
+    }
+
     return {
-      response: finalContent || '(no response)',
+      response: responseToReturn || '(no response)',
       toolCalls: toolCallNames,
       finished:
         toolCallNames.length >= maxRounds || (finalContent !== '' && toolCallNames.length === 0),
@@ -168,6 +233,28 @@ export class AgentRuntime {
       systemPrompt,
       contextWindowSize = DEFAULT_CONTEXT_WINDOW,
     } = opts
+
+    const sentinel = this.deps.sentinel
+    const messageText = typeof userMessage === 'string'
+      ? userMessage
+      : userMessage.map((b) => (b.type === 'text' ? b.text : '')).join(' ')
+
+    // ─── 输入扫描（同步） ─────────────────────────────────────
+    if (sentinel) {
+      const scanResult = sentinel.scanInput(messageText, sessionKey)
+      if (!scanResult.pass) {
+        const fallbackResponse = sentinel.scanInputWithTakeover(messageText, sessionKey)
+        yield fallbackResponse.response!
+        return
+      }
+    }
+
+    // ─── 状态同步：开始处理 ─────────────────────────────────────
+    let stateUpdater: StateUpdater | undefined
+    if (sentinel) {
+      stateUpdater = sentinel.createStateUpdater(agentId)
+      stateUpdater.startProcessing(sessionKey, messageText)
+    }
 
     const history = await this.deps.memory.getHistory(agentId, sessionKey)
     let messages: LLMMessage[] = [...history, { role: 'user', content: userMessage }]
@@ -203,6 +290,16 @@ export class AgentRuntime {
       const toolCalls = this.deps.tools.parse(accumulated)
       if (toolCalls.length === 0) {
         await this.deps.memory.append(agentId, sessionKey, 'assistant', accumulated)
+
+        // 输出扫描（异步）
+        if (this.outputScanner) {
+          this.outputScanner.scanAsync(accumulated, sessionKey)
+        }
+
+        // 状态同步：完成处理
+        if (stateUpdater) {
+          stateUpdater.finishProcessing(sessionKey, accumulated)
+        }
         break
       }
 

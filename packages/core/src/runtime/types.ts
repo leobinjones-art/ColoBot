@@ -10,6 +10,7 @@ import type {
   ToolResult,
   ToolContext,
 } from '@colobot/types'
+import type { Sentinel } from '@colobot/sentinel'
 
 /**
  * LLM 提供者接口
@@ -96,4 +97,5 @@ export interface RuntimeDeps {
   tools: ToolExecutor
   audit: AuditLogger
   pusher: ResultPusher
+  sentinel?: Sentinel  // 可选：安全守护母 Agent
 }

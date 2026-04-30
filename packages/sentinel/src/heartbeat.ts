@@ -2,6 +2,7 @@
  * 心跳协议
  *
  * 父 Agent 每 2 秒发送心跳，母 Agent 连续 3 次无响应判定失联
+ * 母 Agent 自身也有心跳自检机制
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -252,5 +253,137 @@ export class HeartbeatSender {
     if (this.onSend) {
       this.onSend(heartbeat)
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 母 Agent 自身心跳（自检机制）
+// ═══════════════════════════════════════════════════════════════
+
+export interface SentinelSelfCheckConfig {
+  interval: number       // 自检间隔（毫秒）
+  threshold: number      // 超过多少毫秒无更新判定异常
+}
+
+const DEFAULT_SELF_CHECK_CONFIG: SentinelSelfCheckConfig = {
+  interval: 1000,        // 每秒自检
+  threshold: 5000,       // 5秒无更新判定异常
+}
+
+export type SentinelHealthStatus = 'healthy' | 'degraded' | 'dead'
+
+/**
+ * 母 Agent 自身心跳
+ *
+ * 每个事件循环都更新心跳时间戳，外部守护进程定时检查
+ */
+export class SentinelSelfHeartbeat {
+  private config: SentinelSelfCheckConfig
+  private lastBeat: number = Date.now()
+  private checkTimer: ReturnType<typeof setInterval> | null = null
+  private status: SentinelHealthStatus = 'healthy'
+  private onStatusChange?: (status: SentinelHealthStatus) => void
+  private eventLoopLag: number = 0
+
+  constructor(config?: Partial<SentinelSelfCheckConfig>) {
+    this.config = { ...DEFAULT_SELF_CHECK_CONFIG, ...config }
+  }
+
+  /**
+   * 设置状态变化回调
+   */
+  setOnStatusChange(callback: (status: SentinelHealthStatus) => void): void {
+    this.onStatusChange = callback
+  }
+
+  /**
+   * 更新心跳（每个事件循环调用）
+   */
+  beat(): void {
+    const now = Date.now()
+    this.eventLoopLag = now - this.lastBeat
+    this.lastBeat = now
+
+    // 如果之前是异常状态，恢复为健康
+    if (this.status !== 'healthy') {
+      this.updateStatus('healthy')
+    }
+  }
+
+  /**
+   * 开始自检
+   */
+  start(): void {
+    if (this.checkTimer) return
+
+    this.checkTimer = setInterval(() => {
+      this.check()
+    }, this.config.interval)
+  }
+
+  /**
+   * 停止自检
+   */
+  stop(): void {
+    if (this.checkTimer) {
+      clearInterval(this.checkTimer)
+      this.checkTimer = null
+    }
+  }
+
+  /**
+   * 检查心跳状态
+   */
+  private check(): void {
+    const elapsed = Date.now() - this.lastBeat
+
+    if (elapsed > this.config.threshold) {
+      // 超过阈值，判定异常
+      this.updateStatus('dead')
+    } else if (elapsed > this.config.threshold / 2) {
+      // 超过一半阈值，降级
+      this.updateStatus('degraded')
+    }
+  }
+
+  /**
+   * 更新状态
+   */
+  private updateStatus(newStatus: SentinelHealthStatus): void {
+    if (this.status !== newStatus) {
+      this.status = newStatus
+      if (this.onStatusChange) {
+        this.onStatusChange(newStatus)
+      }
+    }
+  }
+
+  /**
+   * 获取当前状态
+   */
+  getStatus(): SentinelHealthStatus {
+    return this.status
+  }
+
+  /**
+   * 获取上次心跳时间
+   */
+  getLastBeat(): number {
+    return this.lastBeat
+  }
+
+  /**
+   * 获取事件循环延迟
+   */
+  getEventLoopLag(): number {
+    return this.eventLoopLag
+  }
+
+  /**
+   * 外部检查接口（供 systemd/PM2 等守护进程调用）
+   */
+  externalCheck(): 'alive' | 'dead' {
+    const elapsed = Date.now() - this.lastBeat
+    return elapsed > this.config.threshold ? 'dead' : 'alive'
   }
 }

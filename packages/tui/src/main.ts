@@ -12,7 +12,6 @@ import {
   AgentRuntime,
   toolRegistry,
   SQLiteStore,
-  NoOpScanner,
   ConsoleAudit,
   ConsolePusher,
   ToolExecutorImpl,
@@ -20,6 +19,7 @@ import {
   createTuiLogger,
   type Logger,
 } from '@colobot/core'
+import { Sentinel } from '@colobot/sentinel'
 import type { ContentBlock } from '@colobot/types'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -218,13 +218,17 @@ async function main() {
     path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
   })
 
+  // 创建安全守护
+  const sentinel = new Sentinel()
+  sentinel.start()
+
   const runtime = new AgentRuntime({
     llm,
     memory,
     tools: new ToolExecutorImpl(toolRegistry),
-    scanner: new NoOpScanner(),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
+    sentinel,
   })
 
   logger.info('TUI_READY', { provider: config.model.provider, model: config.model.model })

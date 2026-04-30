@@ -37,14 +37,6 @@
     "./memory": {
       "import": "./dist/memory/index.js",
       "types": "./dist/memory/index.d.ts"
-    },
-    "./content": {
-      "import": "./dist/content/index.js",
-      "types": "./dist/content/index.d.ts"
-    },
-    "./approval": {
-      "import": "./dist/approval/index.js",
-      "types": "./dist/approval/index.d.ts"
     }
   },
   "scripts": {
@@ -55,6 +47,7 @@
   },
   "dependencies": {
     "@colobot/types": "*",
+    "@colobot/sentinel": "*",
     "@xenova/transformers": "^2.17.0",
     "better-sqlite3": "^11.10.0",
     "llm-guard": "^0.1.8",

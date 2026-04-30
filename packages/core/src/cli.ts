@@ -16,6 +16,7 @@ import { initConfig } from './config/index.js'
 import { setGlobalAllowedTools } from './subagents/index.js'
 import { configureSearch } from './search.js'
 import { toolRegistry } from './tools/registry.js'
+import { Sentinel } from '@colobot/sentinel'
 import type { ContentBlock } from '@colobot/types'
 
 // CLI 日志器
@@ -326,12 +327,17 @@ async function startCli(): Promise<void> {
     path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
   })
 
+  // 创建安全守护母 Agent
+  const sentinel = new Sentinel()
+  sentinel.start()
+
   const runtime = new AgentRuntime({
     llm,
     memory,
     tools: new ToolExecutorImpl(toolRegistry),
     audit: new ConsoleAudit(),
     pusher: new ConsolePusher(),
+    sentinel,
   })
 
   logger.info('CLI_READY', { provider: config.model.provider, model: config.model.model })
