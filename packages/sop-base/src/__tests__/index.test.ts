@@ -75,7 +75,7 @@ describe('SopEngine', () => {
       const onTaskCreated = vi.fn()
       const eventEngine = new TestSopEngine(
         { name: 'event-engine', version: '1.0.0' },
-        { onTaskCreated }
+        { onTaskCreated },
       )
 
       const task = await eventEngine.createTask('Test task')

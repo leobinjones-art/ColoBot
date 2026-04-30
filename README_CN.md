@@ -343,12 +343,12 @@ colobot-sop-*              # 社区贡献（npm 发布）
 
 ### 官方 SOP 模块
 
-| 模块 | 场景 | 状态 |
-|------|------|------|
-| `@colobot/sop-base` | 流程引擎基类 | ✅ 已实现 |
+| 模块                    | 场景               | 状态      |
+| ----------------------- | ------------------ | --------- |
+| `@colobot/sop-base`     | 流程引擎基类       | ✅ 已实现 |
 | `@colobot/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
-| `@colobot/sop-writing` | 长文写作、报告生成 | 📋 规划中 |
-| `@colobot/sop-coding` | 项目开发、代码重构 | 📋 规划中 |
+| `@colobot/sop-writing`  | 长文写作、报告生成 | 📋 规划中 |
+| `@colobot/sop-coding`   | 项目开发、代码重构 | 📋 规划中 |
 
 ### @colobot/sop-base 核心概念
 
@@ -356,7 +356,15 @@ colobot-sop-*              # 社区贡献（npm 发布）
 
 ```typescript
 // 任务状态
-type SopTaskStatus = 'created' | 'analyzing' | 'ready' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
+type SopTaskStatus =
+  | 'created'
+  | 'analyzing'
+  | 'ready'
+  | 'running'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
 
 // 步骤定义
 interface SopStep {
@@ -364,7 +372,7 @@ interface SopStep {
   name: string
   description: string
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped'
-  dependencies?: string[]      // 依赖的步骤 ID
+  dependencies?: string[] // 依赖的步骤 ID
   data?: Record<string, unknown>
 }
 
@@ -408,17 +416,17 @@ await engine.startTask(task.id)
 
 #### 核心方法
 
-| 方法 | 说明 |
-|------|------|
-| `createTask(message, context)` | 创建任务 |
-| `startTask(taskId)` | 启动任务 |
-| `pauseTask(taskId)` | 暂停任务 |
-| `resumeTask(taskId)` | 恢复任务 |
-| `cancelTask(taskId)` | 取消任务 |
-| `getCurrentStep(taskId)` | 获取当前步骤 |
-| `advanceStep(taskId)` | 推进到下一步 |
+| 方法                                   | 说明         |
+| -------------------------------------- | ------------ |
+| `createTask(message, context)`         | 创建任务     |
+| `startTask(taskId)`                    | 启动任务     |
+| `pauseTask(taskId)`                    | 暂停任务     |
+| `resumeTask(taskId)`                   | 恢复任务     |
+| `cancelTask(taskId)`                   | 取消任务     |
+| `getCurrentStep(taskId)`               | 获取当前步骤 |
+| `advanceStep(taskId)`                  | 推进到下一步 |
 | `submitStepData(taskId, stepId, data)` | 提交步骤数据 |
-| `generateOutput(taskId)` | 生成最终输出 |
+| `generateOutput(taskId)`               | 生成最终输出 |
 
 #### 事件系统
 
@@ -430,7 +438,7 @@ const engine = new MySopEngine(
     onStepStarted: (task, step) => console.log('步骤开始:', step.name),
     onStepCompleted: (task, step) => console.log('步骤完成:', step.name),
     onTaskCompleted: (task) => console.log('任务完成:', task.output),
-  }
+  },
 )
 ```
 
@@ -480,7 +488,7 @@ export class MyDomainSopEngine extends SopEngine {
   async analyzeTask(userMessage: string, context?: Record<string, unknown>): Promise<TaskAnalysis> {
     // 1. 分析用户意图
     const intent = await this.detectIntent(userMessage)
-    
+
     // 2. 生成步骤列表
     return {
       type: intent.type,
@@ -522,7 +530,7 @@ engine.registerStepExecutor('analyze', async (step, task, context) => {
 
 engine.registerStepExecutor('collect', async (step, task, context) => {
   // 基于上一步结果收集信息
-  const analysis = task.steps.find(s => s.id === 'analyze')?.data?.analysisResult
+  const analysis = task.steps.find((s) => s.id === 'analyze')?.data?.analysisResult
   const info = await collectInfo(analysis)
   return { collectedInfo: info }
 })
@@ -533,11 +541,11 @@ engine.registerStepExecutor('collect', async (step, task, context) => {
 sop-base 提供了内置的 Prompt 模板：
 
 ```typescript
-import { 
-  TASK_ANALYSIS_PROMPT, 
-  STEP_EXECUTION_PROMPT, 
+import {
+  TASK_ANALYSIS_PROMPT,
+  STEP_EXECUTION_PROMPT,
   OUTPUT_GENERATION_PROMPT,
-  buildPrompt 
+  buildPrompt,
 } from '@colobot/sop-base'
 
 // 使用模板

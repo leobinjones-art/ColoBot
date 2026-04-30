@@ -30,11 +30,11 @@ Most AI Agent frameworks focus on **how to call tools**, but overlook **how to c
 
 ColoBot solves three overlooked core problems from first principles:
 
-| Problem | ColoBot's Solution |
-|---------|-------------------|
+| Problem                   | ColoBot's Solution                                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Unbypassable Security** | Independent security parent agent guards all incoming/outgoing messages, no need to embed security checks in business code |
-| **Reusable Knowledge** | SOP encapsulates complex workflows like "academic research" and "code refactoring" into shareable skill modules |
-| **Modular to the Core** | 18 personal assistant modules (todo, notes, habits, etc.) ready to use, not just a tool registry |
+| **Reusable Knowledge**    | SOP encapsulates complex workflows like "academic research" and "code refactoring" into shareable skill modules            |
+| **Modular to the Core**   | 18 personal assistant modules (todo, notes, habits, etc.) ready to use, not just a tool registry                           |
 
 ### Core Features
 
@@ -144,14 +144,14 @@ npx colobot tui
 
 ### 🤖 Agent Core
 
-| Feature | Description |
-|---------|-------------|
-| Multi-Provider | OpenAI / Anthropic / MiniMax / Mock |
-| Fallback | Chain degradation, automatic model switching |
-| Streaming | SSE streaming response support |
-| Context Compression | Auto-compress history when exceeding window |
-| Sub-Agent | Create, delegate, destroy sub-agents |
-| Tool Whitelist | Sub-agent restricted permission control |
+| Feature             | Description                                  |
+| ------------------- | -------------------------------------------- |
+| Multi-Provider      | OpenAI / Anthropic / MiniMax / Mock          |
+| Fallback            | Chain degradation, automatic model switching |
+| Streaming           | SSE streaming response support               |
+| Context Compression | Auto-compress history when exceeding window  |
+| Sub-Agent           | Create, delegate, destroy sub-agents         |
+| Tool Whitelist      | Sub-agent restricted permission control      |
 
 ### 🛡️ Security Guardian (@colobot/sentinel)
 
@@ -172,15 +172,15 @@ graph TD
     Parent -.->|State Sync| SentinelOut
 ```
 
-| Feature | Description |
-|---------|-------------|
-| **Input Scanning** | Trie tree sensitive words, regex patterns, length/frequency limits, <1ms response |
-| **Output Scanning** | Async detection, deliver first then recall if issues |
-| **Heartbeat Monitoring** | 2-second interval, 3 missed beats = dead |
-| **State Synchronization** | Real-time parent agent state sync, full context on takeover |
-| **Timeout Handling** | 30s warning → 60s inquiry → 120s takeover |
-| **Three-Layer Defense** | Rule engine → Local model → LLM takeover |
-| **Distributed** | Redis shared state, Pub/Sub signals |
+| Feature                   | Description                                                                       |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| **Input Scanning**        | Trie tree sensitive words, regex patterns, length/frequency limits, <1ms response |
+| **Output Scanning**       | Async detection, deliver first then recall if issues                              |
+| **Heartbeat Monitoring**  | 2-second interval, 3 missed beats = dead                                          |
+| **State Synchronization** | Real-time parent agent state sync, full context on takeover                       |
+| **Timeout Handling**      | 30s warning → 60s inquiry → 120s takeover                                         |
+| **Three-Layer Defense**   | Rule engine → Local model → LLM takeover                                          |
+| **Distributed**           | Redis shared state, Pub/Sub signals                                               |
 
 ```typescript
 import { Sentinel } from '@colobot/sentinel'
@@ -206,12 +206,12 @@ sentinel.startSessionTimeout(sessionId, agentId)
 
 ### 🐍 Python WASM Sandbox
 
-| Feature | Description |
-|---------|-------------|
-| No System Python | Pyodide runs in WebAssembly |
-| Cross-platform | Consistent behavior on macOS/Linux/Windows |
-| Secure Isolation | WASM sandbox provides natural isolation |
-| Dynamic Package Installation | Supports numpy, pandas, matplotlib, etc. |
+| Feature                      | Description                                |
+| ---------------------------- | ------------------------------------------ |
+| No System Python             | Pyodide runs in WebAssembly                |
+| Cross-platform               | Consistent behavior on macOS/Linux/Windows |
+| Secure Isolation             | WASM sandbox provides natural isolation    |
+| Dynamic Package Installation | Supports numpy, pandas, matplotlib, etc.   |
 
 ```typescript
 // Execute Python code
@@ -227,26 +227,26 @@ print(arr.sum())
 
 ### 📋 Personal Assistant (@colobot/assistant)
 
-| Module | Features |
-|--------|----------|
-| **Todo List** | Create, priority, due dates, tags |
-| **Reminders** | Scheduled, recurring, natural language creation |
-| **Calendar** | Calendar view, conflict detection, weekly/monthly views |
-| **Notes** | Markdown, tags, full-text search |
-| **Habit Tracking** | Check-in, streak count, statistics |
-| **Mood Journal** | Mood recording, trend analysis |
-| **Finance** | Income/expense tracking, category statistics |
-| **Health Tracking** | Exercise, sleep, weight, water intake |
-| **Learning Progress** | Course management, progress tracking |
-| **Reading List** | Books/articles, reading progress |
-| **Goals** | Goal setting, progress tracking |
-| **Inspiration Notes** | Quick capture, tag classification |
-| **Contacts** | Contact info, interaction records |
-| **Projects** | Project tracking, milestones |
-| **Password Manager** | AES encryption, password generation |
-| **Time Tracking** | Start/stop, category statistics |
-| **Web Bookmarks** | URL, summary, tags |
-| **Intent Recognition** | Natural language understanding |
+| Module                 | Features                                                |
+| ---------------------- | ------------------------------------------------------- |
+| **Todo List**          | Create, priority, due dates, tags                       |
+| **Reminders**          | Scheduled, recurring, natural language creation         |
+| **Calendar**           | Calendar view, conflict detection, weekly/monthly views |
+| **Notes**              | Markdown, tags, full-text search                        |
+| **Habit Tracking**     | Check-in, streak count, statistics                      |
+| **Mood Journal**       | Mood recording, trend analysis                          |
+| **Finance**            | Income/expense tracking, category statistics            |
+| **Health Tracking**    | Exercise, sleep, weight, water intake                   |
+| **Learning Progress**  | Course management, progress tracking                    |
+| **Reading List**       | Books/articles, reading progress                        |
+| **Goals**              | Goal setting, progress tracking                         |
+| **Inspiration Notes**  | Quick capture, tag classification                       |
+| **Contacts**           | Contact info, interaction records                       |
+| **Projects**           | Project tracking, milestones                            |
+| **Password Manager**   | AES encryption, password generation                     |
+| **Time Tracking**      | Start/stop, category statistics                         |
+| **Web Bookmarks**      | URL, summary, tags                                      |
+| **Intent Recognition** | Natural language understanding                          |
 
 ### 🔧 Built-in Tools
 
@@ -343,12 +343,12 @@ colobot-sop-*              # Community contributions (npm publish)
 
 ### Official SOP Modules
 
-| Module | Scenario | Status |
-|--------|----------|--------|
-| `@colobot/sop-base` | Flow engine base class | ✅ Implemented |
-| `@colobot/sop-academic` | Paper writing, literature research | ✅ Implemented |
-| `@colobot/sop-writing` | Long-form writing, report generation | 📋 Planned |
-| `@colobot/sop-coding` | Project development, code refactoring | 📋 Planned |
+| Module                  | Scenario                              | Status         |
+| ----------------------- | ------------------------------------- | -------------- |
+| `@colobot/sop-base`     | Flow engine base class                | ✅ Implemented |
+| `@colobot/sop-academic` | Paper writing, literature research    | ✅ Implemented |
+| `@colobot/sop-writing`  | Long-form writing, report generation  | 📋 Planned     |
+| `@colobot/sop-coding`   | Project development, code refactoring | 📋 Planned     |
 
 ### @colobot/sop-base Core Concepts
 
@@ -356,7 +356,15 @@ colobot-sop-*              # Community contributions (npm publish)
 
 ```typescript
 // Task status
-type SopTaskStatus = 'created' | 'analyzing' | 'ready' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
+type SopTaskStatus =
+  | 'created'
+  | 'analyzing'
+  | 'ready'
+  | 'running'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
 
 // Step definition
 interface SopStep {
@@ -364,7 +372,7 @@ interface SopStep {
   name: string
   description: string
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped'
-  dependencies?: string[]      // Dependent step IDs
+  dependencies?: string[] // Dependent step IDs
   data?: Record<string, unknown>
 }
 
@@ -408,17 +416,17 @@ await engine.startTask(task.id)
 
 #### Core Methods
 
-| Method | Description |
-|--------|-------------|
-| `createTask(message, context)` | Create task |
-| `startTask(taskId)` | Start task |
-| `pauseTask(taskId)` | Pause task |
-| `resumeTask(taskId)` | Resume task |
-| `cancelTask(taskId)` | Cancel task |
-| `getCurrentStep(taskId)` | Get current step |
-| `advanceStep(taskId)` | Advance to next step |
-| `submitStepData(taskId, stepId, data)` | Submit step data |
-| `generateOutput(taskId)` | Generate final output |
+| Method                                 | Description           |
+| -------------------------------------- | --------------------- |
+| `createTask(message, context)`         | Create task           |
+| `startTask(taskId)`                    | Start task            |
+| `pauseTask(taskId)`                    | Pause task            |
+| `resumeTask(taskId)`                   | Resume task           |
+| `cancelTask(taskId)`                   | Cancel task           |
+| `getCurrentStep(taskId)`               | Get current step      |
+| `advanceStep(taskId)`                  | Advance to next step  |
+| `submitStepData(taskId, stepId, data)` | Submit step data      |
+| `generateOutput(taskId)`               | Generate final output |
 
 #### Event System
 
@@ -430,7 +438,7 @@ const engine = new MySopEngine(
     onStepStarted: (task, step) => console.log('Step started:', step.name),
     onStepCompleted: (task, step) => console.log('Step completed:', step.name),
     onTaskCompleted: (task) => console.log('Task completed:', task.output),
-  }
+  },
 )
 ```
 
@@ -480,7 +488,7 @@ export class MyDomainSopEngine extends SopEngine {
   async analyzeTask(userMessage: string, context?: Record<string, unknown>): Promise<TaskAnalysis> {
     // 1. Analyze user intent
     const intent = await this.detectIntent(userMessage)
-    
+
     // 2. Generate step list
     return {
       type: intent.type,
@@ -522,7 +530,7 @@ engine.registerStepExecutor('analyze', async (step, task, context) => {
 
 engine.registerStepExecutor('collect', async (step, task, context) => {
   // Collect information based on previous step result
-  const analysis = task.steps.find(s => s.id === 'analyze')?.data?.analysisResult
+  const analysis = task.steps.find((s) => s.id === 'analyze')?.data?.analysisResult
   const info = await collectInfo(analysis)
   return { collectedInfo: info }
 })
@@ -533,11 +541,11 @@ engine.registerStepExecutor('collect', async (step, task, context) => {
 sop-base provides built-in prompt templates:
 
 ```typescript
-import { 
-  TASK_ANALYSIS_PROMPT, 
-  STEP_EXECUTION_PROMPT, 
+import {
+  TASK_ANALYSIS_PROMPT,
+  STEP_EXECUTION_PROMPT,
   OUTPUT_GENERATION_PROMPT,
-  buildPrompt 
+  buildPrompt,
 } from '@colobot/sop-base'
 
 // Use template
@@ -620,28 +628,28 @@ export function registerMyTool(): void {
 
 ## Project Statistics
 
-| Metric | Value |
-|--------|-------|
-| Version | 0.3.0 |
-| Total Code | ~28,000 lines TypeScript |
-| Source Files | 145 |
-| Packages | 7 |
-| Assistant Modules | 18 |
-| Test Cases | 522 |
-| Test Coverage | 56%+ |
+| Metric            | Value                    |
+| ----------------- | ------------------------ |
+| Version           | 0.3.0                    |
+| Total Code        | ~28,000 lines TypeScript |
+| Source Files      | 145                      |
+| Packages          | 7                        |
+| Assistant Modules | 18                       |
+| Test Cases        | 522                      |
+| Test Coverage     | 56%+                     |
 
 ---
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `OPENAI_API_KEY` | OpenAI API Key |
-| `ANTHROPIC_API_KEY` | Anthropic API Key |
-| `MINIMAX_API_KEY` | MiniMax API Key |
-| `COLOBOT_LOG_LEVEL` | Log level (debug/info/warn/error) |
-| `COLOBOT_LOG_CONSOLE` | Output to console (true/false) |
-| `COLOBOT_ENCRYPTION_KEY` | Password encryption key |
+| Variable                 | Description                       |
+| ------------------------ | --------------------------------- |
+| `OPENAI_API_KEY`         | OpenAI API Key                    |
+| `ANTHROPIC_API_KEY`      | Anthropic API Key                 |
+| `MINIMAX_API_KEY`        | MiniMax API Key                   |
+| `COLOBOT_LOG_LEVEL`      | Log level (debug/info/warn/error) |
+| `COLOBOT_LOG_CONSOLE`    | Output to console (true/false)    |
+| `COLOBOT_ENCRYPTION_KEY` | Password encryption key           |
 
 ---
 

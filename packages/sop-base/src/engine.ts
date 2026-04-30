@@ -44,7 +44,10 @@ export abstract class SopEngine implements ISopEngine {
 
   // ─── 抽象方法（子类实现）──────────────────────────────────────────────
 
-  abstract analyzeTask(userMessage: string, context?: Record<string, unknown>): Promise<TaskAnalysis>
+  abstract analyzeTask(
+    userMessage: string,
+    context?: Record<string, unknown>,
+  ): Promise<TaskAnalysis>
 
   // ─── 任务管理 ──────────────────────────────────────────────
 
@@ -146,7 +149,11 @@ export abstract class SopEngine implements ISopEngine {
 
   // ─── 步骤管理 ──────────────────────────────────────────────
 
-  async submitStepData(taskId: string, stepId: string, data: Record<string, unknown>): Promise<void> {
+  async submitStepData(
+    taskId: string,
+    stepId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
     const task = this.tasks.get(taskId)
     if (!task) throw new Error(`Task not found: ${taskId}`)
 
@@ -256,7 +263,11 @@ export abstract class SopEngine implements ISopEngine {
     } catch (error) {
       step.status = 'failed'
       step.error = error instanceof Error ? error.message : String(error)
-      await this.events.onStepFailed?.(task, step, error instanceof Error ? error : new Error(String(error)))
+      await this.events.onStepFailed?.(
+        task,
+        step,
+        error instanceof Error ? error : new Error(String(error)),
+      )
       throw error
     }
   }

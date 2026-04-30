@@ -89,7 +89,10 @@ export const ERROR_HANDLING_PROMPT = `步骤执行失败，请分析并提供解
 
 // ─── Prompt 构建器 ──────────────────────────────────────────────
 
-export function buildPrompt(template: string, variables: Record<string, string | number | object>): string {
+export function buildPrompt(
+  template: string,
+  variables: Record<string, string | number | object>,
+): string {
   let result = template
   for (const [key, value] of Object.entries(variables)) {
     const placeholder = `{${key}}`

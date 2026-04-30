@@ -31,7 +31,15 @@ export interface SopStep {
 
 // ─── 任务状态 ──────────────────────────────────────────────
 
-export type SopTaskStatus = 'created' | 'analyzing' | 'ready' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
+export type SopTaskStatus =
+  | 'created'
+  | 'analyzing'
+  | 'ready'
+  | 'running'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
 
 // ─── 任务定义 ──────────────────────────────────────────────
 
@@ -150,7 +158,11 @@ export interface ISopEngine {
 
 // ─── 步骤执行器 ──────────────────────────────────────────────
 
-export type StepExecutor = (step: SopStep, task: SopTask, context: Record<string, unknown>) => Promise<Record<string, unknown> | void>
+export type StepExecutor = (
+  step: SopStep,
+  task: SopTask,
+  context: Record<string, unknown>,
+) => Promise<Record<string, unknown> | void>
 
 // ─── 步骤注册表 ──────────────────────────────────────────────
 
