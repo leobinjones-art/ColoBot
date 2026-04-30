@@ -78,7 +78,7 @@ colobot/
 │   │   ├── project/     # 项目
 │   │   └── tools/       # 密码、时间追踪
 │   ├── tui/             # 终端界面
-│   ├── sop-base/        # SOP 基础接口
+│   ├── sop-base/        # SOP 流程引擎基类
 │   └── sop-academic/    # 学术 SOP
 └── _legacy/             # 旧代码（待迁移）
 ```

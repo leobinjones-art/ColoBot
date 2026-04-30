@@ -12,7 +12,7 @@
     "release": "release-please release",
     "dev": "tsx watch src/colobot-server.ts",
     "build": "npm run build:packages",
-    "build:packages": "npm run build -w packages/types && npm run build -w packages/sentinel && npm run build -w packages/core && npm run build -w packages/assistant && npm run build -w packages/tui && npm run build -w packages/sop-academic",
+    "build:packages": "npm run build -w packages/types && npm run build -w packages/sentinel && npm run build -w packages/core && npm run build -w packages/assistant && npm run build -w packages/tui && npm run build -w packages/sop-base && npm run build -w packages/sop-academic",
     "start": "node dist/colobot-server.js",
     "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",

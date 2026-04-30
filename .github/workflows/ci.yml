@@ -53,6 +53,7 @@ jobs:
           npx tsc --noEmit --skipLibCheck --project packages/core/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/assistant/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/tui/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/sop-base/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/sop-academic/tsconfig.json
 
       - name: Prettier check
