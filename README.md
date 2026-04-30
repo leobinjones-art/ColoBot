@@ -2,9 +2,9 @@
 
 <div align="center">
 
-**单智能体 + 子智能体协作平台**
+**自带安全守护的 TypeScript AI Agent 框架**
 
-多模态 AI × Skill 编排 × 个人助理
+多模态 AI × 安全母 Agent × 个人助理
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
@@ -16,12 +16,30 @@
 
 ## 简介
 
-ColoBot 是一个基于 TypeScript 的 AI Agent 框架，专注于**个人助理**场景。支持多模态交互、子 Agent 协作、工具调用，并内置完整的个人信息管理功能。
+ColoBot 是一个**自带安全守护**的 TypeScript AI Agent 框架。
+
+它把"个人助理"做成了可编程、可扩展的模块化系统，并内置了**业界首创的独立安全母 Agent**。
+
+你可以用它快速搭建一个能管待办、写论文、写代码的智能助理，并且**永远不用担心它说出不该说的话**。
+
+---
+
+## 为什么选择 ColoBot
+
+大多数 AI Agent 框架专注于**如何调用工具**，却忽略了**如何安全调用**和**如何复用领域知识**。
+
+ColoBot 从第一性原理出发，解决三个被忽视的核心问题：
+
+| 问题 | ColoBot 的解法 |
+|------|----------------|
+| **安全不可绕过** | 独立的安全母 Agent 守护所有进出消息，无需在业务代码中嵌入安全检查 |
+| **知识可复用** | SOP 将"学术调研""代码重构"等复杂流程封装为可共享的技能模块 |
+| **模块化到底** | 18 个个人助理模块（待办、笔记、习惯等）开箱即用，而非仅提供工具注册表 |
 
 ### 核心特点
 
-- 🤖 **多 LLM 支持**: OpenAI、Anthropic、MiniMax、自定义 API
 - 🛡️ **安全守护**: 独立的安全母 Agent，输入输出扫描、进程守护、异常接管
+- 🤖 **多 LLM 支持**: OpenAI、Anthropic、MiniMax、自定义 API
 - 🧠 **子 Agent 协作**: 任务分解、并行执行、工具白名单
 - 🖼️ **多模态**: 文本、图片、音频
 - 🐍 **Python WASM**: Pyodide 沙箱执行，无需系统 Python
@@ -139,6 +157,21 @@ npx colobot tui
 
 独立的安全母 Agent，平行链路架构：
 
+```mermaid
+graph TD
+    User[用户消息] --> SentinelIn[安全母 Agent 输入扫描]
+    SentinelIn -->|放行| Parent[父 Agent 编排器]
+    SentinelIn -->|拦截| Fallback[兜底话术]
+    Parent --> SubPool[子 Agent 池]
+    SubPool --> Tool[工具执行]
+    Tool --> Parent
+    Parent --> SentinelOut[安全母 Agent 输出扫描]
+    SentinelOut -->|合规| User
+    SentinelOut -->|违规| Fallback
+    SentinelIn -.->|心跳| Parent
+    Parent -.->|状态同步| SentinelOut
+```
+
 | 功能 | 说明 |
 |------|------|
 | **输入扫描** | Trie树敏感词、正则模式、长度/频率限制，<1ms 响应 |
@@ -164,6 +197,12 @@ if (!result.pass) {
 // 超时监控
 sentinel.startSessionTimeout(sessionId, agentId)
 ```
+
+### 🚀 高并发与扩展
+
+- **子 Agent 池化**：基于信号量的并发控制，上限可配置，默认匹配 CPU 核心数
+- **异步非阻塞**：父 Agent 为纯编排器，所有重计算在 Worker Thread 或独立子进程中执行
+- **分布式就绪**：通过 Redis Pub/Sub 和共享状态支持多实例部署，安全母 Agent 可独立扩展
 
 ### 🐍 Python WASM 沙箱
 
@@ -309,6 +348,52 @@ colobot-sop-*              # 社区贡献（npm 发布）
 | `@colobot/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
 | `@colobot/sop-writing` | 长文写作、报告生成 | 📋 规划中 |
 | `@colobot/sop-coding` | 项目开发、代码重构 | 📋 规划中 |
+
+### 开发一个 SOP：3 步搞定
+
+#### 1. 创建包结构
+
+```
+colobot-sop-my-domain/
+├── package.json
+├── tsconfig.json
+└── src/
+    ├── index.ts      # SopModule 实现
+    └── steps.ts      # 步骤逻辑
+```
+
+#### 2. 实现 SopModule 接口
+
+```typescript
+import type { SopModule } from '@colobot/sop-base'
+
+export const mySop: SopModule = {
+  name: 'my-domain',
+  version: '1.0.0',
+  description: '处理我的专属领域任务',
+
+  detectIntent(message) {
+    return /帮我做某事/.test(message)
+  },
+
+  async analyzeTask(message, runtime) {
+    return {
+      steps: [
+        { name: '搜索信息', tool: 'web_search', prompt: '搜索: $query' },
+        { name: '生成报告', tool: 'write_file', prompt: '将结果整理为报告' },
+      ],
+      context: { query: extractQuery(message) },
+    }
+  },
+}
+```
+
+#### 3. 安装并测试
+
+```bash
+npm install ./colobot-sop-my-domain
+npx colobot sop test "帮我做某事"
+```
 
 ---
 
