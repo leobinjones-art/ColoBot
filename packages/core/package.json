@@ -1,7 +1,7 @@
 {
   "name": "@colobot/core",
-  "version": "0.2.0",
-  "description": "ColoBot Agent 运行时核心",
+  "version": "0.3.0",
+  "description": "ColoBot Agent 运行时核心（含安全守护）",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",

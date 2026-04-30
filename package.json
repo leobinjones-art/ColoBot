@@ -1,7 +1,7 @@
 {
   "name": "colobot-monorepo",
-  "version": "0.2.0",
-  "description": "单智能体 + 子智能体协作平台 — 多模态 AI + Skill 编排 + SearXNG 搜索",
+  "version": "0.3.0",
+  "description": "自带安全守护的 AI Agent 框架 — 多模态 AI × 安全母 Agent × 个人助理",
   "license": "AGPL-3.0",
   "type": "module",
   "private": true,

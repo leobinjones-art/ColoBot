@@ -1,7 +1,7 @@
 {
   "name": "@colobot/sentinel",
   "version": "0.1.0",
-  "description": "安全守护母 Agent - 输入输出扫描、进程守护、异常接管",
+  "description": "安全守护母 Agent - 输入输出扫描、进程守护、异常接管（业界首创独立安全链路）",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
