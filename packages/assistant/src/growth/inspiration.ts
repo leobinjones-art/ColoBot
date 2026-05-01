@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Inspiration')
 
 export interface Inspiration {
   id: string
@@ -34,6 +37,8 @@ export function addInspiration(
   `,
     )
     .run(id, userId, content, JSON.stringify(tags), now)
+
+  logger.info('Added inspiration', { id, userId, content: content.substring(0, 50) })
 
   return { id, userId, content, tags, createdAt: now }
 }
@@ -103,11 +108,16 @@ export function searchInspirations(
  */
 export function deleteInspiration(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  return (
-    database
-      .prepare(`DELETE FROM assistant_inspirations WHERE id = ? AND user_id = ?`)
-      .run(id, userId).changes > 0
-  )
+  const result = database
+    .prepare(`DELETE FROM assistant_inspirations WHERE id = ? AND user_id = ?`)
+    .run(id, userId)
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted inspiration', { id, userId })
+  } else {
+    logger.warn('Inspiration not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 function rowToInspiration(row: any): Inspiration {

@@ -53,7 +53,7 @@ export interface Intent {
   raw: string
 }
 
-// 意图模式
+// 意图模式（支持中文和英文）
 const INTENT_PATTERNS: Array<{
   type: IntentType
   patterns: RegExp[]
@@ -65,68 +65,103 @@ const INTENT_PATTERNS: Array<{
     patterns: [
       /添加.*待办|新建.*任务|记.*待办|帮我记|我要做|待办[:：]/i,
       /记得|别忘了|要完成|需要做/i,
+      /add\s*(a\s*)?(todo|task)|create\s*(a\s*)?(todo|task)|new\s*(todo|task)/i,
+      /remind\s*me\s*to|need\s*to|have\s*to|i\s*want\s*to/i,
     ],
     slots: ['title', 'dueDate'],
   },
   {
     type: 'todo.list',
-    patterns: [/列出.*待办|查看.*待办|有什么.*待办|待办列表|我的任务/i],
+    patterns: [
+      /列出.*待办|查看.*待办|有什么.*待办|待办列表|我的任务/i,
+      /list\s*(todos|tasks)|show\s*(todos|tasks)|my\s*(todos|tasks)/i,
+    ],
     slots: [],
   },
   {
     type: 'todo.complete',
-    patterns: [/完成.*待办|标记.*完成|做完.*任务/i],
+    patterns: [
+      /完成.*待办|标记.*完成|做完.*任务/i,
+      /complete\s*(the\s*)?(todo|task)|mark\s*(the\s*)?(todo|task)\s*(as\s*done|complete)|finish\s*(the\s*)?(todo|task)/i,
+    ],
     slots: ['title'],
   },
   // 提醒
   {
     type: 'reminder.add',
-    patterns: [/提醒我|设置提醒|定时提醒|到时候提醒/i],
+    patterns: [
+      /提醒我|设置提醒|定时提醒|到时候提醒/i,
+      /remind\s*me|set\s*reminder|reminder\s*(for|at|on)/i,
+    ],
     slots: ['title', 'time'],
   },
   {
     type: 'reminder.list',
-    patterns: [/列出.*提醒|查看.*提醒|有什么.*提醒/i],
+    patterns: [
+      /列出.*提醒|查看.*提醒|有什么.*提醒/i,
+      /list\s*reminders|show\s*reminders|my\s*reminders|what\s*reminders?\s*(do\s*i\s*have)?/i,
+    ],
     slots: [],
   },
   // 笔记
   {
     type: 'note.add',
-    patterns: [/记笔记|添加笔记|新建笔记|笔记[:：]/i],
+    patterns: [
+      /记笔记|添加笔记|新建笔记|笔记[:：]/i,
+      /add\s*(a\s*)?note|create\s*(a\s*)?note|save\s*(a\s*)?note|take\s*(a\s*)?note/i,
+    ],
     slots: ['title', 'content'],
   },
   {
     type: 'note.search',
-    patterns: [/搜索.*笔记|查找.*笔记|笔记.*搜索/i],
+    patterns: [
+      /搜索.*笔记|查找.*笔记|笔记.*搜索/i,
+      /search\s*notes|find\s*notes|lookup\s*notes/i,
+    ],
     slots: ['query'],
   },
   // 日程
   {
     type: 'schedule.add',
-    patterns: [/添加.*日程|新建.*日程|安排.*日程|日程[:：]/i],
+    patterns: [
+      /添加.*日程|新建.*日程|安排.*日程|日程[:：]/i,
+      /add\s*(an?\s*)?(event|schedule)|create\s*(an?\s*)?(event|schedule)|schedule\s*(a\s*meeting|an?\s*(appointment|event))/i,
+    ],
     slots: ['title', 'time'],
   },
   {
     type: 'schedule.list',
-    patterns: [/查看.*日程|今天.*日程|本周.*日程|日程表/i],
+    patterns: [
+      /查看.*日程|今天.*日程|本周.*日程|日程表/i,
+      /show\s*(schedule|events|calendar)|list\s*(events|schedule)|today['']?s\s*(schedule|events)/i,
+    ],
     slots: ['range'],
   },
   // 习惯
   {
     type: 'habit.check',
-    patterns: [/打卡|签到|完成.*习惯|习惯.*打卡/i],
+    patterns: [
+      /打卡|签到|完成.*习惯|习惯.*打卡/i,
+      /check\s*in|log\s*habit|habit\s*check|track\s*habit/i,
+    ],
     slots: ['habit'],
   },
   // 心情
   {
     type: 'mood.log',
-    patterns: [/记录.*心情|今天.*心情|心情[:：]|感觉|情绪/i],
+    patterns: [
+      /记录.*心情|今天.*心情|心情[:：]|感觉|情绪/i,
+      /log\s*mood|record\s*mood|feeling|today['']?s\s*mood|mood\s*(happy|sad|good|bad)/i,
+    ],
     slots: ['mood', 'note'],
   },
   // 财务
   {
     type: 'finance.log',
-    patterns: [/记录.*收支|记账|花费|支出|收入/i],
+    patterns: [
+      /记录.*收支|记账|花费|支出|收入/i,
+      /log\s*(expense|income|finance)|record\s*(expense|income)|spent|spend/i,
+    ],
     slots: ['type', 'amount', 'category'],
   },
 ]

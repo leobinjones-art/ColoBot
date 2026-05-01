@@ -5,6 +5,9 @@
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
 import { parseTime, parseTimeRange } from '../task/time-parser.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Calendar')
 
 export interface Event {
   id: string
@@ -63,6 +66,8 @@ export function createEvent(input: CreateEventInput, db?: Database.Database): Ev
     input.repeat || null,
     now,
   )
+
+  logger.info('Created event', { id, userId: input.userId, title: input.title, startAt })
 
   return {
     id,
@@ -152,7 +157,13 @@ export function deleteEvent(id: string, userId: string, db?: Database.Database):
   const database = db || getDb()
   const stmt = database.prepare(`DELETE FROM assistant_events WHERE id = ? AND user_id = ?`)
   const result = stmt.run(id, userId)
-  return result.changes > 0
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted event', { id, userId })
+  } else {
+    logger.warn('Event not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 /**
@@ -175,12 +186,13 @@ export function getDayEvents(userId: string, date: Date | string, db?: Database.
  */
 export function getWeekEvents(
   userId: string,
-  date: Date = new Date(),
+  date: Date | string = new Date(),
   db?: Database.Database,
 ): Event[] {
   const database = db || getDb()
-  const startOfWeek = new Date(date)
-  startOfWeek.setDate(date.getDate() - date.getDay())
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const startOfWeek = new Date(dateObj)
+  startOfWeek.setDate(dateObj.getDate() - dateObj.getDay())
   startOfWeek.setHours(0, 0, 0, 0)
 
   const endOfWeek = new Date(startOfWeek)
@@ -201,12 +213,13 @@ export function getWeekEvents(
  */
 export function getMonthEvents(
   userId: string,
-  date: Date = new Date(),
+  date: Date | string = new Date(),
   db?: Database.Database,
 ): Event[] {
   const database = db || getDb()
-  const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
-  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1)
+  const endOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0, 23, 59, 59, 999)
 
   const stmt = database.prepare(`
     SELECT * FROM assistant_events
@@ -222,12 +235,13 @@ export function getMonthEvents(
  */
 export function checkConflict(
   userId: string,
-  startAt: Date,
-  endAt: Date | null,
+  startAt: Date | string,
+  endAt: Date | string | null = null,
   db?: Database.Database,
 ): Event[] {
   const database = db || getDb()
-  const endTime = endAt || new Date(startAt.getTime() + 3600000) // 默认1小时
+  const startAtObj = typeof startAt === 'string' ? new Date(startAt) : startAt
+  const endAtObj = endAt ? (typeof endAt === 'string' ? new Date(endAt) : endAt) : new Date(startAtObj.getTime() + 3600000)
 
   const stmt = database.prepare(`
     SELECT * FROM assistant_events
@@ -239,10 +253,10 @@ export function checkConflict(
   `)
   const rows = stmt.all(
     userId,
-    startAt.toISOString(),
-    startAt.toISOString(),
-    startAt.toISOString(),
-    endTime.toISOString(),
+    startAtObj.toISOString(),
+    startAtObj.toISOString(),
+    startAtObj.toISOString(),
+    endAtObj.toISOString(),
   ) as any[]
   return rows.map(rowToEvent)
 }

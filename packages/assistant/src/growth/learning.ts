@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Learning')
 
 export interface Course {
   id: string
@@ -32,10 +35,12 @@ export function createCourse(
     .prepare(
       `
     INSERT INTO assistant_courses (id, user_id, name, total_hours, completed_hours, status, created_at)
-    VALUES (?, ?, ?, ?, 0, 'active', ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `,
     )
-    .run(id, userId, name, totalHours, now)
+    .run(id, userId, name, totalHours, 0, 'active', now)
+
+  logger.info('Created course', { id, userId, name, totalHours })
 
   return { id, userId, name, totalHours, completedHours: 0, status: 'active', createdAt: now }
 }
@@ -51,7 +56,10 @@ export function updateProgress(
 ): Course | null {
   const database = db || getDb()
   const course = getCourse(id, userId, database)
-  if (!course) return null
+  if (!course) {
+    logger.warn('Course not found for update', { id, userId })
+    return null
+  }
 
   const newCompleted = course.completedHours + hours
   const status =
@@ -64,6 +72,8 @@ export function updateProgress(
   `,
     )
     .run(newCompleted, status, id, userId)
+
+  logger.info('Updated course progress', { id, userId, hours, totalCompleted: newCompleted, status })
 
   return getCourse(id, userId, database)
 }
@@ -106,10 +116,14 @@ export function listCourses(
  */
 export function deleteCourse(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  return (
-    database.prepare(`DELETE FROM assistant_courses WHERE id = ? AND user_id = ?`).run(id, userId)
-      .changes > 0
-  )
+  const result = database.prepare(`DELETE FROM assistant_courses WHERE id = ? AND user_id = ?`).run(id, userId)
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted course', { id, userId })
+  } else {
+    logger.warn('Course not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 function rowToCourse(row: any): Course {

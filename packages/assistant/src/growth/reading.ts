@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Reading')
 
 export type ReadingType = 'book' | 'article' | 'paper'
 export type ReadingStatus = 'pending' | 'reading' | 'done'
@@ -38,10 +41,12 @@ export function addReading(
     .prepare(
       `
     INSERT INTO assistant_readings (id, user_id, title, author, type, status, progress, created_at)
-    VALUES (?, ?, ?, ?, ?, 'pending', 0, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
     )
-    .run(id, userId, title, author || null, type, now)
+    .run(id, userId, title, author || null, type, 'pending', 0, now)
+
+  logger.info('Added reading', { id, userId, title, type })
 
   return { id, userId, title, author, type, status: 'pending', progress: 0, createdAt: now }
 }
@@ -58,7 +63,10 @@ export function updateReadingProgress(
 ): Reading | null {
   const database = db || getDb()
   const reading = getReading(id, userId, database)
-  if (!reading) return null
+  if (!reading) {
+    logger.warn('Reading not found for update', { id, userId })
+    return null
+  }
 
   const status = progress >= 100 ? 'done' : progress > 0 ? 'reading' : 'pending'
 
@@ -69,6 +77,8 @@ export function updateReadingProgress(
   `,
     )
     .run(progress, status, note || reading.note, id, userId)
+
+  logger.info('Updated reading progress', { id, userId, progress, status })
 
   return getReading(id, userId, database)
 }
@@ -111,10 +121,14 @@ export function listReadings(
  */
 export function deleteReading(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  return (
-    database.prepare(`DELETE FROM assistant_readings WHERE id = ? AND user_id = ?`).run(id, userId)
-      .changes > 0
-  )
+  const result = database.prepare(`DELETE FROM assistant_readings WHERE id = ? AND user_id = ?`).run(id, userId)
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted reading', { id, userId })
+  } else {
+    logger.warn('Reading not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 function rowToReading(row: any): Reading {

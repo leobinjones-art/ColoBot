@@ -5,6 +5,9 @@
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
 import { parseTime, formatTime } from './time-parser.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Reminder')
 
 export type ReminderRepeat = 'none' | 'daily' | 'weekly' | 'monthly'
 export type ReminderStatus = 'pending' | 'done' | 'cancelled'
@@ -59,6 +62,8 @@ export function createReminder(input: CreateReminderInput, db?: Database.Databas
     input.repeat || 'none',
     now,
   )
+
+  logger.info('Created reminder', { id, userId: input.userId, title: input.title, remindAt })
 
   return {
     id,
@@ -131,19 +136,24 @@ export function completeReminder(
 ): Reminder | null {
   const database = db || getDb()
   const reminder = getReminder(id, userId, database)
-  if (!reminder) return null
+  if (!reminder) {
+    logger.warn('Reminder not found for completion', { id, userId })
+    return null
+  }
 
   // 如果是重复提醒，计算下次时间
   if (reminder.repeat !== 'none') {
     const nextTime = calculateNextTime(new Date(reminder.remindAt), reminder.repeat)
     const stmt = database.prepare(`UPDATE assistant_reminders SET remind_at = ? WHERE id = ?`)
     stmt.run(nextTime.toISOString(), id)
+    logger.info('Rescheduled repeating reminder', { id, repeat: reminder.repeat, nextTime })
     return getReminder(id, userId, database)
   }
 
   // 非重复提醒，标记为完成
   const stmt = database.prepare(`UPDATE assistant_reminders SET status = 'done' WHERE id = ?`)
   stmt.run(id)
+  logger.info('Completed reminder', { id, userId })
   return getReminder(id, userId, database)
 }
 
@@ -182,9 +192,15 @@ export function onReminder(callback: (reminder: Reminder) => void): void {
 export function startReminderCheck(intervalMs: number = 60000): void {
   if (checkInterval) return
 
+  logger.info('Started reminder check', { intervalMs })
+
   checkInterval = setInterval(() => {
     const pending = getPendingReminders()
+    if (pending.length > 0) {
+      logger.debug('Found pending reminders', { count: pending.length })
+    }
     for (const reminder of pending) {
+      logger.info('Triggering reminder', { id: reminder.id, title: reminder.title })
       for (const callback of reminderCallbacks) {
         callback(reminder)
       }

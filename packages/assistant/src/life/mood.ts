@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Mood')
 
 export type MoodType = 'happy' | 'sad' | 'neutral' | 'angry' | 'anxious' | 'excited' | 'calm'
 
@@ -50,6 +53,8 @@ export function logMood(
   `,
     )
     .run(id, userId, mood, finalScore, note || null, now)
+
+  logger.info('Logged mood', { id, userId, mood, score: finalScore })
 
   return { id, userId, mood, score: finalScore, note, loggedAt: now }
 }

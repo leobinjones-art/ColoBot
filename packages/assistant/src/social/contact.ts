@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Contact')
 
 export interface Contact {
   id: string
@@ -53,6 +56,8 @@ export function createContact(
       now,
     )
 
+  logger.info('Created contact', { id, userId, name, organization: options.organization })
+
   return { id, userId, name, tags: [], createdAt: now, ...options }
 }
 
@@ -80,6 +85,18 @@ export function updateContact(
   const contact = getContact(id, userId, database)
   if (!contact) return null
 
+  // JavaScript key 到数据库字段的映射
+  const keyToColumn: Record<string, string> = {
+    name: 'name',
+    organization: 'organization',
+    role: 'role',
+    email: 'email',
+    phone: 'phone',
+    tags: 'tags',
+    lastContact: 'last_contact',
+    note: 'note',
+  }
+
   const fields: string[] = []
   const values: any[] = []
 
@@ -88,7 +105,8 @@ export function updateContact(
       fields.push('tags = ?')
       values.push(JSON.stringify(value))
     } else if (key !== 'id' && key !== 'userId' && key !== 'createdAt') {
-      fields.push(`${key} = ?`)
+      const column = keyToColumn[key] || key
+      fields.push(`${column} = ?`)
       values.push(value)
     }
   }
@@ -99,6 +117,8 @@ export function updateContact(
   database
     .prepare(`UPDATE assistant_contacts SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`)
     .run(...values)
+
+  logger.info('Updated contact', { id, userId, changes: Object.keys(updates) })
 
   return getContact(id, userId, database)
 }
@@ -142,10 +162,14 @@ export function searchContacts(userId: string, query: string, db?: Database.Data
  */
 export function deleteContact(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  return (
-    database.prepare(`DELETE FROM assistant_contacts WHERE id = ? AND user_id = ?`).run(id, userId)
-      .changes > 0
-  )
+  const result = database.prepare(`DELETE FROM assistant_contacts WHERE id = ? AND user_id = ?`).run(id, userId)
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted contact', { id, userId })
+  } else {
+    logger.warn('Contact not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 /**
@@ -156,6 +180,7 @@ export function recordInteraction(
   userId: string,
   db?: Database.Database,
 ): Contact | null {
+  logger.info('Recorded interaction', { id, userId })
   return updateContact(id, userId, { lastContact: new Date().toISOString() }, db)
 }
 

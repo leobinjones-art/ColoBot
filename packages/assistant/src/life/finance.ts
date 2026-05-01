@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Finance')
 
 export type FinanceType = 'income' | 'expense'
 
@@ -47,6 +50,8 @@ export function logFinance(
   `,
     )
     .run(id, userId, type, amount, category || null, note || null, now)
+
+  logger.info('Logged finance', { id, userId, type, amount, category })
 
   return { id, userId, type, amount, category, note, loggedAt: now }
 }

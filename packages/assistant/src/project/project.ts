@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Project')
 
 export type ProjectStatus = 'active' | 'paused' | 'completed' | 'archived'
 
@@ -34,10 +37,12 @@ export function createProject(
     .prepare(
       `
     INSERT INTO assistant_projects (id, user_id, name, description, status, progress, created_at)
-    VALUES (?, ?, ?, ?, 'active', 0, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `,
     )
-    .run(id, userId, name, description || null, now)
+    .run(id, userId, name, description || null, 'active', 0, now)
+
+  logger.info('Created project', { id, userId, name })
 
   return { id, userId, name, description, status: 'active', progress: 0, createdAt: now }
 }
@@ -93,6 +98,8 @@ export function updateProject(
     .prepare(`UPDATE assistant_projects SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`)
     .run(...values)
 
+  logger.info('Updated project', { id, userId, changes: Object.keys(updates) })
+
   return getProject(id, userId, database)
 }
 
@@ -123,10 +130,14 @@ export function listProjects(
  */
 export function deleteProject(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  return (
-    database.prepare(`DELETE FROM assistant_projects WHERE id = ? AND user_id = ?`).run(id, userId)
-      .changes > 0
-  )
+  const result = database.prepare(`DELETE FROM assistant_projects WHERE id = ? AND user_id = ?`).run(id, userId)
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted project', { id, userId })
+  } else {
+    logger.warn('Project not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 function rowToProject(row: any): Project {

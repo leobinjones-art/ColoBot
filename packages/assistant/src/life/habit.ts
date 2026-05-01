@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Habit')
 
 export type HabitFrequency = 'daily' | 'weekly' | 'monthly'
 
@@ -43,6 +46,8 @@ export function createHabit(
   `,
     )
     .run(id, userId, name, frequency, now)
+
+  logger.info('Created habit', { id, userId, name, frequency })
 
   return { id, userId, name, frequency, createdAt: now }
 }
@@ -97,6 +102,8 @@ export function checkHabit(habitId: string, note?: string, db?: Database.Databas
   `,
     )
     .run(id, habitId, now, note || null)
+
+  logger.info('Habit checked in', { habitId, note })
 
   return { id, habitId, loggedAt: now, note }
 }

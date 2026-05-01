@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Goal')
 
 export type GoalStatus = 'active' | 'achieved' | 'abandoned'
 
@@ -36,10 +39,12 @@ export function createGoal(
     .prepare(
       `
     INSERT INTO assistant_goals (id, user_id, title, description, target_date, progress, status, created_at)
-    VALUES (?, ?, ?, ?, ?, 0, 'active', ?)
+    VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
   `,
     )
-    .run(id, userId, title, description || null, targetDate || null, now)
+    .run(id, userId, title, description || null, targetDate || null, 0, now)
+
+  logger.info('Created goal', { id, userId, title, targetDate })
 
   return {
     id,
@@ -64,13 +69,18 @@ export function updateGoalProgress(
 ): Goal | null {
   const database = db || getDb()
   const goal = getGoal(id, userId, database)
-  if (!goal) return null
+  if (!goal) {
+    logger.warn('Goal not found for update', { id, userId })
+    return null
+  }
 
   const status = progress >= 100 ? 'achieved' : goal.status
 
   database
     .prepare(`UPDATE assistant_goals SET progress = ?, status = ? WHERE id = ? AND user_id = ?`)
     .run(progress, status, id, userId)
+
+  logger.info('Updated goal progress', { id, userId, progress, status })
 
   return getGoal(id, userId, database)
 }
@@ -109,10 +119,14 @@ export function listGoals(userId: string, status?: GoalStatus, db?: Database.Dat
  */
 export function deleteGoal(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  return (
-    database.prepare(`DELETE FROM assistant_goals WHERE id = ? AND user_id = ?`).run(id, userId)
-      .changes > 0
-  )
+  const result = database.prepare(`DELETE FROM assistant_goals WHERE id = ? AND user_id = ?`).run(id, userId)
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted goal', { id, userId })
+  } else {
+    logger.warn('Goal not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 function rowToGoal(row: any): Goal {

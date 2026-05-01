@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Note')
 
 export interface Note {
   id: string
@@ -50,6 +53,8 @@ export function createNote(input: CreateNoteInput, db?: Database.Database): Note
     now,
     now,
   )
+
+  logger.info('Created note', { id, userId: input.userId, title: input.title })
 
   return {
     id,

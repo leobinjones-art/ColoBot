@@ -4,6 +4,9 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { createLogger } from '../utils/logger.js'
+
+const logger = createLogger('Todo')
 
 export type TodoPriority = 'high' | 'medium' | 'low'
 export type TodoStatus = 'pending' | 'doing' | 'done' | 'cancelled'
@@ -73,6 +76,8 @@ export function createTodo(input: CreateTodoInput, db?: Database.Database): Todo
     now,
   )
 
+  logger.info('Created todo', { id, userId: input.userId, title: input.title })
+
   return {
     id,
     userId: input.userId,
@@ -110,7 +115,10 @@ export function updateTodo(
 ): Todo | null {
   const database = db || getDb()
   const todo = getTodo(id, userId, database)
-  if (!todo) return null
+  if (!todo) {
+    logger.warn('Todo not found for update', { id, userId })
+    return null
+  }
 
   const now = new Date().toISOString()
   const updates: string[] = []
@@ -156,6 +164,8 @@ export function updateTodo(
   `)
   stmt.run(...values)
 
+  logger.info('Updated todo', { id, userId, changes: Object.keys(input) })
+
   return getTodo(id, userId, database)
 }
 
@@ -166,7 +176,13 @@ export function deleteTodo(id: string, userId: string, db?: Database.Database): 
   const database = db || getDb()
   const stmt = database.prepare(`DELETE FROM assistant_todos WHERE id = ? AND user_id = ?`)
   const result = stmt.run(id, userId)
-  return result.changes > 0
+  const deleted = result.changes > 0
+  if (deleted) {
+    logger.info('Deleted todo', { id, userId })
+  } else {
+    logger.warn('Todo not found for deletion', { id, userId })
+  }
+  return deleted
 }
 
 /**
