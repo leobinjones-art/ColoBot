@@ -246,7 +246,8 @@ print(arr.sum())
 | **Password Manager**   | AES encryption, password generation                     |
 | **Time Tracking**      | Start/stop, category statistics                         |
 | **Web Bookmarks**      | URL, summary, tags                                      |
-| **Intent Recognition** | Natural language understanding                          |
+| **Intent Recognition** | Natural language understanding (Chinese & English)      |
+| **Logging System**     | Unified logging with level control for all modules      |
 
 ### 🔧 Built-in Tools
 
@@ -306,7 +307,14 @@ await runtime.installPackage('matplotlib')
 ### Using Assistant Features
 
 ```typescript
-import { createTodo, createReminderFromText, logMood, parseIntent } from '@colobot/assistant'
+import {
+  createTodo,
+  createReminderFromText,
+  logMood,
+  parseIntent,
+  setLogLevel,
+  createLogger
+} from '@colobot/assistant'
 
 // Create todo
 const todo = createTodo({
@@ -322,9 +330,15 @@ const reminder = createReminderFromText('user1', 'Remind me to meet at 3pm tomor
 // Log mood
 logMood('user1', 'happy', 8, 'Great day today')
 
-// Intent recognition
+// Intent recognition (supports Chinese and English)
 const intent = parseIntent('Add todo Complete report')
 // { type: 'todo.add', confidence: 0.9 }
+
+// Logging system
+setLogLevel('debug')  // debug/info/warn/error
+const logger = createLogger('MyModule')
+logger.info('Operation completed', { userId: 'user1', action: 'create' })
+// [2026-05-01T08:54:09.780Z] [INFO] [MyModule] Operation completed {"userId":"user1","action":"create"}
 ```
 
 ---
@@ -630,11 +644,11 @@ export function registerMyTool(): void {
 
 | Metric            | Value                    |
 | ----------------- | ------------------------ |
-| Version           | 0.3.0                    |
-| Total Code        | ~28,000 lines TypeScript |
-| Source Files      | 145                      |
+| Version           | 0.3.1                    |
+| Total Code        | ~28,500 lines TypeScript |
+| Source Files      | 146                      |
 | Packages          | 7                        |
-| Assistant Modules | 18                       |
+| Assistant Modules | 18 + Logging System      |
 | Test Cases        | 522                      |
 | Test Coverage     | 56%+                     |
 

@@ -246,7 +246,8 @@ print(arr.sum())
 | **密码管理** | AES 加密、密码生成           |
 | **时间追踪** | 开始/结束、分类统计          |
 | **网页收藏** | URL、摘要、标签              |
-| **意图识别** | 自然语言理解用户意图         |
+| **意图识别** | 自然语言理解（中英文支持）  |
+| **日志系统** | 统一日志，级别控制，全覆盖  |
 
 ### 🔧 内置工具
 
@@ -306,7 +307,14 @@ await runtime.installPackage('matplotlib')
 ### 使用助理功能
 
 ```typescript
-import { createTodo, createReminderFromText, logMood, parseIntent } from '@colobot/assistant'
+import {
+  createTodo,
+  createReminderFromText,
+  logMood,
+  parseIntent,
+  setLogLevel,
+  createLogger
+} from '@colobot/assistant'
 
 // 创建待办
 const todo = createTodo({
@@ -322,9 +330,15 @@ const reminder = createReminderFromText('user1', '提醒我明天下午3点开�
 // 记录心情
 logMood('user1', 'happy', 8, '今天很顺利')
 
-// 意图识别
+// 意图识别（支持中英文）
 const intent = parseIntent('添加待办 完成报告')
 // { type: 'todo.add', confidence: 0.9 }
+
+// 日志系统
+setLogLevel('debug')  // debug/info/warn/error
+const logger = createLogger('MyModule')
+logger.info('操作完成', { userId: 'user1', action: 'create' })
+// [2026-05-01T08:54:09.780Z] [INFO] [MyModule] 操作完成 {"userId":"user1","action":"create"}
 ```
 
 ---
@@ -630,13 +644,13 @@ export function registerMyTool(): void {
 
 | 指标       | 数值                  |
 | ---------- | --------------------- |
-| 版本       | 0.3.0                 |
-| 总代码量   | ~28,000 行 TypeScript |
-| 源文件数   | 145 个                |
+| 版本       | 0.3.1                 |
+| 总代码量   | ~28,500 行 TypeScript |
+| 源文件数   | 146 个                |
 | 包数量     | 7 个                  |
-| 助理模块   | 18 个                 |
-| 测试用例   | 382 个                |
-| 测试覆盖率 | 91%+                  |
+| 助理模块   | 18 个 + 日志系统      |
+| 测试用例   | 522 个                |
+| 测试覆盖率 | 56%+                  |
 
 ---
 
