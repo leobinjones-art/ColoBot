@@ -108,6 +108,9 @@ export {
   RedisSignalReceiver,
 } from './redis-signal.js'
 
+// 日志工具
+export { createLogger, setLogLevel, getLogLevel, type Logger, type LogLevel } from './logger.js'
+
 // ═══════════════════════════════════════════════════════════════
 // 安全守护母 Agent 主类
 // ═══════════════════════════════════════════════════════════════
@@ -122,6 +125,9 @@ import {
   SessionTimeoutConfig,
   defaultTimeoutMessages,
 } from './timeout-monitor.js'
+import { createLogger } from './logger.js'
+
+const logger = createLogger('Sentinel')
 
 export interface SentinelConfig {
   ruleEngine?: RuleEngine
@@ -183,7 +189,7 @@ export class Sentinel {
       threshold: config?.selfCheckThreshold ?? 5000,
     })
     this.selfHeartbeat.setOnStatusChange((status) => {
-      console.log(`[Sentinel] Self health status: ${status}`)
+      logger.info('Self health status changed', { status })
     })
   }
 
@@ -191,6 +197,7 @@ export class Sentinel {
    * 启动守护
    */
   start(): void {
+    logger.info('Sentinel started')
     this.heartbeatMonitor.start()
     this.timeoutMonitor.start()
     this.selfHeartbeat.start()
@@ -200,6 +207,7 @@ export class Sentinel {
    * 停止守护
    */
   stop(): void {
+    logger.info('Sentinel stopped')
     this.heartbeatMonitor.stop()
     this.timeoutMonitor.stop()
     this.selfHeartbeat.stop()
@@ -246,6 +254,7 @@ export class Sentinel {
     const result = this.scanInput(message, sessionId)
 
     if (!result.pass) {
+      logger.warn('Input blocked', { sessionId, reason: result.reason, message: message.substring(0, 50) })
       const fallbackType = this.mapReasonToFallbackType(result.reason)
       const response = this.fallbacks.get(fallbackType)
       return { pass: false, response }
@@ -269,6 +278,7 @@ export class Sentinel {
    * 接收心跳
    */
   receiveHeartbeat(heartbeat: Heartbeat): void {
+    logger.debug('Heartbeat received', { agentId: heartbeat.agentId, status: heartbeat.status })
     this.heartbeatMonitor.receiveHeartbeat(heartbeat)
   }
 
@@ -301,6 +311,7 @@ export class Sentinel {
    * 触发接管
    */
   triggerTakeover(sessionId: string, reason: TakeoverReason): string {
+    logger.warn('Takeover triggered', { sessionId, reason })
     return this.takeoverManager.trigger(sessionId, reason)
   }
 
@@ -317,6 +328,7 @@ export class Sentinel {
    * 开始监控会话超时
    */
   startSessionTimeout(sessionId: string, agentId: string): void {
+    logger.info('Session timeout monitoring started', { sessionId, agentId })
     this.timeoutMonitor.startSession(sessionId, agentId)
   }
 
@@ -354,7 +366,7 @@ export class Sentinel {
    * 处理 Agent 失联
    */
   private handleAgentDead(agentId: string): void {
-    console.log(`[Sentinel] Agent ${agentId} is dead, triggering takeover`)
+    logger.error('Agent is dead, triggering takeover', { agentId })
 
     // 获取该 Agent 的所有会话
     const sessions = this.stateStore.getByAgent(agentId)
