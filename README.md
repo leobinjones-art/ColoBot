@@ -24,6 +24,36 @@ You can quickly build an intelligent assistant that manages todos, writes papers
 
 ---
 
+## Philosophy: Not Imitating Humans, But Sharing Their Role
+
+Most AI projects pursue "making AI more human-like" at the surface level: more human-like tone, expressions, and chitchat ability. ColoBot goes deeper:
+
+### 1. Perceives Your State, Doesn't Wait for You to Describe It
+
+A human friend doesn't need you to tell them "I've been feeling down lately." They see you sleeping less, going out less, talking less — and they just know. ColoBot's real-time evaluation does exactly this: AI doesn't need you to speak up; it can see for itself.
+
+### 2. Reaches Out When You're Slipping, Not When You Ask for Help
+
+A human friend won't wait for you to say "I need help" before caring. Seeing your state, they'll ask "Are you okay?" The passive suggestions in v0.4 and confirmation-based sending in v0.5 are essentially training AI to "care proactively." This isn't a cold function trigger — it's simulating the most precious part of human friendship: _I saw it before you had to say it._
+
+### 3. Always Respects Your Boundaries
+
+A real human friend, when caring about you, doesn't make decisions for you. They say "Want me to help you contact someone?" — not directly making the call. v0.4 (suggest only), v0.5 (confirm before send), and v0.6 (strict conditional auto-send) all answer the same question: _How far can AI go in acting for the user?_ The answer is always: _A bit more than the previous level, but never over the line._
+
+### 4. Takes Responsibility for Its Actions
+
+A mature person leaves traces, accepts scrutiny. Sentinel's audit logs, pre-send review, and automatic shutdown on anomalies — these add accountability to AI's "personality." It's not an unconstrained superpower; it's a partner with constraints, traceability, and accountability.
+
+---
+
+**In one sentence**: ColoBot isn't making AI more like an eloquent machine, but more like a friend who cares about you — and always respects you.
+
+This "human-likeness" isn't achieved through larger models or fancier prompts. It's achieved through **architecture** — real-time evaluation, privacy boundaries, security parent agent, progressive autonomy — growing from the foundation up.
+
+_This is perhaps the deepest difference between ColoBot and all other AI frameworks._
+
+---
+
 ## Why ColoBot
 
 Most AI Agent frameworks focus on **how to call tools**, but overlook **how to call them safely** and **how to reuse domain knowledge**.
