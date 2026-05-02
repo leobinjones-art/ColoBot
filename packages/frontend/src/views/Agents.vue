@@ -45,7 +45,7 @@ const { t } = useI18n()
 const agentStore = useAgentStore()
 const agents = computed(() => agentStore.agents)
 
-const showCreateModal = false
+const showCreateModal = ref(false)
 
 function toggleAgent(agent: any) {
   agentStore.updateAgent(agent.id, { enabled: !agent.enabled })
