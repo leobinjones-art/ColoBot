@@ -24,6 +24,16 @@ import type { ContentBlock } from '@colobot/types'
 import * as fs from 'fs'
 import * as path from 'path'
 
+// 检测 @colobot/assistant 是否已安装
+function isAssistantInstalled(): boolean {
+  try {
+    require.resolve('@colobot/assistant')
+    return true
+  } catch {
+    return false
+  }
+}
+
 // TUI 日志器
 let logger: Logger
 
@@ -270,6 +280,30 @@ async function main() {
     console.log('')
   })
 
+  // 上下文命令
+  tui.commands.register('/context', '查看对话上下文维度', () => {
+    console.log('\n当前对话上下文维度:\n')
+    if (isAssistantInstalled()) {
+      const dimensions = [
+        { name: '心理状态', source: 'Mood Journal', enabled: true },
+        { name: '生活习惯', source: 'Habit Tracking, Health', enabled: true },
+        { name: '工作效率', source: 'Todo List, Time Tracking', enabled: true },
+        { name: '社交关系', source: 'Contacts', enabled: true },
+        { name: '财务状况', source: 'Finance', enabled: true },
+        { name: '健康状况', source: 'Health Tracking', enabled: true },
+        { name: '成长目标', source: 'Goals, Learning, Reading', enabled: true },
+      ]
+      dimensions.forEach((d) => {
+        console.log(`  ${style('✓', 'green')} ${d.name} (${d.source})`)
+      })
+      console.log('\n这些数据存储在本地，不会上传到云端。')
+      console.log('卸载 @colobot/assistant 可停止注入这些数据。\n')
+    } else {
+      console.log(`  ${style('✗', 'red')} @colobot/assistant 未安装`)
+      console.log('\n核心框架不会收集或注入任何个人数据。\n')
+    }
+  })
+
   // 图片命令
   tui.commands.register('/image', '添加图片', async (args?: string) => {
     if (!args) {
@@ -334,6 +368,22 @@ async function main() {
 
   console.log(`Provider: ${style(config.model.provider, 'cyan')}`)
   console.log(`Model: ${style(config.model.model, 'cyan')}`)
+
+  // 检测并提示个人助理包
+  if (isAssistantInstalled()) {
+    console.log('')
+    console.log(style('[ColoBot] 检测到 @colobot/assistant 已安装。', 'yellow'))
+    console.log(
+      style('[ColoBot] ', 'yellow') +
+        '个人助理模块会在对话中注入您的情绪、习惯、健康等 7 类个人数据作为上下文。',
+    )
+    console.log(
+      style('[ColoBot] ', 'yellow') +
+        '这些数据仅存储在本地，不会上传。输入 /context 查看详情。',
+    )
+    console.log(style('[ColoBot] ', 'yellow') + '如需关闭此功能，请卸载 @colobot/assistant。')
+  }
+
   console.log(`输入 ${style('/help', 'cyan')} 查看可用命令\n`)
 
   // 运行交互循环

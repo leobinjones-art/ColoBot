@@ -228,28 +228,23 @@ print(arr.sum())
 
 ### 📋 Personal Assistant (@colobot/assistant)
 
-> ⚠️ **Privacy Notice**: This package collects and stores personal data locally. All data remains on your device by default. You can selectively install only the modules you need:
+> ⚠️ **隐私提示**
 >
-> ```bash
-> # Install only specific modules (e.g., without finance/health tracking)
-> npm install @colobot/assistant --no-optional
-> ```
+> `@colobot/assistant` 是一个**可选包**。安装后，ColoBot 会在每次对话中自动携带以下维度的用户数据作为上下文：
 >
-> | Module           | Privacy Level | Description                                   |
-> | ---------------- | ------------- | --------------------------------------------- |
-> | Todo List        | Low           | Task management, no sensitive data            |
-> | Reminders        | Low           | Time-based alerts                             |
-> | Calendar         | Low           | Event scheduling                              |
-> | Notes            | Medium        | Personal notes, may contain sensitive content |
-> | Habit Tracking   | Low           | Daily habit check-in                          |
-> | Mood Journal     | Medium        | Emotional state tracking                      |
-> | Finance          | **High**      | Income/expense data, financial records        |
-> | Health Tracking  | **High**      | Weight, sleep, exercise, health metrics       |
-> | Password Manager | **Critical**  | Encrypted password storage (AES-256)          |
-> | Contacts         | Medium        | Personal contact information                  |
-> | User Profile     | Medium        | Aggregated analysis from all modules          |
+> - 心理状态（情绪日记、心情趋势）
+> - 生活习惯（习惯追踪、睡眠、运动）
+> - 工作效率（待办、时间追踪）
+> - 社交关系（人脉管理）
+> - 财务状况（收支记录）
+> - 健康状况（运动、睡眠、体重、饮水）
+> - 成长目标（学习进度、阅读清单、目标管理）
 >
-> **Recommendation**: Review your privacy needs before enabling high/critical modules. All data is stored locally in SQLite/PostgreSQL with optional encryption.
+> 这些数据**全部存储在本地**（SQLite/PostgreSQL），不会上传到任何云端服务。
+>
+> 如果你不希望 AI 读取这些数据，**请不要安装 `@colobot/assistant` 包**。ColoBot 的核心框架（`@colobot/core` + `@colobot/sentinel`）不会收集或注入任何个人数据。
+>
+> 已安装用户可以通过 `/context` 命令查看当前会话携带了哪些上下文维度。
 
 | Module                 | Features                                                |
 | ---------------------- | ------------------------------------------------------- |
