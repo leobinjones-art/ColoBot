@@ -43,6 +43,28 @@ const mockGoals = [
   { id: '1', title: '学习 TypeScript', description: '掌握 TypeScript 高级特性', targetDate: '2026-06-01', progress: 60, status: 'active' },
 ]
 
+// Auth API
+const ADMIN_USER = 'admin'
+const ADMIN_PASS = 'colobot2024'
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    res.json({ data: { token: 'mock-token-' + Date.now() } })
+  } else {
+    res.status(401).json({ error: '用户名或密码错误' })
+  }
+})
+
+app.get('/api/auth/verify', (req, res) => {
+  const token = req.headers.authorization
+  if (token) {
+    res.json({ data: { valid: true } })
+  } else {
+    res.status(401).json({ error: '未授权' })
+  }
+})
+
 // Agent API
 app.get('/api/agents', (req, res) => res.json({ data: mockAgents }))
 app.patch('/api/agents/:id', (req, res) => res.json({ success: true }))
