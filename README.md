@@ -228,6 +228,29 @@ print(arr.sum())
 
 ### 📋 Personal Assistant (@colobot/assistant)
 
+> ⚠️ **Privacy Notice**: This package collects and stores personal data locally. All data remains on your device by default. You can selectively install only the modules you need:
+>
+> ```bash
+> # Install only specific modules (e.g., without finance/health tracking)
+> npm install @colobot/assistant --no-optional
+> ```
+>
+> | Module           | Privacy Level | Description                                   |
+> | ---------------- | ------------- | --------------------------------------------- |
+> | Todo List        | Low           | Task management, no sensitive data            |
+> | Reminders        | Low           | Time-based alerts                             |
+> | Calendar         | Low           | Event scheduling                              |
+> | Notes            | Medium        | Personal notes, may contain sensitive content |
+> | Habit Tracking   | Low           | Daily habit check-in                          |
+> | Mood Journal     | Medium        | Emotional state tracking                      |
+> | Finance          | **High**      | Income/expense data, financial records        |
+> | Health Tracking  | **High**      | Weight, sleep, exercise, health metrics       |
+> | Password Manager | **Critical**  | Encrypted password storage (AES-256)          |
+> | Contacts         | Medium        | Personal contact information                  |
+> | User Profile     | Medium        | Aggregated analysis from all modules          |
+>
+> **Recommendation**: Review your privacy needs before enabling high/critical modules. All data is stored locally in SQLite/PostgreSQL with optional encryption.
+
 | Module                 | Features                                                |
 | ---------------------- | ------------------------------------------------------- |
 | **Todo List**          | Create, priority, due dates, tags                       |
