@@ -97,6 +97,37 @@
         </div>
       </div>
     </div>
+
+    <!-- 模型管理弹窗 -->
+    <div v-if="managingProvider" class="modal-overlay" @click.self="managingProvider = null">
+      <div class="modal-content model-manager">
+        <h2>管理模型 - {{ managingProvider.name }}</h2>
+        <div class="model-list-manager">
+          <div v-for="model in managingProvider.models" :key="model.id" class="model-row">
+            <div class="model-info">
+              <span class="model-id">{{ model.id }}</span>
+              <span class="model-name">{{ model.name }}</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="model.enabled" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div v-if="managingProvider.models.length === 0" class="empty-models">
+            暂无模型，点击"发现模型"自动检测
+          </div>
+        </div>
+        <div class="add-model-form">
+          <input v-model="newModelId" placeholder="模型 ID，如 gpt-4o" />
+          <input v-model="newModelName" placeholder="模型名称，如 GPT-4o" />
+          <button class="btn-secondary" @click="addModel">添加模型</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" @click="managingProvider = null">关闭</button>
+          <button class="btn-primary" @click="saveModelConfig">保存配置</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -128,6 +159,9 @@ const providers = ref<Provider[]>([])
 const showAddProvider = ref(false)
 const defaultModel = ref('')
 const testingId = ref<string | null>(null)
+const managingProvider = ref<Provider | null>(null)
+const newModelId = ref('')
+const newModelName = ref('')
 
 const newProvider = ref({
   type: 'openai',
@@ -178,8 +212,27 @@ async function testProvider(provider: Provider) {
 }
 
 function manageModels(provider: Provider) {
-  // TODO: 打开模型管理弹窗
-  console.log('Manage models for', provider.name)
+  managingProvider.value = { ...provider, models: [...provider.models] }
+}
+
+function addModel() {
+  if (!managingProvider.value || !newModelId.value.trim()) return
+  managingProvider.value.models.push({
+    id: newModelId.value.trim(),
+    name: newModelName.value.trim() || newModelId.value.trim(),
+    enabled: true,
+  })
+  newModelId.value = ''
+  newModelName.value = ''
+}
+
+async function saveModelConfig() {
+  if (!managingProvider.value) return
+  const idx = providers.value.findIndex(p => p.id === managingProvider.value!.id)
+  if (idx !== -1) {
+    providers.value[idx] = { ...managingProvider.value }
+  }
+  managingProvider.value = null
 }
 
 async function discoverModels() {
@@ -330,5 +383,109 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 20px;
+}
+
+.model-manager {
+  max-width: 600px;
+}
+
+.model-list-manager {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  border: 1px solid var(--cb-border);
+  border-radius: var(--cb-radius-md);
+}
+
+.model-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--cb-border-light);
+}
+
+.model-row:last-child {
+  border-bottom: none;
+}
+
+.model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.model-id {
+  font-family: monospace;
+  font-size: var(--cb-text-sm);
+  color: var(--cb-text-primary);
+}
+
+.model-name {
+  font-size: var(--cb-text-xs);
+  color: var(--cb-text-tertiary);
+}
+
+.empty-models {
+  padding: 24px;
+  text-align: center;
+  color: var(--cb-text-tertiary);
+}
+
+.add-model-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.add-model-form input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--cb-border);
+  border-radius: var(--cb-radius-md);
+  background: var(--cb-bg);
+  color: var(--cb-text-primary);
+  font-size: var(--cb-text-sm);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--cb-border);
+  border-radius: var(--cb-radius-full);
+  transition: background 0.15s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--cb-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
 }
 </style>

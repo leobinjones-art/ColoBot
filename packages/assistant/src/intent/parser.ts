@@ -114,10 +114,7 @@ const INTENT_PATTERNS: Array<{
   },
   {
     type: 'note.search',
-    patterns: [
-      /搜索.*笔记|查找.*笔记|笔记.*搜索/i,
-      /search\s*notes|find\s*notes|lookup\s*notes/i,
-    ],
+    patterns: [/搜索.*笔记|查找.*笔记|笔记.*搜索/i, /search\s*notes|find\s*notes|lookup\s*notes/i],
     slots: ['query'],
   },
   // 日程

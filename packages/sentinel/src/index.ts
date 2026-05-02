@@ -254,7 +254,11 @@ export class Sentinel {
     const result = this.scanInput(message, sessionId)
 
     if (!result.pass) {
-      logger.warn('Input blocked', { sessionId, reason: result.reason, message: message.substring(0, 50) })
+      logger.warn('Input blocked', {
+        sessionId,
+        reason: result.reason,
+        message: message.substring(0, 50),
+      })
       const fallbackType = this.mapReasonToFallbackType(result.reason)
       const response = this.fallbacks.get(fallbackType)
       return { pass: false, response }

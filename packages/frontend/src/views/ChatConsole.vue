@@ -15,7 +15,7 @@
         <select v-model="selectedAgentId">
           <option value="">{{ t('chat.selectAgent') }}</option>
           <option v-for="agent in agents" :key="agent.id" :value="agent.id">
-            {{ agent.name }}
+            {{ agent.icon || '🤖' }} {{ agent.name }}
           </option>
         </select>
       </div>
@@ -54,10 +54,32 @@
             <span v-if="msg.role === 'user'">👤</span>
             <span v-else>🤖</span>
           </div>
-          <div class="msg-bubble">
-            <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
-            <template v-else>{{ msg.content }}</template>
-            <span v-if="msg.status === 'generating'" class="typing-indicator">●●●</span>
+          <div class="msg-content">
+            <!-- 流式进度 -->
+            <StreamProgress
+              v-if="msg.status === 'generating' && msg.metadata?.currentPhase"
+              :phase="msg.metadata.currentPhase as any"
+              :current-tool="currentToolName"
+            />
+
+            <!-- 工具调用 -->
+            <div v-if="msg.metadata?.toolCalls?.length" class="tool-calls">
+              <ToolCallCard
+                v-for="(tool, idx) in msg.metadata.toolCalls"
+                :key="idx"
+                :tool-name="tool.name"
+                :args="tool.arguments"
+                :result="tool.result"
+                :status="tool.status"
+              />
+            </div>
+
+            <!-- 消息内容 -->
+            <div class="msg-bubble">
+              <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+              <template v-else>{{ msg.content }}</template>
+              <span v-if="msg.status === 'generating' && !msg.metadata?.toolCalls?.length" class="typing-cursor"></span>
+            </div>
           </div>
         </div>
 
@@ -104,12 +126,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAgentStore } from '@/stores/useAgentStore'
 import { useMarkdownRenderer } from '@/composables/useMarkdownRenderer'
-import { conversationApi } from '@/api'
-import type { Conversation, Message } from '@/types'
+import { conversationApi, userProfileApi } from '@/api'
+import StreamProgress from '@/components/chat/StreamProgress.vue'
+import ToolCallCard from '@/components/chat/ToolCallCard.vue'
+import type { Conversation, Message, ToolCallMeta } from '@/types'
 
 const { t } = useI18n()
 const agentStore = useAgentStore()
@@ -124,8 +148,11 @@ const inputText = ref('')
 const isGenerating = ref(false)
 const convPanelOpen = ref(false)
 const messageListRef = ref<HTMLElement | null>(null)
+const currentToolName = ref('')
+const userProfileContext = ref<string>('')
 
 let abortController: AbortController | null = null
+let profileRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 const canSend = computed(() => {
   return inputText.value.trim() && selectedAgentId.value
@@ -160,6 +187,9 @@ async function loadMessages(conversationId: string) {
 async function sendMessage() {
   if (!canSend.value || isGenerating.value) return
 
+  // 发送前刷新用户画像
+  await loadUserProfileContext()
+
   const content = inputText.value.trim()
   inputText.value = ''
 
@@ -181,6 +211,7 @@ async function sendMessage() {
     content: '',
     contentParts: [],
     status: 'generating',
+    metadata: { currentPhase: 'thinking', toolCalls: [] },
   }
   messages.value.push(assistantMsg)
 
@@ -200,6 +231,7 @@ async function sendMessage() {
         agentId: selectedAgentId.value,
         conversationId: currentConversationId.value,
         message: content,
+        userContext: userProfileContext.value,
       }),
       signal: abortController.signal,
     })
@@ -220,23 +252,19 @@ async function sendMessage() {
         if (line.startsWith('data: ')) {
           try {
             const data = JSON.parse(line.slice(6))
-            if (data.type === 'content_delta' || data.delta) {
-              assistantMsg.content += data.content || data.delta || ''
-            } else if (data.type === 'done') {
-              assistantMsg.status = 'completed'
-            }
+            handleStreamEvent(data, assistantMsg)
           } catch {
             // ignore parse errors
           }
         }
       }
 
-      // 滚动到底部
       await nextTick()
       scrollToBottom()
     }
 
     assistantMsg.status = 'completed'
+    assistantMsg.metadata!.currentPhase = 'completed'
   } catch (e: any) {
     if (e.name !== 'AbortError') {
       assistantMsg.status = 'failed'
@@ -244,6 +272,66 @@ async function sendMessage() {
   } finally {
     isGenerating.value = false
     abortController = null
+    currentToolName.value = ''
+  }
+}
+
+function handleStreamEvent(data: any, msg: Message) {
+  switch (data.type) {
+    case 'content_delta':
+      msg.content += data.content || data.delta || ''
+      msg.metadata!.currentPhase = 'streaming'
+      break
+    case 'phase':
+      msg.metadata!.currentPhase = data.phase
+      break
+    case 'thinking_delta':
+      msg.metadata!.currentPhase = 'thinking'
+      break
+    case 'tool_call_started':
+      msg.metadata!.currentPhase = 'executing_tool'
+      currentToolName.value = data.tool_name || data.name || ''
+      const toolCall: ToolCallMeta = {
+        name: data.tool_name || data.name || '',
+        arguments: data.arguments || '',
+        status: 'running',
+      }
+      msg.metadata!.toolCalls!.push(toolCall)
+      break
+    case 'tool_call_completed':
+      const calls = msg.metadata!.toolCalls!
+      const lastCall = calls[calls.length - 1]
+      if (lastCall) {
+        lastCall.status = 'completed'
+        lastCall.result = data.result || ''
+      }
+      currentToolName.value = ''
+      break
+    case 'tool_call_error':
+      const errorCalls = msg.metadata!.toolCalls!
+      const lastErrorCall = errorCalls[errorCalls.length - 1]
+      if (lastErrorCall) {
+        lastErrorCall.status = 'error'
+        lastErrorCall.result = data.error || '执行失败'
+      }
+      currentToolName.value = ''
+      break
+    case 'awaiting_approval':
+      const approvalCalls = msg.metadata!.toolCalls!
+      const lastApprovalCall = approvalCalls[approvalCalls.length - 1]
+      if (lastApprovalCall) {
+        lastApprovalCall.status = 'awaiting_approval'
+      }
+      msg.status = 'awaiting_approval'
+      break
+    case 'done':
+      msg.status = 'completed'
+      msg.metadata!.currentPhase = 'completed'
+      break
+    case 'error':
+      msg.status = 'failed'
+      msg.metadata!.currentPhase = 'failed'
+      break
   }
 }
 
@@ -264,7 +352,25 @@ watch(messages, () => {
 
 onMounted(() => {
   agentStore.fetchAgents()
+  loadUserProfileContext()
+  // 每5分钟刷新用户画像
+  profileRefreshTimer = setInterval(loadUserProfileContext, 5 * 60 * 1000)
 })
+
+onUnmounted(() => {
+  if (profileRefreshTimer) {
+    clearInterval(profileRefreshTimer)
+  }
+})
+
+async function loadUserProfileContext() {
+  try {
+    const res: any = await userProfileApi.get()
+    userProfileContext.value = res.aiContext || ''
+  } catch (e) {
+    console.error('Failed to load user profile', e)
+  }
+}
 </script>
 
 <style scoped>
@@ -390,8 +496,14 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.msg-bubble {
+.msg-content {
   max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msg-bubble {
   padding: 12px 16px;
   border-radius: var(--cb-radius-lg);
   line-height: 1.6;
@@ -408,15 +520,40 @@ onMounted(() => {
   color: var(--cb-user-bubble-color);
 }
 
-.typing-indicator {
-  display: inline-block;
-  animation: pulse 1s infinite;
-  margin-left: 4px;
+.tool-calls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--cb-primary);
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.message-wrapper {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-input-area {

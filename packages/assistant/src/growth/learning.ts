@@ -73,7 +73,13 @@ export function updateProgress(
     )
     .run(newCompleted, status, id, userId)
 
-  logger.info('Updated course progress', { id, userId, hours, totalCompleted: newCompleted, status })
+  logger.info('Updated course progress', {
+    id,
+    userId,
+    hours,
+    totalCompleted: newCompleted,
+    status,
+  })
 
   return getCourse(id, userId, database)
 }
@@ -116,7 +122,9 @@ export function listCourses(
  */
 export function deleteCourse(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  const result = database.prepare(`DELETE FROM assistant_courses WHERE id = ? AND user_id = ?`).run(id, userId)
+  const result = database
+    .prepare(`DELETE FROM assistant_courses WHERE id = ? AND user_id = ?`)
+    .run(id, userId)
   const deleted = result.changes > 0
   if (deleted) {
     logger.info('Deleted course', { id, userId })

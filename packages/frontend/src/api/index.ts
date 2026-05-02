@@ -1,8 +1,11 @@
 import axios from 'axios'
 import { handleAuthFailure, updateTokenFromHeader } from '@/utils/auth'
 
+const isDev = import.meta.env.DEV
+const apiBase = import.meta.env.VITE_API_BASE || ''
+
 export const http = axios.create({
-  baseURL: '/api/v1',
+  baseURL: isDev ? '/api/v1' : `${apiBase}/api/v1`,
   timeout: 30000,
 })
 
@@ -16,7 +19,7 @@ http.interceptors.request.use((config) => {
 
 http.interceptors.response.use(
   (res) => {
-    updateTokenFromHeader(res.headers)
+    updateTokenFromHeader(res.headers as Record<string, string>)
     const data = res.data
     if (data && typeof data === 'object' && 'code' in data) {
       if (data.code === 200) return data
@@ -199,4 +202,13 @@ export const configApi = {
   get: () => http.get('/config'),
   update: (data: any) => http.put('/config', data),
   models: () => http.get('/config/models'),
+  status: () => http.get('/config/status'),
+  clearCache: () => http.post('/config/clear-cache'),
+  reset: () => http.post('/config/reset'),
+  export: () => http.get('/config/export'),
+}
+
+// ==================== User Profile ====================
+export const userProfileApi = {
+  get: () => http.get('/user/profile'),
 }

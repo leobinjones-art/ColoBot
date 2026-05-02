@@ -2,8 +2,7 @@
  * 统一聊天 Composable
  */
 import { ref, computed } from 'vue'
-import { useStream, type SSEEventType } from './chat/useStream'
-import { useMarkdownRenderer } from './useMarkdownRenderer'
+import { useMarkdownRenderer } from '../useMarkdownRenderer'
 import type { Message, StreamPhase, QueuedMessage } from '@/types'
 
 export interface UseChatOptions {

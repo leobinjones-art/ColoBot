@@ -246,8 +246,8 @@ print(arr.sum())
 | **密码管理** | AES 加密、密码生成           |
 | **时间追踪** | 开始/结束、分类统计          |
 | **网页收藏** | URL、摘要、标签              |
-| **意图识别** | 自然语言理解（中英文支持）  |
-| **日志系统** | 统一日志，级别控制，全覆盖  |
+| **意图识别** | 自然语言理解（中英文支持）   |
+| **日志系统** | 统一日志，级别控制，全覆盖   |
 
 ### 🔧 内置工具
 
@@ -313,7 +313,7 @@ import {
   logMood,
   parseIntent,
   setLogLevel,
-  createLogger
+  createLogger,
 } from '@colobot/assistant'
 
 // 创建待办
@@ -335,7 +335,7 @@ const intent = parseIntent('添加待办 完成报告')
 // { type: 'todo.add', confidence: 0.9 }
 
 // 日志系统
-setLogLevel('debug')  // debug/info/warn/error
+setLogLevel('debug') // debug/info/warn/error
 const logger = createLogger('MyModule')
 logger.info('操作完成', { userId: 'user1', action: 'create' })
 // [2026-05-01T08:54:09.780Z] [INFO] [MyModule] 操作完成 {"userId":"user1","action":"create"}

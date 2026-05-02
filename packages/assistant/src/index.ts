@@ -218,4 +218,24 @@ export {
 } from './intent/index.js'
 
 // 日志工具
-export { createLogger, setLogLevel, getLogLevel, type Logger, type LogLevel } from './utils/logger.js'
+export {
+  createLogger,
+  setLogLevel,
+  getLogLevel,
+  type Logger,
+  type LogLevel,
+} from './utils/logger.js'
+
+// 用户画像
+export {
+  generateUserProfile,
+  type UserProfile,
+  type PsychologicalProfile,
+  type LifestyleProfile,
+  type ProductivityProfile,
+  type SocialProfile,
+  type FinancialProfile,
+  type HealthProfile,
+  type GrowthProfile,
+  type UserProfileInput,
+} from './profile/index.js'

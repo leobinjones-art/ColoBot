@@ -79,7 +79,7 @@ export interface MessageMetadata {
 export interface ToolCallMeta {
   name: string
   arguments?: string
-  status: 'running' | 'completed' | 'awaiting_approval'
+  status: 'running' | 'completed' | 'error' | 'awaiting_approval'
   result?: string
   success?: boolean
 }

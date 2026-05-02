@@ -241,7 +241,11 @@ export function checkConflict(
 ): Event[] {
   const database = db || getDb()
   const startAtObj = typeof startAt === 'string' ? new Date(startAt) : startAt
-  const endAtObj = endAt ? (typeof endAt === 'string' ? new Date(endAt) : endAt) : new Date(startAtObj.getTime() + 3600000)
+  const endAtObj = endAt
+    ? typeof endAt === 'string'
+      ? new Date(endAt)
+      : endAt
+    : new Date(startAtObj.getTime() + 3600000)
 
   const stmt = database.prepare(`
     SELECT * FROM assistant_events

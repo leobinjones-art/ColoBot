@@ -25,6 +25,8 @@ export default {
     search: '搜索',
     confirm: '确认',
     close: '关闭',
+    all: '全部',
+    confirmDelete: '确认删除',
   },
   chat: {
     newChat: '新对话',
@@ -64,13 +66,18 @@ export default {
   todo: {
     title: '待办清单',
     newTodo: '新建待办',
-    priority: { high: '高', medium: '中', low: '低' },
+    editTodo: '编辑待办',
+    description: '描述',
+    priority: { label: '优先级', high: '高', medium: '中', low: '低' },
     status: { pending: '待办', doing: '进行中', done: '已完成', cancelled: '已取消' },
+    dueDate: '截止日期',
   },
   reminder: {
     title: '提醒',
     newReminder: '新建提醒',
-    repeat: { none: '不重复', daily: '每天', weekly: '每周', monthly: '每月' },
+    content: '内容',
+    remindAt: '提醒时间',
+    repeat: { label: '重复', none: '不重复', daily: '每天', weekly: '每周', monthly: '每月' },
   },
   event: {
     title: '日程',
@@ -79,6 +86,8 @@ export default {
   note: {
     title: '笔记',
     newNote: '新建笔记',
+    content: '内容',
+    tags: '标签',
   },
   habit: {
     title: '习惯追踪',
@@ -108,6 +117,13 @@ export default {
   contact: {
     title: '人脉管理',
     newContact: '新建联系人',
+    name: '姓名',
+    organization: '公司/组织',
+    role: '职位',
+    email: '邮箱',
+    phone: '电话',
+    tags: '标签',
+    note: '备注',
   },
   settings: {
     models: '模型配置',

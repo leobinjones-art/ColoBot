@@ -23,6 +23,15 @@
         </button>
       </div>
 
+      <!-- 搜索按钮 -->
+      <div v-if="!sidebarCollapsed || isMobile" class="search-trigger" @click="showCommandPalette = true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span>搜索命令...</span>
+        <kbd>⌘K</kbd>
+      </div>
+
       <!-- 导航菜单 -->
       <nav class="sidebar-nav">
         <div class="nav-group">
@@ -139,6 +148,9 @@
     <main class="main-content">
       <router-view />
     </main>
+
+    <!-- 命令面板 -->
+    <CommandPalette :visible="showCommandPalette" @close="showCommandPalette = false" />
   </div>
 </template>
 
@@ -147,6 +159,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { handleAuthFailure } from '@/utils/auth'
+import CommandPalette from '@/components/common/CommandPalette.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -154,6 +167,7 @@ const router = useRouter()
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
 const windowWidth = ref(window.innerWidth)
+const showCommandPalette = ref(false)
 
 const isMobile = computed(() => windowWidth.value < 768)
 
@@ -179,12 +193,21 @@ function handleResize() {
   windowWidth.value = window.innerWidth
 }
 
+function handleKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    showCommandPalette.value = !showCommandPalette.value
+  }
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize)
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
@@ -233,5 +256,39 @@ onUnmounted(() => {
 
 .collapse-btn:hover {
   background: var(--cb-bg-sunken);
+}
+
+.search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 12px 16px;
+  padding: 8px 12px;
+  background: var(--cb-bg-sunken);
+  border-radius: var(--cb-radius-md);
+  color: var(--cb-text-tertiary);
+  font-size: var(--cb-text-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.search-trigger:hover {
+  background: var(--cb-sidebar-hover);
+}
+
+.search-trigger svg {
+  opacity: 0.6;
+}
+
+.search-trigger span {
+  flex: 1;
+}
+
+.search-trigger kbd {
+  padding: 2px 6px;
+  background: var(--cb-bg);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
 }
 </style>

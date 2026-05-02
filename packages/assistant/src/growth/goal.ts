@@ -119,7 +119,9 @@ export function listGoals(userId: string, status?: GoalStatus, db?: Database.Dat
  */
 export function deleteGoal(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  const result = database.prepare(`DELETE FROM assistant_goals WHERE id = ? AND user_id = ?`).run(id, userId)
+  const result = database
+    .prepare(`DELETE FROM assistant_goals WHERE id = ? AND user_id = ?`)
+    .run(id, userId)
   const deleted = result.changes > 0
   if (deleted) {
     logger.info('Deleted goal', { id, userId })

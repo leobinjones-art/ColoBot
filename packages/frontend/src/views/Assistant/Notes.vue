@@ -59,9 +59,27 @@
           placeholder="内容..."
           class="note-content-input"
         ></textarea>
+        <div class="form-group">
+          <label>标签</label>
+          <div class="tags-input">
+            <span v-for="tag in editingNote.tags" :key="tag" class="tag-item">
+              {{ tag }}
+              <button type="button" class="tag-remove" @click="removeTag(tag)">×</button>
+            </span>
+            <input
+              v-model="newTag"
+              type="text"
+              placeholder="添加标签..."
+              @keydown.enter.prevent="addTag"
+            />
+          </div>
+        </div>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="closeEditor">{{ t('common.cancel') }}</button>
-          <button class="btn-primary" @click="saveNote">{{ t('common.save') }}</button>
+          <button v-if="editingNote.id" type="button" class="btn-danger" @click="deleteNote">{{ t('common.delete') }}</button>
+          <div class="actions-right">
+            <button class="btn-secondary" @click="closeEditor">{{ t('common.cancel') }}</button>
+            <button class="btn-primary" @click="saveNote">{{ t('common.save') }}</button>
+          </div>
         </div>
       </div>
     </div>
@@ -79,6 +97,7 @@ const { t } = useI18n()
 const notes = ref<Note[]>([])
 const searchQuery = ref('')
 const editingNote = ref<Note | null>(null)
+const newTag = ref('')
 
 function getPreview(content?: string): string {
   if (!content) return ''
@@ -129,6 +148,21 @@ function editNote(note: Note) {
 
 function closeEditor() {
   editingNote.value = null
+  newTag.value = ''
+}
+
+function addTag() {
+  if (!newTag.value.trim() || !editingNote.value) return
+  if (!editingNote.value.tags) editingNote.value.tags = []
+  if (!editingNote.value.tags.includes(newTag.value.trim())) {
+    editingNote.value.tags.push(newTag.value.trim())
+  }
+  newTag.value = ''
+}
+
+function removeTag(tag: string) {
+  if (!editingNote.value?.tags) return
+  editingNote.value.tags = editingNote.value.tags.filter(t => t !== tag)
 }
 
 async function saveNote() {
@@ -144,6 +178,17 @@ async function saveNote() {
     fetchNotes()
   } catch (e) {
     console.error('Failed to save note', e)
+  }
+}
+
+async function deleteNote() {
+  if (!editingNote.value?.id || !confirm('确定要删除这个笔记吗？')) return
+  try {
+    await noteApi.delete(editingNote.value.id)
+    closeEditor()
+    fetchNotes()
+  } catch (e) {
+    console.error('Failed to delete note', e)
   }
 }
 
@@ -276,7 +321,78 @@ onMounted(() => {
 
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.actions-right {
+  display: flex;
+  gap: 12px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  font-size: var(--cb-text-sm);
+  font-weight: 500;
+  color: var(--cb-text-secondary);
+  margin-bottom: 6px;
+}
+
+.tags-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--cb-border);
+  border-radius: var(--cb-radius-md);
+  background: var(--cb-bg);
+}
+
+.tags-input input {
+  flex: 1;
+  min-width: 100px;
+  border: none;
+  background: transparent;
+  color: var(--cb-text-primary);
+  font-size: var(--cb-text-sm);
+  outline: none;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--cb-primary-bg);
+  color: var(--cb-primary);
+  border-radius: var(--cb-radius-sm);
+  font-size: var(--cb-text-xs);
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.btn-danger {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--cb-danger);
+  border-radius: var(--cb-radius-md);
+  color: var(--cb-danger);
+  cursor: pointer;
 }
 </style>

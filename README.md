@@ -78,6 +78,7 @@ colobot/
 │   │   ├── project/     # Projects
 │   │   └── tools/       # Password, time tracking
 │   ├── tui/             # Terminal UI
+│   ├── frontend/        # Vue 3 Web UI
 │   ├── sop-base/        # SOP flow engine base class
 │   └── sop-academic/    # Academic SOP
 └── _legacy/             # Legacy code (to be migrated)
@@ -248,6 +249,141 @@ print(arr.sum())
 | **Web Bookmarks**      | URL, summary, tags                                      |
 | **Intent Recognition** | Natural language understanding (Chinese & English)      |
 | **Logging System**     | Unified logging with level control for all modules      |
+| **User Profile**       | 🧠 Comprehensive user profiling integrating all modules |
+
+#### 🧠 User Profile Analysis
+
+The `@colobot/assistant` package provides comprehensive user profiling:
+
+```typescript
+import { generateUserProfile } from '@colobot/assistant'
+
+const profile = generateUserProfile(userId, {
+  moods,
+  habits,
+  todos,
+  goals,
+  contacts,
+  finances,
+  healthEntries,
+  notes,
+  events,
+})
+
+// Profile includes:
+// - Psychological: mood score, trend, risk assessment, insights
+// - Lifestyle: habit streaks, consistency, check-in rate
+// - Productivity: task completion, overdue count, efficiency
+// - Social: contact count, interaction frequency, relationship health
+// - Financial: income/expense, savings rate, spending categories
+// - Health: exercise frequency, sleep average, health score
+// - Growth: goal progress, near-deadline alerts
+// - AI Context: formatted summary for AI agents
+```
+
+**AI Agent Integration**: The `aiContext` field provides a formatted summary that AI agents can use to understand the user's current state and provide personalized responses.
+
+**Chat Integration**: The frontend Chat Console automatically includes user profile context in every message, allowing AI agents to:
+
+- Understand user's psychological state (mood, stress level, risk factors)
+- Reference user's habits, goals, and productivity patterns
+- Provide personalized suggestions based on financial and health data
+- Adapt responses to user's current life situation
+
+### 🖥️ Web UI (@colobot/frontend)
+
+Vue 3 + TypeScript web interface with modern design and creative interactions:
+
+| Page             | Features                                                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Chat Console** | SSE streaming, tool call visualization, typing cursor animation, message fade-in, **🧠 user profile context integration**                    |
+| **Agents**       | CRUD management, icon picker, model selection, system prompt config                                                                          |
+| **Skills**       | Type filters (SOP/Tool/Agent), icon picker, security status, JSON definition                                                                 |
+| **Sentinel**     | Status dashboard, three-layer defense visualization, session monitoring, takeover history                                                    |
+| **Todos**        | Ring progress chart, quick filters, priority borders, animations                                                                             |
+| **Reminders**    | Time picker, repeat options, complete/delete actions                                                                                         |
+| **Calendar**     | Event management, date/time picker                                                                                                           |
+| **Notes**        | Markdown editor, tag management, search, delete                                                                                              |
+| **Habits**       | 🔥 Streak banner with fire animation, week view, achievement system (first check-in, 7/30 day streak, all complete)                          |
+| **Moods**        | 📊 Calendar heatmap, mood statistics (average score, streak days, most frequent), smart hints, trend chart, **🧠 AI psychological analysis** |
+| **Goals**        | Progress rings, milestones, urgency alerts                                                                                                   |
+| **Finances**     | ECharts trend/pie charts, category breakdown                                                                                                 |
+| **Contacts**     | CRUD management, search, tags                                                                                                                |
+| **Settings**     | System config, feature toggles, cache management, data export                                                                                |
+| **Models**       | Provider management, model enable/disable, connection test, add custom models                                                                |
+
+**Tech Stack**: Vue 3 + Vite + Pinia + Vue Router + ECharts + SSE + highlight.js + DOMPurify
+
+**Creative Components**:
+
+- `StreamProgress` - Streaming phase visualization (thinking, tool execution, etc.)
+- `ToolCallCard` - Tool call display with status, arguments, results
+- `ProviderCard` - LLM provider card with model list
+- `CommandPalette` - Quick command access (⌘K)
+- `AchievementToast` - 🏆 Achievement celebration with golden glow, rotating light, sparkle particles
+
+**Architecture**:
+
+```
+packages/frontend/
+├── src/
+│   ├── views/           # 19 page components
+│   │   ├── ChatConsole.vue
+│   │   ├── Agents.vue
+│   │   ├── Skills.vue
+│   │   ├── Sentinel.vue
+│   │   ├── Login.vue
+│   │   ├── Assistant/   # 8 assistant pages
+│   │   ├── Settings/    # System & Models
+│   │   └── layout/
+│   ├── components/
+│   │   ├── chat/        # StreamProgress, ToolCallCard
+│   │   ├── settings/    # ProviderCard
+│   │   └── common/      # CommandPalette, AchievementToast
+│   ├── api/             # 15 API modules
+│   ├── types/           # TypeScript definitions
+│   ├── stores/          # Pinia stores (agent, theme)
+│   ├── composables/     # Markdown renderer, useChat
+│   ├── utils/           # Auth utilities
+│   └── i18n/            # Internationalization (zh-CN)
+├── mock-server.ts       # Mock API for development
+└── dist/                # Production build
+```
+
+**Creative Features**:
+
+- 🏆 **Achievement System**: Pop-up celebration for habit milestones with golden border, rotating glow, and sparkle particles
+- 🔥 **Streak Animation**: Pulsing fire emoji for habit streaks
+- ⌨️ **Typing Cursor**: Blinking cursor effect during AI response generation
+- 📊 **Mood Heatmap**: Calendar heatmap with mood colors and intensity based on score
+- 💡 **Smart Hints**: Contextual suggestions based on recent mood trends
+- 🧠 **Psychological Analysis**: AI-powered mood analysis with:
+  - Overall psychological score (0-100) with ring visualization
+  - Trend analysis (improving/stable/declining/fluctuating)
+  - Pattern recognition (weekday patterns, consecutive low moods, anxiety triggers)
+  - Risk assessment with early warning system
+  - Personalized suggestions based on mood data
+  - Context generation for AI agent to understand user's emotional state
+- 🤖 **Chat Context Integration**: User profile automatically included in chat messages for personalized AI responses
+- 🎨 **Message Animations**: Fade-in and slide-up effects for new messages
+
+**Development**:
+
+```bash
+# Development with mock API
+cd packages/frontend
+npm run dev        # Frontend on :5173
+npx tsx mock-server.ts  # Mock API on :3000
+
+# Build for production
+npm run build
+
+# Deploy
+serve -l 5173 dist
+# Connect to real ColoBot Core backend
+```
+
+**Mock API Coverage**: Auth, Agents, Chat (SSE), Todos, Reminders, Events, Notes, Habits, Moods, Finances, Goals, Contacts, Skills, Sentinel, Config, **User Profile**
 
 ### 🔧 Built-in Tools
 
@@ -313,7 +449,7 @@ import {
   logMood,
   parseIntent,
   setLogLevel,
-  createLogger
+  createLogger,
 } from '@colobot/assistant'
 
 // Create todo
@@ -335,7 +471,7 @@ const intent = parseIntent('Add todo Complete report')
 // { type: 'todo.add', confidence: 0.9 }
 
 // Logging system
-setLogLevel('debug')  // debug/info/warn/error
+setLogLevel('debug') // debug/info/warn/error
 const logger = createLogger('MyModule')
 logger.info('Operation completed', { userId: 'user1', action: 'create' })
 // [2026-05-01T08:54:09.780Z] [INFO] [MyModule] Operation completed {"userId":"user1","action":"create"}
@@ -647,7 +783,7 @@ export function registerMyTool(): void {
 | Version           | 0.3.1                    |
 | Total Code        | ~28,500 lines TypeScript |
 | Source Files      | 146                      |
-| Packages          | 7                        |
+| Packages          | 8                        |
 | Assistant Modules | 18 + Logging System      |
 | Test Cases        | 522                      |
 | Test Coverage     | 56%+                     |

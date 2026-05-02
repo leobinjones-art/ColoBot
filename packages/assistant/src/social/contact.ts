@@ -162,7 +162,9 @@ export function searchContacts(userId: string, query: string, db?: Database.Data
  */
 export function deleteContact(id: string, userId: string, db?: Database.Database): boolean {
   const database = db || getDb()
-  const result = database.prepare(`DELETE FROM assistant_contacts WHERE id = ? AND user_id = ?`).run(id, userId)
+  const result = database
+    .prepare(`DELETE FROM assistant_contacts WHERE id = ? AND user_id = ?`)
+    .run(id, userId)
   const deleted = result.changes > 0
   if (deleted) {
     logger.info('Deleted contact', { id, userId })
