@@ -100,22 +100,21 @@ const router = createRouter({
         // 设置
         {
           path: 'settings',
-          component: () => import('@/views/Settings/Layout.vue'),
-          redirect: '/settings/models',
-          children: [
-            {
-              path: 'models',
-              name: 'SettingsModels',
-              component: () => import('@/views/Settings/Models.vue'),
-              meta: { title: 'Settings - Models' },
-            },
-            {
-              path: 'system',
-              name: 'SettingsSystem',
-              component: () => import('@/views/Settings/System.vue'),
-              meta: { title: 'Settings - System' },
-            },
-          ],
+          name: 'Settings',
+          component: () => import('@/views/Settings/index.vue'),
+          meta: { title: 'Settings' },
+        },
+        {
+          path: 'settings/models',
+          name: 'SettingsModels',
+          component: () => import('@/views/Settings/Models.vue'),
+          meta: { title: 'Settings - Models' },
+        },
+        {
+          path: 'settings/system',
+          name: 'SettingsSystem',
+          component: () => import('@/views/Settings/System.vue'),
+          meta: { title: 'Settings - System' },
         },
       ],
     },

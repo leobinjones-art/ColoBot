@@ -378,8 +378,7 @@ async function main() {
         '个人助理模块会在对话中注入您的情绪、习惯、健康等 7 类个人数据作为上下文。',
     )
     console.log(
-      style('[ColoBot] ', 'yellow') +
-        '这些数据仅存储在本地，不会上传。输入 /context 查看详情。',
+      style('[ColoBot] ', 'yellow') + '这些数据仅存储在本地，不会上传。输入 /context 查看详情。',
     )
     console.log(style('[ColoBot] ', 'yellow') + '如需关闭此功能，请卸载 @colobot/assistant。')
   }

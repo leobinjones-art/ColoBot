@@ -34,8 +34,8 @@
 
       <!-- 导航菜单 -->
       <nav class="sidebar-nav">
+        <!-- 对话 - 常显 -->
         <div class="nav-group">
-          <div v-if="!sidebarCollapsed" class="nav-group-title">{{ t('nav.chat') }}</div>
           <router-link to="/chat" class="nav-item" @click="onNavClick">
             <span class="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,81 +46,50 @@
           </router-link>
         </div>
 
-        <div class="nav-group">
-          <div v-if="!sidebarCollapsed" class="nav-group-title">{{ t('nav.agents') }}</div>
-          <router-link to="/agents" class="nav-item" @click="onNavClick">
+        <!-- 我的日常 - 折叠 -->
+        <div class="nav-group collapsible" :class="{ expanded: expandedGroups.assistant }">
+          <div class="nav-group-header" @click="toggleGroup('assistant')">
             <span class="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
             </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('nav.agents') }}</span>
-          </router-link>
-          <router-link to="/skills" class="nav-item" @click="onNavClick">
-            <span class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('nav.skills') }}</span>
-          </router-link>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('nav.assistant') }}</span>
+            <svg v-if="!sidebarCollapsed" class="expand-icon" :class="{ rotated: expandedGroups.assistant }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div v-if="expandedGroups.assistant && !sidebarCollapsed" class="nav-group-items">
+            <router-link to="/assistant/todos" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.todos') }}</span>
+            </router-link>
+            <router-link to="/assistant/habits" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.habits') }}</span>
+            </router-link>
+            <router-link to="/assistant/moods" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.moods') }}</span>
+            </router-link>
+            <router-link to="/assistant/calendar" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.calendar') }}</span>
+            </router-link>
+            <router-link to="/assistant/notes" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.notes') }}</span>
+            </router-link>
+            <router-link to="/assistant/goals" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.goals') }}</span>
+            </router-link>
+            <router-link to="/assistant/finances" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.finances') }}</span>
+            </router-link>
+            <router-link to="/assistant/contacts" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('assistant.contacts') }}</span>
+            </router-link>
+          </div>
         </div>
 
+        <!-- 设置 - 常显 -->
         <div class="nav-group">
-          <div v-if="!sidebarCollapsed" class="nav-group-title">{{ t('nav.sentinel') }}</div>
-          <router-link to="/sentinel" class="nav-item" @click="onNavClick">
-            <span class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-            </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('nav.sentinel') }}</span>
-          </router-link>
-        </div>
-
-        <div class="nav-group">
-          <div v-if="!sidebarCollapsed" class="nav-group-title">{{ t('nav.assistant') }}</div>
-          <router-link to="/assistant/todos" class="nav-item" @click="onNavClick">
-            <span class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>
-            </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('assistant.todos') }}</span>
-          </router-link>
-          <router-link to="/assistant/calendar" class="nav-item" @click="onNavClick">
-            <span class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-            </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('assistant.calendar') }}</span>
-          </router-link>
-          <router-link to="/assistant/notes" class="nav-item" @click="onNavClick">
-            <span class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-              </svg>
-            </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('assistant.notes') }}</span>
-          </router-link>
-          <router-link to="/assistant/habits" class="nav-item" @click="onNavClick">
-            <span class="nav-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-            </span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('assistant.habits') }}</span>
-          </router-link>
-        </div>
-
-        <div class="nav-group">
-          <div v-if="!sidebarCollapsed" class="nav-group-title">{{ t('nav.settings') }}</div>
-          <router-link to="/settings/models" class="nav-item" @click="onNavClick">
+          <router-link to="/settings" class="nav-item" @click="onNavClick">
             <span class="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
@@ -129,6 +98,34 @@
             </span>
             <span v-if="!sidebarCollapsed" class="nav-label">{{ t('nav.settings') }}</span>
           </router-link>
+        </div>
+
+        <!-- 高级 - 折叠 -->
+        <div class="nav-group collapsible" :class="{ expanded: expandedGroups.advanced }">
+          <div class="nav-group-header" @click="toggleGroup('advanced')">
+            <span class="nav-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+              </svg>
+            </span>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ t('nav.advanced') }}</span>
+            <svg v-if="!sidebarCollapsed" class="expand-icon" :class="{ rotated: expandedGroups.advanced }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div v-if="expandedGroups.advanced && !sidebarCollapsed" class="nav-group-items">
+            <router-link to="/agents" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('nav.agents') }}</span>
+            </router-link>
+            <router-link to="/skills" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('nav.skills') }}</span>
+            </router-link>
+            <router-link to="/sentinel" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('nav.sentinel') }}</span>
+            </router-link>
+          </div>
         </div>
       </nav>
 
@@ -168,6 +165,10 @@ const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
 const windowWidth = ref(window.innerWidth)
 const showCommandPalette = ref(false)
+const expandedGroups = ref({
+  assistant: false,
+  advanced: false,
+})
 
 const isMobile = computed(() => windowWidth.value < 768)
 
@@ -177,6 +178,10 @@ function toggleSidebar() {
   } else {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
+}
+
+function toggleGroup(group: 'assistant' | 'advanced') {
+  expandedGroups.value[group] = !expandedGroups.value[group]
 }
 
 function onNavClick() {
@@ -290,5 +295,38 @@ onUnmounted(() => {
   border-radius: 4px;
   font-size: 11px;
   font-family: inherit;
+}
+
+.nav-group.collapsible .nav-group-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nav-group.collapsible .nav-group-header:hover {
+  background: var(--cb-sidebar-hover);
+}
+
+.expand-icon {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.expand-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.nav-group-items {
+  padding-left: 36px;
+}
+
+.nav-item.sub-item {
+  padding: 8px 16px;
+}
+
+.nav-item.sub-item .nav-label {
+  font-size: var(--cb-text-sm);
 }
 </style>

@@ -22,15 +22,15 @@
 
 安装后，以下数据会在对话时自动注入为上下文：
 
-| 维度     | 来源模块                         | 隐私等级 |
-| -------- | -------------------------------- | -------- |
-| 心理状态 | Mood Journal                     | 中       |
-| 生活习惯 | Habit Tracking, Health           | 中       |
-| 工作效率 | Todo List, Time Tracking         | 低       |
-| 社交关系 | Contacts                         | 中       |
-| 财务状况 | Finance                          | **高**   |
-| 健康状况 | Health Tracking                  | **高**   |
-| 成长目标 | Goals, Learning, Reading         | 低       |
+| 维度     | 来源模块                 | 隐私等级 |
+| -------- | ------------------------ | -------- |
+| 心理状态 | Mood Journal             | 中       |
+| 生活习惯 | Habit Tracking, Health   | 中       |
+| 工作效率 | Todo List, Time Tracking | 低       |
+| 社交关系 | Contacts                 | 中       |
+| 财务状况 | Finance                  | **高**   |
+| 健康状况 | Health Tracking          | **高**   |
+| 成长目标 | Goals, Learning, Reading | 低       |
 
 ### 用户控制
 
