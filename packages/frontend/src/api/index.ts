@@ -2,10 +2,11 @@ import axios from 'axios'
 import { handleAuthFailure, updateTokenFromHeader } from '@/utils/auth'
 
 const isDev = import.meta.env.DEV
-const apiBase = import.meta.env.VITE_API_BASE || ''
 
+// 生产环境：API 和前端同源，直接使用相对路径
+// 开发环境：代理到本地 Mock 服务器
 export const http = axios.create({
-  baseURL: isDev ? '/api/v1' : `${apiBase}/api/v1`,
+  baseURL: '/api/v1',
   timeout: 30000,
 })
 
