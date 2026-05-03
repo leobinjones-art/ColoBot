@@ -126,11 +126,11 @@ app.delete('/api/v1/contacts/:id', (req, res) => res.json({ code: 200, success: 
 
 // Skill API
 const mockSkills = [
-  { id: '1', name: 'morning_brief', nameZh: '晨间简报', icon: '🌅', enabled: true, description: '每天早上自动总结今日待办' },
-  { id: '2', name: 'mood_check', nameZh: '心情关怀', icon: '💝', enabled: true, description: '连续低落时主动关心' },
-  { id: '3', name: 'weekly_review', nameZh: '周报生成', icon: '📊', enabled: false, description: '每周日自动生成本周总结' },
-  { id: '4', name: 'habit_reminder', nameZh: '习惯提醒', icon: '🎯', enabled: true, description: '习惯打卡时间自动提醒' },
-  { id: '5', name: 'translate', nameZh: '翻译助手', icon: '🌐', enabled: true, description: '多语言翻译' },
+  { id: '1', name: 'morning_brief', nameZh: '每天早上提醒我今天要做什么', icon: '🌅', enabled: true, description: '' },
+  { id: '2', name: 'mood_check', nameZh: '我心情不好时关心我', icon: '💝', enabled: true, description: '' },
+  { id: '3', name: 'weekly_review', nameZh: '每周日帮我总结这周做了什么', icon: '📊', enabled: false, description: '' },
+  { id: '4', name: 'habit_reminder', nameZh: '到时间提醒我打卡习惯', icon: '🎯', enabled: true, description: '' },
+  { id: '5', name: 'translate', nameZh: '帮我翻译外语', icon: '🌐', enabled: true, description: '' },
 ]
 app.get('/api/v1/skills', (req, res) => res.json({ code: 200, data: { records: mockSkills } }))
 app.put('/api/v1/skills/:id/toggle', (req, res) => res.json({ code: 200, success: true }))

@@ -2,8 +2,8 @@
   <div class="cb-page-shell">
     <div class="cb-page-header">
       <div>
-        <h1 class="cb-page-title">{{ t('nav.skills') }}</h1>
-        <p class="cb-page-desc">开启 AI 的额外能力</p>
+        <h1 class="cb-page-title">自动化功能</h1>
+        <p class="cb-page-desc">让 AI 自动帮你做的事</p>
       </div>
     </div>
 
@@ -13,7 +13,6 @@
           <div class="skill-icon">{{ skill.icon || '⚡' }}</div>
           <div class="skill-info">
             <h3 class="skill-name">{{ skill.nameZh || skill.name }}</h3>
-            <p class="skill-desc">{{ skill.description || 'AI 能力' }}</p>
           </div>
           <label class="toggle-switch" @click.stop>
             <input type="checkbox" :checked="skill.enabled" @change="toggleSkill(skill)" />
@@ -46,11 +45,11 @@ async function fetchSkills() {
   } catch (e) {
     console.error('Failed to fetch skills', e)
     skills.value = [
-      { id: '1', name: 'morning_brief', nameZh: '晨间简报', icon: '🌅', enabled: true, description: '每天早上自动总结今日待办' },
-      { id: '2', name: 'mood_check', nameZh: '心情关怀', icon: '💝', enabled: true, description: '连续低落时主动关心' },
-      { id: '3', name: 'weekly_review', nameZh: '周报生成', icon: '📊', enabled: false, description: '每周日自动生成本周总结' },
-      { id: '4', name: 'habit_reminder', nameZh: '习惯提醒', icon: '🎯', enabled: true, description: '习惯打卡时间自动提醒' },
-      { id: '5', name: 'translate', nameZh: '翻译助手', icon: '🌐', enabled: true, description: '多语言翻译' },
+      { id: '1', name: 'morning_brief', nameZh: '每天早上提醒我今天要做什么', icon: '🌅', enabled: true, description: '' },
+      { id: '2', name: 'mood_check', nameZh: '我心情不好时关心我', icon: '💝', enabled: true, description: '' },
+      { id: '3', name: 'weekly_review', nameZh: '每周日帮我总结这周做了什么', icon: '📊', enabled: false, description: '' },
+      { id: '4', name: 'habit_reminder', nameZh: '到时间提醒我打卡习惯', icon: '🎯', enabled: true, description: '' },
+      { id: '5', name: 'translate', nameZh: '帮我翻译外语', icon: '🌐', enabled: true, description: '' },
     ]
   }
 }

@@ -2,14 +2,14 @@
   <div class="cb-page-shell">
     <div class="cb-page-header">
       <div>
-        <h1 class="cb-page-title">系统状态</h1>
-        <p class="cb-page-desc">查看应用运行状态</p>
+        <h1 class="cb-page-title">关于</h1>
+        <p class="cb-page-desc">版本信息和数据管理</p>
       </div>
     </div>
 
     <!-- 系统状态 -->
     <div class="status-section cb-card">
-      <h3>运行状态</h3>
+      <h3>状态</h3>
       <div class="status-grid">
         <div class="status-item">
           <span class="status-label">AI 服务</span>

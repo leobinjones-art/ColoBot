@@ -2,8 +2,8 @@
   <div class="cb-page-shell">
     <div class="cb-page-header">
       <div>
-        <h1 class="cb-page-title">{{ t('nav.agents') }}</h1>
-        <p class="cb-page-desc">选择你需要的 AI 助手</p>
+        <h1 class="cb-page-title">AI 助手</h1>
+        <p class="cb-page-desc">选择你想用的 AI</p>
       </div>
     </div>
 

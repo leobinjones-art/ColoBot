@@ -2,8 +2,8 @@
   <div class="cb-page-shell">
     <div class="cb-page-header">
       <div>
-        <h1 class="cb-page-title">{{ t('sentinel.title') }}</h1>
-        <p class="cb-page-desc">保护你的对话安全</p>
+        <h1 class="cb-page-title">安全保护</h1>
+        <p class="cb-page-desc">防止敏感信息泄露</p>
       </div>
     </div>
 

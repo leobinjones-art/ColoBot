@@ -3,13 +3,13 @@
     <div class="cb-page-header">
       <div>
         <h1 class="cb-page-title">AI 模型</h1>
-        <p class="cb-page-desc">选择对话使用的 AI 模型</p>
+        <p class="cb-page-desc">选择对话的 AI</p>
       </div>
     </div>
 
     <!-- 默认模型选择 -->
     <div class="model-section cb-card">
-      <h3>选择模型</h3>
+      <h3>选择 AI</h3>
       <div class="model-list">
         <div
           v-for="model in models"
@@ -30,7 +30,7 @@
 
     <!-- API Key 设置 -->
     <div class="apikey-section cb-card">
-      <h3>API 密钥</h3>
+      <h3>密钥</h3>
       <div class="apikey-form">
         <label>密钥</label>
         <div class="apikey-input">
@@ -43,7 +43,7 @@
             {{ showApiKey ? '隐藏' : '显示' }}
           </button>
         </div>
-        <p class="apikey-hint">密钥仅存储在你的设备上，不会上传到任何服务器</p>
+        <p class="apikey-hint">密钥只存在你的电脑上，不会传到任何地方</p>
       </div>
       <button class="btn-primary" @click="saveApiKey">保存</button>
     </div>
