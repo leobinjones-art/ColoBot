@@ -89,25 +89,10 @@ packages/frontend/
 - Pinia
 - Vue Router
 - ECharts
-- SSE streaming
-
----
-
-## Backend Dependencies
-
-Production requires ColoBot backend:
-
-| Package | Purpose |
-|---------|---------|
-| `@colobot/core` | Core runtime, LLM calls |
-| `@colobot/sentinel` | Safety guard |
-| `@colobot/assistant` | Personal assistant features |
-
-Use mock-server for development.
 
 ---
 
 ## Related Docs
 
 - [Privacy Policy](../../PRIVACY.md)
-- [Mental Health Intervention Plan](../../docs/mental-health-intervention.md)
+- [中文文档](./README.zh-CN.md)
