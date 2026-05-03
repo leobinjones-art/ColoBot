@@ -1,113 +1,113 @@
 # @colobot/frontend
 
-ColoBot 前端 — 普通用户的 AI 伙伴
+ColoBot Frontend — AI Companion for Everyone
 
 ---
 
-## 特点
+## Features
 
-- **零概念** — 不需要知道 Agent/Provider/SOP 等技术术语
-- **零配置** — 没有配置文件，所有设置通过界面完成
-- **隐私优先** — 数据只存在你的设备上
-
----
-
-## 功能
-
-### 核心功能
-
-| 功能 | 说明 |
-|------|------|
-| 对话 | 和 AI 聊天，AI 会记住你说过的话 |
-| 自动化 | 每天提醒待办、心情不好时关心你、每周总结 |
-| 安全保护 | 自动过滤敏感信息，防止泄露 |
-| 个人助理 | 待办、习惯、心情、目标、财务等 |
-
-### 设置
-
-| 设置 | 选项 |
-|------|------|
-| AI 行为 | 简洁/标准/详细、被动/问候/关心 |
-| 心理健康 | 心情追踪、低落时关心、提醒联系朋友 |
-| 隐私 | 查看AI记住的事、导出数据、清除数据 |
+- **Zero Concepts** — No need to know Agent/Provider/SOP or any technical terms
+- **Zero Config** — No config files, all settings done through the UI
+- **Privacy First** — Your data stays on your device only
 
 ---
 
-## 开发
+## What It Does
 
-### 开发环境
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| Chat | Talk to AI, it remembers what you said |
+| Automation | Daily reminders, mood check-ins, weekly summaries |
+| Safety | Auto-filters sensitive info to prevent leaks |
+| Assistant | Todos, habits, moods, goals, finances, etc. |
+
+### Settings
+
+| Setting | Options |
+|---------|---------|
+| AI Behavior | Brief/Normal/Detailed, Passive/Greeting/Caring |
+| Mental Health | Mood tracking, check-in when down, remind to contact friends |
+| Privacy | View what AI remembers, export data, delete data |
+
+---
+
+## Development
+
+### Setup
 
 ```bash
 cd packages/frontend
 
-# 安装依赖
+# Install dependencies
 npm install
 
-# 启动 mock API（模拟后端）
+# Start mock API (simulates backend)
 npx tsx mock-server.ts
 
-# 启动前端开发服务器
+# Start dev server
 npx vite
 ```
 
-访问 http://localhost:5173
+Visit http://localhost:5173
 
-### 构建
+### Build
 
 ```bash
 npm run build
 ```
 
-### 目录结构
+### Project Structure
 
 ```
 packages/frontend/
 ├── src/
-│   ├── views/           # 页面
-│   │   ├── Home.vue           # 首页
-│   │   ├── ChatConsole.vue    # 对话
-│   │   ├── Agents.vue         # AI 助手
-│   │   ├── Skills.vue         # 自动化
-│   │   ├── Sentinel.vue       # 安全保护
-│   │   ├── Onboarding.vue     # 引导流程
-│   │   ├── Settings/          # 设置
-│   │   └── Assistant/         # 个人助理模块
-│   ├── components/      # 组件
-│   ├── api/             # API
-│   ├── stores/          # 状态
-│   └── i18n/            # 国际化
-├── mock-server.ts       # Mock API
-└── dist/                # 构建输出
+│   ├── views/           # Pages
+│   │   ├── Home.vue           # Home
+│   │   ├── ChatConsole.vue    # Chat
+│   │   ├── Agents.vue         # AI Assistants
+│   │   ├── Skills.vue         # Automation
+│   │   ├── Sentinel.vue       # Safety
+│   │   ├── Onboarding.vue     # Setup flow
+│   │   ├── Settings/          # Settings
+│   │   └── Assistant/         # Personal assistant modules
+│   ├── components/      # Components
+│   ├── api/             # API layer
+│   ├── stores/          # State management
+│   └── i18n/            # Internationalization
+├── mock-server.ts       # Mock API server
+└── dist/                # Build output
 ```
 
 ---
 
-## 技术栈
+## Tech Stack
 
 - Vue 3 + TypeScript
 - Vite
 - Pinia
 - Vue Router
 - ECharts
-- SSE 流式响应
+- SSE streaming
 
 ---
 
-## 后端依赖
+## Backend Dependencies
 
-生产环境需要部署 ColoBot 后端：
+Production requires ColoBot backend:
 
-| 包 | 用途 |
-|---|------|
-| `@colobot/core` | 核心运行时、LLM 调用 |
-| `@colobot/sentinel` | 安全守护 |
-| `@colobot/assistant` | 个人助理功能 |
+| Package | Purpose |
+|---------|---------|
+| `@colobot/core` | Core runtime, LLM calls |
+| `@colobot/sentinel` | Safety guard |
+| `@colobot/assistant` | Personal assistant features |
 
-开发时可用 mock-server 模拟。
+Use mock-server for development.
 
 ---
 
-## 相关文档
+## Related Docs
 
-- [隐私政策](../../PRIVACY.md)
-- [心理健康干预规划](../../docs/mental-health-intervention.md)
+- [Privacy Policy](../../PRIVACY.md)
+- [Mental Health Intervention Plan](../../docs/mental-health-intervention.md)
