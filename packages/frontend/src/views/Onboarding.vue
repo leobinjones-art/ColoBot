@@ -187,8 +187,8 @@ const careLevel = ref('greet')
 const showTutorial = ref(false)
 
 const providers = [
-  { id: 'openai', name: 'OpenAI (ChatGPT)', icon: '🤖' },
-  { id: 'anthropic', name: 'Anthropic (Claude)', icon: '🧠' },
+  { id: 'openai', name: 'ChatGPT', icon: '🤖' },
+  { id: 'anthropic', name: 'Claude', icon: '🧠' },
   { id: 'minimax', name: 'MiniMax', icon: '🌟' },
   { id: 'other', name: '其他', icon: '⚙️' },
 ]

@@ -212,7 +212,7 @@
         </div>
         <div v-if="expandedSections.advanced" class="section-content">
           <div class="setting-item">
-            <label>API Key</label>
+            <label>密钥</label>
             <div class="api-key-status">
               <span class="status-dot success"></span>
               <span>{{ t('common.enabled') }}</span>

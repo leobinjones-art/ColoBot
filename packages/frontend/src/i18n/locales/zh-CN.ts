@@ -212,9 +212,9 @@ export default {
   onboarding: {
     welcome: '欢迎使用 ColoBot',
     selectLanguage: '选择你的语言',
-    setupApiKey: '让 AI 开始工作',
-    apiKeyDesc: 'ColoBot 需要连接 AI 模型才能工作。你的对话内容直接发送给模型，ColoBot 不经手。',
-    selectProvider: '选择模型来源',
+    setupApiKey: '连接 AI',
+    apiKeyDesc: '输入你的 API Key 来连接 AI。密钥只存在你的电脑上。',
+    selectProvider: '选择 AI 品牌',
     howToGetKey: '如何获取 API Key?',
     viewTutorial: '查看教程',
     careLevel: 'AI 怎么关心你？',
