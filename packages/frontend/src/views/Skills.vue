@@ -46,9 +46,11 @@ async function fetchSkills() {
   } catch (e) {
     console.error('Failed to fetch skills', e)
     skills.value = [
-      { id: '1', name: 'academic_research', nameZh: '学术研究', icon: '📚', enabled: true, description: '帮助查找和总结学术资料' },
-      { id: '2', name: 'translate', nameZh: '翻译助手', icon: '🌐', enabled: true, description: '多语言翻译' },
-      { id: '3', name: 'code_helper', nameZh: '编程助手', icon: '💻', enabled: true, description: '代码编写和调试' },
+      { id: '1', name: 'morning_brief', nameZh: '晨间简报', icon: '🌅', enabled: true, description: '每天早上自动总结今日待办' },
+      { id: '2', name: 'mood_check', nameZh: '心情关怀', icon: '💝', enabled: true, description: '连续低落时主动关心' },
+      { id: '3', name: 'weekly_review', nameZh: '周报生成', icon: '📊', enabled: false, description: '每周日自动生成本周总结' },
+      { id: '4', name: 'habit_reminder', nameZh: '习惯提醒', icon: '🎯', enabled: true, description: '习惯打卡时间自动提醒' },
+      { id: '5', name: 'translate', nameZh: '翻译助手', icon: '🌐', enabled: true, description: '多语言翻译' },
     ]
   }
 }
