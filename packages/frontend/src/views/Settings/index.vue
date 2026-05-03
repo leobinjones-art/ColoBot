@@ -2,6 +2,7 @@
   <div class="settings-page">
     <div class="settings-header">
       <h1>{{ t('nav.settings') }}</h1>
+      <span v-if="saving" class="saving-indicator">{{ t('common.saving') }}</span>
     </div>
 
     <div class="settings-content">
@@ -160,10 +161,10 @@
 
           <!-- 操作按钮 -->
           <div class="setting-item actions">
-            <button class="action-btn" @click="showSecurityLog = true">
+            <button class="action-btn" @click="openSecurityLog">
               {{ t('privacy.viewSecurityLog') }}
             </button>
-            <button class="action-btn" @click="showDataPanel = true">
+            <button class="action-btn" @click="openDataPanel">
               {{ t('privacy.viewMyData') }}
             </button>
           </div>
@@ -236,25 +237,23 @@
         <div class="modal-body">
           <div class="log-section">
             <h4>{{ t('securityLog.today') }}</h4>
-            <div class="log-item">
-              <span class="log-time">10:23</span>
-              <span class="log-status success">✓</span>
-              <span>{{ t('securityLog.inputAudit') }} {{ t('securityLog.allPassed') }}</span>
+            <div v-if="securityLogs.length === 0" class="empty-log">
+              暂无日志记录
             </div>
-            <div class="log-item">
-              <span class="log-time">10:24</span>
-              <span class="log-status success">✓</span>
-              <span>{{ t('securityLog.outputAudit') }} {{ t('securityLog.allPassed') }}</span>
+            <div v-for="log in securityLogs" :key="log.id" class="log-item">
+              <span class="log-time">{{ log.time }}</span>
+              <span class="log-status" :class="log.status">{{ log.status === 'passed' ? '✓' : '⚠' }}</span>
+              <span>{{ log.message }}</span>
             </div>
           </div>
-          <div class="log-section">
+          <div v-if="securityStats" class="log-section">
             <h4>{{ t('securityLog.thisWeek') }}</h4>
             <div class="log-stats">
               <div class="stat-item">
-                <span>{{ t('securityLog.inputAudit') }}: 45 次，{{ t('securityLog.allPassed') }}</span>
+                <span>{{ t('securityLog.inputAudit') }}: {{ securityStats.inputTotal }} 次，{{ securityStats.inputPassed === securityStats.inputTotal ? t('securityLog.allPassed') : `${securityStats.inputTotal - securityStats.inputPassed} ${t('securityLog.intercepted')}` }}</span>
               </div>
               <div class="stat-item">
-                <span>{{ t('securityLog.outputAudit') }}: 45 次，0 {{ t('securityLog.intercepted') }}</span>
+                <span>{{ t('securityLog.outputAudit') }}: {{ securityStats.outputTotal }} 次，{{ securityStats.outputIntercepted }} {{ t('securityLog.intercepted') }}</span>
               </div>
             </div>
           </div>
@@ -272,22 +271,38 @@
         <div class="modal-body">
           <div class="data-section">
             <h4>{{ t('data.memories') }}</h4>
-            <div class="memory-list">
-              <div class="memory-item">• 你说你是程序员，主要用 TypeScript</div>
-              <div class="memory-item">• 你提到最近在做一个叫 ColoBot 的项目</div>
-              <div class="memory-item">• 你说每天大概 11 点睡觉</div>
+            <div v-if="memories.length === 0" class="empty-data">
+              AI 还没有记住任何关于你的事
             </div>
-            <div class="section-actions">
+            <div v-else class="memory-list">
+              <div v-for="memory in memories" :key="memory.id" class="memory-item">
+                • {{ memory.content }}
+              </div>
+            </div>
+            <div v-if="memories.length > 0" class="section-actions">
               <button class="action-btn small">{{ t('data.viewAll') }}</button>
-              <button class="action-btn small secondary">{{ t('common.edit') }}</button>
               <button class="action-btn small danger">{{ t('common.delete') }}</button>
             </div>
           </div>
           <div class="data-section">
-            <h4>{{ t('data.moodRecords') }}</h4>
-            <div class="mood-summary">
-              <span>最近 7 天平均: 7.2/10</span>
-              <span>趋势: 稳定</span>
+            <h4>{{ t('data.storageLocation') }}</h4>
+            <div class="data-location">
+              <div class="location-item">
+                <span class="status-dot success"></span>
+                <span>{{ t('data.conversationHistory') }}: {{ t('data.localOnly') }}</span>
+              </div>
+              <div class="location-item">
+                <span class="status-dot success"></span>
+                <span>{{ t('data.personalData') }}: {{ t('data.localOnly') }}</span>
+              </div>
+              <div class="location-item">
+                <span class="status-dot success"></span>
+                <span>{{ t('data.apiKey') }}: {{ t('data.localOnly') }}</span>
+              </div>
+              <div class="location-item">
+                <span class="status-dot"></span>
+                <span>{{ t('privacy.cloudSync') }}: {{ t('data.cloudSyncOff') }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -297,8 +312,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { behaviorApi, securityLogApi, userProfileApi } from '@/api'
 
 const { t } = useI18n()
 
@@ -333,21 +349,121 @@ const privacy = reactive({
 const showSecurityLog = ref(false)
 const showDataPanel = ref(false)
 const showApiKeyModal = ref(false)
+const saving = ref(false)
+
+const securityLogs = ref<any[]>([])
+const securityStats = ref<any>(null)
+const memories = ref<any[]>([])
+
+// Auto-save with debounce
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+
+function scheduleSave() {
+  if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(async () => {
+    saving.value = true
+    await saveBehavior()
+    saving.value = false
+  }, 500)
+}
+
+// Watch for changes
+watch(() => ({ ...behavior }), scheduleSave, { deep: true })
+watch(() => ({ ...mentalHealth }), scheduleSave, { deep: true })
+watch(() => privacy.safetyMode, scheduleSave)
+
+onMounted(async () => {
+  try {
+    // 加载行为设置
+    const behaviorRes: any = await behaviorApi.get()
+    if (behaviorRes.data) {
+      Object.assign(behavior, behaviorRes.data)
+      if (behaviorRes.data.mentalHealth) {
+        Object.assign(mentalHealth, behaviorRes.data.mentalHealth)
+      }
+      privacy.safetyMode = behaviorRes.data.safetyMode || 'normal'
+    }
+  } catch (e) {
+    console.error('Failed to load behavior settings', e)
+  }
+})
+
+async function loadSecurityLogs() {
+  try {
+    const [logsRes, statsRes]: any[] = await Promise.all([
+      securityLogApi.list(),
+      securityLogApi.stats()
+    ])
+    securityLogs.value = logsRes.data || []
+    securityStats.value = statsRes.data
+  } catch (e) {
+    console.error('Failed to load security logs', e)
+  }
+}
+
+async function loadMemories() {
+  try {
+    const res: any = await userProfileApi.memories()
+    memories.value = res.data || []
+  } catch (e) {
+    console.error('Failed to load memories', e)
+  }
+}
 
 function toggleSection(section: keyof typeof expandedSections) {
   expandedSections[section] = !expandedSections[section]
 }
 
-function exportData() {
-  // TODO: 实现数据导出
-  alert('数据导出功能开发中...')
+async function saveBehavior() {
+  try {
+    await behaviorApi.update({
+      ...behavior,
+      mentalHealth,
+      safetyMode: privacy.safetyMode
+    })
+  } catch (e) {
+    console.error('Failed to save behavior', e)
+  }
 }
 
-function confirmClearData() {
-  if (confirm('确定要清除所有数据吗？此操作不可恢复。')) {
-    // TODO: 实现数据清除
-    alert('数据清除功能开发中...')
+async function exportData() {
+  try {
+    const res: any = await userProfileApi.exportData()
+    const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `colobot-data-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('Failed to export data', e)
+    alert('导出失败')
   }
+}
+
+async function confirmClearData() {
+  if (confirm('确定要清除所有数据吗？此操作不可恢复。')) {
+    try {
+      await userProfileApi.clearData()
+      alert('数据已清除')
+    } catch (e) {
+      console.error('Failed to clear data', e)
+      alert('清除失败')
+    }
+  }
+}
+
+// 当打开安全日志时加载数据
+function openSecurityLog() {
+  showSecurityLog.value = true
+  loadSecurityLogs()
+}
+
+// 当打开数据面板时加载数据
+function openDataPanel() {
+  showDataPanel.value = true
+  loadMemories()
 }
 </script>
 
@@ -360,12 +476,20 @@ function confirmClearData() {
 
 .settings-header {
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .settings-header h1 {
   font-size: var(--cb-text-2xl);
   font-weight: 600;
   color: var(--cb-text-primary);
+}
+
+.saving-indicator {
+  font-size: var(--cb-text-sm);
+  color: var(--cb-text-tertiary);
 }
 
 .settings-section {

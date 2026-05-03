@@ -301,6 +301,76 @@ app.post('/api/v1/sentinel/scan/output', (req, res) => {
   })
 })
 
+// User Memories API
+app.get('/api/v1/user/memories', (req, res) => res.json({
+  code: 200,
+  data: [
+    { id: '1', content: '你是程序员，主要用 TypeScript', createdAt: '2026-05-01T10:00:00' },
+    { id: '2', content: '最近在做一个叫 ColoBot 的项目', createdAt: '2026-05-02T14:00:00' },
+    { id: '3', content: '每天大概 11 点睡觉', createdAt: '2026-05-02T20:00:00' },
+  ]
+}))
+
+app.delete('/api/v1/user/memories/:id', (req, res) => res.json({ code: 200, success: true }))
+
+app.get('/api/v1/user/export', (req, res) => res.json({
+  code: 200,
+  data: {
+    memories: [],
+    moods: [],
+    habits: [],
+    todos: [],
+    exportedAt: new Date().toISOString()
+  }
+}))
+
+app.post('/api/v1/user/clear', (req, res) => res.json({ code: 200, success: true }))
+
+// Security Logs API
+app.get('/api/v1/security/logs', (req, res) => res.json({
+  code: 200,
+  data: [
+    { id: '1', time: '10:23', type: 'input', status: 'passed', message: '输入审核通过' },
+    { id: '2', time: '10:24', type: 'output', status: 'passed', message: '输出审核通过' },
+    { id: '3', time: '10:25', type: 'output', status: 'intercepted', message: '输出包含敏感词"密码"，已替换' },
+  ]
+}))
+
+app.get('/api/v1/security/logs/stats', (req, res) => res.json({
+  code: 200,
+  data: {
+    inputTotal: 45,
+    inputPassed: 45,
+    outputTotal: 45,
+    outputPassed: 43,
+    outputIntercepted: 2,
+    interceptReasons: { sensitiveWord: 1, tooLong: 1 }
+  }
+}))
+
+// Behavior Settings API
+app.get('/api/v1/behavior', (req, res) => res.json({
+  code: 200,
+  data: {
+    style: 'normal',
+    proactivity: 'greet',
+    memory: 'important',
+    canSeeMood: true,
+    canSeeFinance: false,
+    canSeeHealth: false,
+    mentalHealth: {
+      watchMood: true,
+      proactiveCare: true,
+      suggestContact: false,
+      triggerDays: 7,
+      threshold: 4
+    },
+    safetyMode: 'normal'
+  }
+}))
+
+app.put('/api/v1/behavior', (req, res) => res.json({ code: 200, success: true }))
+
 // Chat API (SSE)
 app.post('/api/v1/chat/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream')

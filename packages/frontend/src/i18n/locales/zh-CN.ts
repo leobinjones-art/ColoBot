@@ -17,6 +17,7 @@ export default {
   },
   common: {
     save: '保存',
+    saving: '保存中...',
     cancel: '取消',
     edit: '编辑',
     delete: '删除',

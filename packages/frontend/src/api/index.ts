@@ -211,4 +211,21 @@ export const configApi = {
 // ==================== User Profile ====================
 export const userProfileApi = {
   get: () => http.get('/user/profile'),
+  memories: () => http.get('/user/memories'),
+  deleteMemory: (id: string) => http.delete(`/user/memories/${id}`),
+  exportData: () => http.get('/user/export'),
+  clearData: () => http.post('/user/clear'),
+}
+
+// ==================== Security Log ====================
+export const securityLogApi = {
+  list: (params?: { start?: string; end?: string }) =>
+    http.get('/security/logs', { params }),
+  stats: () => http.get('/security/logs/stats'),
+}
+
+// ==================== Behavior Settings ====================
+export const behaviorApi = {
+  get: () => http.get('/behavior'),
+  update: (data: any) => http.put('/behavior', data),
 }
