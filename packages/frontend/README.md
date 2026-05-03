@@ -1,130 +1,39 @@
 # @colobot/frontend
 
-ColoBot Vue 3 前端应用 — 面向普通用户的 AI 伙伴界面
+ColoBot 前端 — 普通用户的 AI 伙伴
 
 ---
 
-## 前置依赖
+## 特点
 
-### 运行时依赖
-
-前端通过 HTTP API 调用后端服务，需要以下包提供 API：
-
-| 包 | 用途 | API 端点 |
-|---|------|---------|
-| `@colobot/core` | 核心运行时、LLM 调用 | `/api/v1/chat/*`, `/api/v1/agents/*` |
-| `@colobot/sentinel` | 安全守护 | `/api/v1/sentinel/*` |
-| `@colobot/assistant` | 个人助理功能 | `/api/v1/todos/*`, `/api/v1/habits/*`, `/api/v1/moods/*` 等 |
-
-### 开发模式
-
-开发时可使用 `mock-server.ts` 模拟 API，无需启动完整后端：
-
-```bash
-# 终端 1：启动 mock API
-npx tsx mock-server.ts
-
-# 终端 2：启动前端开发服务器
-npm run dev
-```
-
-### 生产部署
-
-生产环境需要部署完整的 ColoBot 后端服务：
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    用户浏览器                            │
-│                  @colobot/frontend                       │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          │ HTTP API
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                   ColoBot Server                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │ @colobot/   │  │ @colobot/   │  │ @colobot/   │     │
-│  │   core      │  │  sentinel   │  │  assistant  │     │
-│  └─────────────┘  └─────────────┘  └─────────────┘     │
-└─────────────────────────────────────────────────────────┘
-```
+- **零概念** — 不需要知道 Agent/Provider/SOP 等技术术语
+- **零配置** — 没有配置文件，所有设置通过界面完成
+- **隐私优先** — 数据只存在你的设备上
 
 ---
 
-基于 Vue 3 + TypeScript + Vite 的 Web 应用，提供：
+## 功能
 
-- **对话控制台** — SSE 流式对话、工具调用可视化、用户画像上下文
-- **智能体管理** — 创建和配置 AI 智能体
-- **个人助理** — 待办、习惯、情绪、财务等 8 个模块
-- **安全守护** — Sentinel 状态监控
-- **系统设置** — 模型配置、功能开关
+### 核心功能
 
-### 技术栈
-
-- Vue 3 + Composition API
-- TypeScript 5.6
-- Vite 6
-- Pinia 状态管理
-- Vue Router 4
-- ECharts 图表
-- SSE 流式响应
-- highlight.js + DOMPurify
-
----
-
-## 发展方向：普通用户版
-
-> 详细规划见 [docs/consumer-version-roadmap.md](../../docs/consumer-version-roadmap.md)
-
-### 目标
-
-把 ColoBot 的架构能力封装成普通用户能理解的产品：
-
-- **零概念** — 用户不需要知道 Agent/Tool/Provider
-- **零配置** — 默认值即最优，高级选项折叠
-- **零部署** — 桌面应用，下载即用
-
-### 核心差异化
-
-| 维度 | LLM 演示产品 | ColoBot 普通用户版 |
-|------|-------------|-------------------|
-| 记忆 | 每次从头开始 | 长期记忆，越用越懂你 |
-| 主动性 | 等你提问 | 主动关心你的状态 |
-| 安全感 | 黑盒承诺 | 可查看、可控制、可审计 |
-| 定制性 | 选预设角色 | 开关式定制行为 |
-
-### 功能优先级
-
-**P0：核心体验闭环**
-
-| 功能 | 状态 |
+| 功能 | 说明 |
 |------|------|
-| 引导式初始设置 | 📋 规划中 |
-| 基础对话 | ✅ 已实现 |
-| 长期记忆 | ✅ 已实现（用户画像） |
-| 安全日志 | 📋 规划中 |
-| 行为开关 | 📋 规划中 |
+| 对话 | 和 AI 聊天，AI 会记住你说过的话 |
+| 自动化 | 每天提醒待办、心情不好时关心你、每周总结 |
+| 安全保护 | 自动过滤敏感信息，防止泄露 |
+| 个人助理 | 待办、习惯、心情、目标、财务等 |
 
-**P1：差异化体验**
+### 设置
 
-| 功能 | 状态 |
+| 设置 | 选项 |
 |------|------|
-| 轻度主动问候 | 📋 规划中 |
-| 情绪日记 | ✅ 已实现（Moods 页面） |
-| 数据导出/删除 | 📋 规划中 |
-| 端到端加密同步 | 📋 规划中 |
-
-**P2：生态扩展**
-
-| 功能 | 状态 |
-|------|------|
-| 插件市场 | 📋 规划中 |
-| 深度主动关心 | 📋 规划中（见心理健康干预规划） |
-| Web 版 | ✅ 已实现 |
+| AI 行为 | 简洁/标准/详细、被动/问候/关心 |
+| 心理健康 | 心情追踪、低落时关心、提醒联系朋友 |
+| 隐私 | 查看AI记住的事、导出数据、清除数据 |
 
 ---
 
-## 开发指南
+## 开发
 
 ### 开发环境
 
@@ -134,13 +43,18 @@ cd packages/frontend
 # 安装依赖
 npm install
 
-# 启动开发服务器（需要 mock API）
-npm run dev
-
-# 启动 mock API 服务器
+# 启动 mock API（模拟后端）
 npx tsx mock-server.ts
 
-# 构建
+# 启动前端开发服务器
+npx vite
+```
+
+访问 http://localhost:5173
+
+### 构建
+
+```bash
 npm run build
 ```
 
@@ -149,65 +63,51 @@ npm run build
 ```
 packages/frontend/
 ├── src/
-│   ├── views/           # 页面组件
-│   │   ├── ChatConsole.vue    # 对话控制台
-│   │   ├── Agents.vue         # 智能体管理
-│   │   ├── Assistant/         # 个人助理模块
-│   │   ├── Settings/          # 设置页面
-│   │   └── layout/            # 布局组件
-│   ├── components/
-│   │   ├── chat/        # 对话相关组件
-│   │   ├── settings/    # 设置相关组件
-│   │   └── common/      # 通用组件
-│   ├── api/             # API 模块
-│   ├── stores/          # Pinia stores
-│   ├── composables/     # 组合式函数
-│   ├── types/           # TypeScript 类型
-│   ├── utils/           # 工具函数
+│   ├── views/           # 页面
+│   │   ├── Home.vue           # 首页
+│   │   ├── ChatConsole.vue    # 对话
+│   │   ├── Agents.vue         # AI 助手
+│   │   ├── Skills.vue         # 自动化
+│   │   ├── Sentinel.vue       # 安全保护
+│   │   ├── Onboarding.vue     # 引导流程
+│   │   ├── Settings/          # 设置
+│   │   └── Assistant/         # 个人助理模块
+│   ├── components/      # 组件
+│   ├── api/             # API
+│   ├── stores/          # 状态
 │   └── i18n/            # 国际化
-├── mock-server.ts       # Mock API 服务器
+├── mock-server.ts       # Mock API
 └── dist/                # 构建输出
 ```
 
-### 创意组件
+---
 
-- `StreamProgress` — 流式响应阶段可视化
-- `ToolCallCard` — 工具调用展示
-- `AchievementToast` — 成就庆祝弹窗（金色光晕、粒子效果）
-- `CommandPalette` — 快捷命令面板（⌘K）
+## 技术栈
+
+- Vue 3 + TypeScript
+- Vite
+- Pinia
+- Vue Router
+- ECharts
+- SSE 流式响应
 
 ---
 
-## 与开发者版的关系
+## 后端依赖
 
-| 开发者版 | 普通用户版（前端） |
-|---------|-------------------|
-| CLI/TUI | Web/Desktop GUI |
-| 配置文件 | 设置界面 |
-| CLI 命令 | 界面按钮 |
-| `/context` | 数据面板 |
-| Sentinel 日志 | 安全日志界面 |
+生产环境需要部署 ColoBot 后端：
 
-前端复用开发者版核心包：
+| 包 | 用途 |
+|---|------|
+| `@colobot/core` | 核心运行时、LLM 调用 |
+| `@colobot/sentinel` | 安全守护 |
+| `@colobot/assistant` | 个人助理功能 |
 
-- `@colobot/core` — 运行时
-- `@colobot/sentinel` — 安全守护
-- `@colobot/assistant` — 个人助理功能
-
----
-
-## 发布路线
-
-| 阶段 | 目标 | 依赖 |
-|------|------|------|
-| Alpha | 技术用户内测 | 开发者版 v0.4 |
-| Beta | 非技术用户测试 | Alpha 反馈后 2-4 周 |
-| 1.0 | 正式发布 | Beta 稳定后 |
+开发时可用 mock-server 模拟。
 
 ---
 
 ## 相关文档
 
-- [心理健康主动干预规划](../../docs/mental-health-intervention.md)
-- [普通用户版完整规划](../../docs/consumer-version-roadmap.md)
 - [隐私政策](../../PRIVACY.md)
+- [心理健康干预规划](../../docs/mental-health-intervention.md)
