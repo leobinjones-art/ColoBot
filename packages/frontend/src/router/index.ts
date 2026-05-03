@@ -7,8 +7,15 @@ const router = createRouter({
     {
       path: '/',
       component: () => import('@/views/layout/MainLayout.vue'),
-      redirect: '/chat',
+      redirect: '/home',
       children: [
+        // 首页
+        {
+          path: 'home',
+          name: 'Home',
+          component: () => import('@/views/Home.vue'),
+          meta: { title: 'Home' },
+        },
         // 核心
         {
           path: 'chat',
@@ -124,6 +131,11 @@ const router = createRouter({
       component: () => import('@/views/Login.vue'),
     },
     {
+      path: '/onboarding',
+      name: 'Onboarding',
+      component: () => import('@/views/Onboarding.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/chat',
     },
@@ -131,10 +143,15 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
+  const onboarded = localStorage.getItem('colobot_onboarded')
+
   if (to.name === 'Login' && isLoggedIn()) {
     next({ path: '/' })
   } else if (to.name !== 'Login' && !isLoggedIn()) {
     next({ name: 'Login' })
+  } else if (to.name !== 'Onboarding' && isLoggedIn() && !onboarded) {
+    // 已登录但未完成引导，跳转到引导页
+    next({ name: 'Onboarding' })
   } else {
     next()
   }
