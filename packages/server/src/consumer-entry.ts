@@ -19,8 +19,11 @@ import {
   healthCheck,
   livenessCheck,
   initHealthChecker,
+  createGracefulShutdown,
+  Logger,
 } from '@colobot/core'
 
+const logger = new Logger({ prefix: 'server' })
 const PORT = parseInt(process.env.PORT || '3000')
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -280,16 +283,23 @@ function main() {
   // 启动服务器
   const server = createServer()
   server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
+    logger.info(`Server running on http://localhost:${PORT}`)
   })
 
   // 优雅关闭
-  process.on('SIGTERM', () => {
-    console.log('Shutting down...')
-    server.close(() => {
-      console.log('Server stopped')
-      process.exit(0)
-    })
+  createGracefulShutdown({
+    server,
+    timeout: 30000,
+    cleanup: async () => {
+      logger.info('Cleaning up resources...')
+      // 这里可以添加数据库关闭等清理逻辑
+    },
+    onShutdown: () => {
+      logger.info('Server stopped gracefully')
+    },
+    onSignal: (signal) => {
+      logger.info(`Received ${signal}, starting graceful shutdown...`)
+    },
   })
 }
 

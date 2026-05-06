@@ -269,3 +269,14 @@ export {
   ErrorCodes,
   type ErrorCategory,
 } from './errors/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 优雅关闭
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  GracefulShutdown,
+  createGracefulShutdown,
+  setupSimpleShutdown,
+  type ShutdownOptions,
+} from './shutdown/index.js'
