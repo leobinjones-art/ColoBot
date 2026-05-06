@@ -4,7 +4,7 @@
 
 **TypeScript AI Agent Framework with Built-in Security Guardian**
 
-Multi-modal AI × Security Parent Agent × Personal Assistant
+Multi-modal AI × Security Parent Agent × Charter License System
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
@@ -18,9 +18,100 @@ Multi-modal AI × Security Parent Agent × Personal Assistant
 
 ColoBot is a **TypeScript AI Agent framework with built-in security guardian**.
 
-It transforms the "personal assistant" concept into a programmable, extensible modular system, featuring an **industry-first independent security parent agent**.
+It transforms the "personal assistant" concept into a programmable, extensible modular system, featuring an **industry-first independent security parent agent** and **Charter license system**.
 
 You can quickly build an intelligent assistant that manages todos, writes papers, and codes - **without ever worrying about it saying something it shouldn't**.
+
+---
+
+## Core Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         应用层                                   │
+│  frontend (Vue 3)  │  tui (终端UI)  │  server (API服务)         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                         安全层                                   │
+│  sentinel - 独立安全守护，平行链路，不参与业务逻辑               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                         许可层                                   │
+│  charter - 许可证系统，定义AI能力边界，绑定文档库防幻觉          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                         运行时层                                 │
+│  core - Agent运行时、LLM调用、工具执行、子Agent管理              │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                         基础层                                   │
+│  types - 共享类型定义，零依赖                                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Features
+
+### Charter License System
+
+**Define what AI can do** through licenses:
+
+```typescript
+import { charterManager } from '@colobot/charter'
+
+// Request a license
+const instance = charterManager.requestCharter(userId, {
+  type: 'academic',
+  reason: 'Writing a paper'
+})
+
+// Check capability
+const result = charterManager.checkCapability(userId, 'paper-writing')
+if (result.allowed) {
+  // Get relevant document library entries (prevent hallucination)
+  const library = charterManager.getCharterLibrary(result.charter.charterId)
+}
+```
+
+**Built-in Charters**:
+- `academic` - Paper writing, literature review, citation formatting
+- `legal` - Contract drafting, disclaimer generation, legal analysis
+- `longdoc` - Long document processing with partition support
+
+### Sentinel Security Guardian
+
+**Independent security layer** that never participates in business logic:
+
+```typescript
+import { Sentinel, CharterGuard } from '@colobot/sentinel'
+
+const sentinel = new Sentinel()
+const guard = new CharterGuard()
+
+// Input scanning (< 1ms)
+const result = sentinel.scanInput(userMessage)
+
+// Charter permission check
+const capResult = guard.checkCapability(userId, 'paper-writing')
+```
+
+### Sub-Agent Architecture
+
+**Break LLM context limits** for large file processing:
+
+```typescript
+import { readChunksByTokens, runSubAgentTask } from '@colobot/core'
+
+const chunks = readChunksByTokens(largeFile, { maxTokens: 10000 })
+const results = await Promise.all(
+  chunks.map(chunk => runSubAgentTask({ task: 'analyze', input: chunk }))
+)
+```
 
 ---
 

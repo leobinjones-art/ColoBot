@@ -111,6 +111,15 @@ export {
 // 日志工具
 export { createLogger, setLogLevel, getLogLevel, type Logger, type LogLevel } from './logger.js'
 
+// Charter 许可证守护
+export {
+  CharterGuard,
+  CharterGuardConfig,
+  CapabilityCheckResult,
+  getCharterGuard,
+  resetCharterGuard,
+} from './charter-guard.js'
+
 // ═══════════════════════════════════════════════════════════════
 // 安全守护母 Agent 主类
 // ═══════════════════════════════════════════════════════════════

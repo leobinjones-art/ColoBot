@@ -1,0 +1,39 @@
+{
+  "$schema": "https://colobot.org/schemas/library.json",
+  "id": "library-medical",
+  "name": "Medical Document Library",
+  "description": "Medical terminology, clinical documentation standards, and healthcare writing guidelines",
+  "entries": [
+    {
+      "id": "clinical-documentation-standard",
+      "type": "regulation",
+      "title": "Clinical Documentation Standards",
+      "content": "# Clinical Documentation Standards\n\n## SOAP Note Format\n- **Subjective**: Patient's reported symptoms and concerns\n- **Objective**: Measurable findings (vitals, exam results)\n- **Assessment**: Clinical interpretation and diagnosis\n- **Plan**: Treatment plan and follow-up\n\n## Documentation Principles\n1. Accuracy: Record exactly what was observed/reported\n2. Timeliness: Document as close to the event as possible\n3. Completeness: Include all relevant information\n4. Legibility: Clear and readable entries",
+      "tags": ["documentation", "clinical", "standards"],
+      "source": {
+        "author": "Medical Standards Board",
+        "date": "2024-01-01"
+      }
+    },
+    {
+      "id": "medical-terminology-icd10",
+      "type": "reference",
+      "title": "ICD-10 Terminology Guidelines",
+      "content": "# ICD-10 Coding Guidelines\n\n## Basic Principles\n- Use the most specific code available\n- Code to the highest level of specificity\n- Do not code suspected conditions as confirmed\n\n## Common Categories\n- A00-B99: Infectious diseases\n- C00-D49: Neoplasms\n- E00-E89: Endocrine and metabolic diseases\n- I00-I99: Diseases of the circulatory system\n- M00-M99: Diseases of the musculoskeletal system",
+      "tags": ["terminology", "icd-10", "coding"]
+    },
+    {
+      "id": "patient-privacy-hipaa",
+      "type": "regulation",
+      "title": "HIPAA Privacy Guidelines",
+      "content": "# HIPAA Privacy Guidelines\n\n## Protected Health Information (PHI)\n- Patient names\n- Dates (birth, admission, discharge)\n- Geographic data (address, zip code)\n- Phone/fax numbers\n- Email addresses\n- Social Security numbers\n- Medical record numbers\n\n## Documentation Requirements\n1. Minimum necessary standard\n2. Patient consent for disclosure\n3. Audit trail for access\n4. Secure storage and transmission",
+      "tags": ["privacy", "hipaa", "compliance"]
+    }
+  ],
+  "author": {
+    "name": "Your Name",
+    "email": "your@email.com"
+  },
+  "version": "1.0.0",
+  "license": "CC-BY-4.0"
+}

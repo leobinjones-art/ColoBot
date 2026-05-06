@@ -1,0 +1,38 @@
+{
+  "$schema": "https://colobot.org/schemas/charter.json",
+  "id": "charter-medical",
+  "type": "medical",
+  "name": "Medical Document Charter",
+  "description": "Unlock medical document writing capabilities with clinical terminology support",
+  "capabilities": [
+    {
+      "name": "clinical-report",
+      "description": "Write clinical reports and medical documentation",
+      "allowedTools": ["write_file", "read_file"],
+      "constraints": {
+        "requireTerminologyValidation": true,
+        "terminologyStandard": "ICD-10"
+      }
+    },
+    {
+      "name": "patient-summary",
+      "description": "Generate patient case summaries",
+      "allowedTools": ["write_file", "read_file"],
+      "constraints": {
+        "anonymizeRequired": true,
+        "maxPatientDetails": "limited"
+      }
+    }
+  ],
+  "libraryId": "library-medical",
+  "disclaimer": "This charter enables medical document writing. All content must be reviewed by qualified medical professionals. Not for clinical decision-making.",
+  "validityMs": 43200000,
+  "requireConfirmation": true,
+  "author": {
+    "name": "Your Name",
+    "email": "your@email.com",
+    "url": "https://github.com/yourname"
+  },
+  "version": "1.0.0",
+  "tags": ["medical", "clinical", "healthcare"]
+}
