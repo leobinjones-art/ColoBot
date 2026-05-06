@@ -56,21 +56,22 @@ _This is perhaps the deepest difference between ColoBot and all other AI framewo
 
 ## Why ColoBot
 
-Most AI Agent frameworks focus on **how to call tools**, but overlook **how to call them safely** and **how to reuse domain knowledge**.
+Most AI Agent frameworks focus on **how to call tools**, but overlook **how to call them safely** and **how to prevent hallucination**.
 
 ColoBot solves three overlooked core problems from first principles:
 
 | Problem                   | ColoBot's Solution                                                                                                         |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Unbypassable Security** | Independent security parent agent guards all incoming/outgoing messages, no need to embed security checks in business code |
-| **Reusable Knowledge**    | SOP encapsulates complex workflows like "academic research" and "code refactoring" into shareable skill modules            |
+| **Unbypassable Security** | Independent Sentinel agent guards all messages, can takeover on anomaly                                                    |
+| **Hallucination Prevention** | Charter license + document library = evidence-based output                                                              |
 | **Modular to the Core**   | 18 personal assistant modules (todo, notes, habits, etc.) ready to use, not just a tool registry                           |
 
 ### Core Features
 
-- 🛡️ **Security Guardian**: Independent security parent agent with input/output scanning, process monitoring, and exception takeover
+- 🛡️ **Security Guardian**: Independent Sentinel agent with input/output scanning, process monitoring, and exception takeover
+- 📜 **Charter System**: License-based capability unlocking with document library support
 - 🤖 **Multi-LLM Support**: OpenAI, Anthropic, MiniMax, custom APIs
-- 🧠 **Sub-Agent Collaboration**: Task decomposition, parallel execution, tool whitelisting
+- 🧠 **Dynamic Orchestration**: AI dynamically manages workflows, no preset SOP needed
 - 🖼️ **Multi-modal**: Text, images, audio
 - 🐍 **Python WASM**: Pyodide sandbox execution, no system Python required
 - 📋 **Personal Assistant**: 18 modules including todo, reminders, calendar, notes, habit tracking
@@ -85,7 +86,7 @@ ColoBot solves three overlooked core problems from first principles:
 colobot/
 ├── packages/
 │   ├── types/           # Type definitions
-│   ├── sentinel/        # Security Guardian Parent Agent
+│   ├── sentinel/        # Security Guardian (Bypass Architecture)
 │   │   ├── rule-engine/ # Rule engine (Trie tree for sensitive words)
 │   │   ├── heartbeat/   # Heartbeat protocol
 │   │   ├── state/       # State synchronization
@@ -96,9 +97,11 @@ colobot/
 │   │   ├── runtime/     # Agent runtime
 │   │   ├── memory/      # Memory system
 │   │   ├── tools/       # Tool system (including Python WASM)
-│   │   ├── subagents/   # Sub-agents
 │   │   └── config/      # Configuration management
-│   ├── assistant/       # Core assistant
+│   ├── charter/         # Charter License System (Planned)
+│   │   ├── charters/    # License definitions
+│   │   └── libraries/   # Document libraries
+│   ├── assistant/       # Personal assistant modules
 │   │   ├── task/        # Todo, reminders
 │   │   ├── schedule/    # Calendar
 │   │   ├── knowledge/   # Notes, bookmarks
@@ -108,9 +111,7 @@ colobot/
 │   │   ├── project/     # Projects
 │   │   └── tools/       # Password, time tracking
 │   ├── tui/             # Terminal UI
-│   ├── frontend/        # Vue 3 Web UI
-│   ├── sop-base/        # SOP flow engine base class
-│   └── sop-academic/    # Academic SOP
+│   └── frontend/        # Vue 3 Web UI
 └── _legacy/             # Legacy code (to be migrated)
 ```
 
@@ -824,6 +825,93 @@ export function registerMyTool(): void {
 
 ---
 
+## Future Roadmap
+
+### Charter License System
+
+ColoBot is evolving from SOP-based workflow to a **Charter License System**:
+
+```
+Default: Maximum Restriction (Prevent Hallucination)
+    ↓
+Charter License
+    - Unlock specific capabilities
+    - Bind document libraries
+    - Define boundaries and disclaimers
+    ↓
+Execution: Evidence-based output, no hallucination
+    ↓
+Sentinel: Bypass guardian
+```
+
+**Core Concept:**
+
+| State | Capability | Document Library |
+|-------|------------|------------------|
+| Default | Restricted | None |
+| Academic Charter | Paper writing | Citation rules, academic standards |
+| Legal Charter | Legal documents | Legal clauses, disclaimer templates |
+| LongDoc Charter | Long documents | Partition processing rules |
+
+**Why Charter?**
+
+- AI dynamically orchestrates workflows (no need for SOP)
+- Charter unlocks capabilities + document library prevents hallucination
+- Output is evidence-based, traceable
+
+### Planned Packages
+
+```
+@colobot/charter
+    ├── charters/           # License definitions
+    │   ├── academic.ts     # Academic writing charter
+    │   ├── legal.ts        # Legal document charter
+    │   └── longdoc.ts      # Long document charter
+    ├── libraries/          # Document libraries
+    │   ├── citations/      # Citation standards
+    │   ├── templates/      # Document templates
+    │   └── regulations/    # Legal clauses
+    └── index.ts
+```
+
+---
+
+## Academic Papers
+
+ColoBot's architecture is documented in two academic papers:
+
+### Paper 1: Heterogeneous Agent Architecture for Non-Technical Users
+
+**Title:** Design and Implementation of Heterogeneous Agent Architecture for Non-Technical Users
+
+**Core Contributions:**
+1. Heterogeneous agent collaboration (active vs passive agents)
+2. Zero-concept UI design for ordinary users
+3. Sentinel as first-class citizen agent (bypass architecture)
+4. Seven-dimensional user profiling
+
+**Key Innovation:**
+- Active agents: Decision-making (Main Agent, Sentinel)
+- Passive agents: Execution (Sub-agents)
+- Sentinel is independent from business agents, can takeover on anomaly
+
+### Paper 2: Multi-Layer Safety Guard Mechanism
+
+**Title:** Design and Implementation of Multi-Layer Safety Guard Mechanism for AI Assistants
+
+**Core Contributions:**
+1. Bypass-style safety architecture (vs embedded safety)
+2. Three-layer defense: Rule engine → Local model → LLM takeover
+3. Context-aware takeover mechanism
+4. Charter license system for hallucination prevention
+
+**Key Innovation:**
+- Safety as architectural principle, not add-on
+- Sentinel monitors independently, can takeover business agents
+- Charter + Document Library = Evidence-based output
+
+---
+
 ## Project Statistics
 
 | Metric            | Value                    |
@@ -835,19 +923,6 @@ export function registerMyTool(): void {
 | Assistant Modules | 18 + Logging System      |
 | Test Cases        | 522                      |
 | Test Coverage     | 56%+                     |
-
----
-
-## Environment Variables
-
-| Variable                 | Description                       |
-| ------------------------ | --------------------------------- |
-| `OPENAI_API_KEY`         | OpenAI API Key                    |
-| `ANTHROPIC_API_KEY`      | Anthropic API Key                 |
-| `MINIMAX_API_KEY`        | MiniMax API Key                   |
-| `COLOBOT_LOG_LEVEL`      | Log level (debug/info/warn/error) |
-| `COLOBOT_LOG_CONSOLE`    | Output to console (true/false)    |
-| `COLOBOT_ENCRYPTION_KEY` | Password encryption key           |
 
 ---
 

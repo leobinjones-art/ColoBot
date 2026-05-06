@@ -26,21 +26,22 @@ ColoBot 是一个**自带安全守护**的 TypeScript AI Agent 框架。
 
 ## 为什么选择 ColoBot
 
-大多数 AI Agent 框架专注于**如何调用工具**，却忽略了**如何安全调用**和**如何复用领域知识**。
+大多数 AI Agent 框架专注于**如何调用工具**，却忽略了**如何安全调用**和**如何防止幻觉**。
 
 ColoBot 从第一性原理出发，解决三个被忽视的核心问题：
 
 | 问题             | ColoBot 的解法                                                        |
 | ---------------- | --------------------------------------------------------------------- |
-| **安全不可绕过** | 独立的安全母 Agent 守护所有进出消息，无需在业务代码中嵌入安全检查     |
-| **知识可复用**   | SOP 将"学术调研""代码重构"等复杂流程封装为可共享的技能模块            |
+| **安全不可绕过** | 独立的 Sentinel Agent 守护所有消息，异常时可接管                     |
+| **幻觉防护**     | Charter 许可证 + 文档库 = 有据可查的输出                              |
 | **模块化到底**   | 18 个个人助理模块（待办、笔记、习惯等）开箱即用，而非仅提供工具注册表 |
 
 ### 核心特点
 
-- 🛡️ **安全守护**: 独立的安全母 Agent，输入输出扫描、进程守护、异常接管
+- 🛡️ **安全守护**: 独立的 Sentinel Agent，输入输出扫描、进程守护、异常接管
+- 📜 **Charter 系统**: 许可证解锁能力 + 文档库支撑
 - 🤖 **多 LLM 支持**: OpenAI、Anthropic、MiniMax、自定义 API
-- 🧠 **子 Agent 协作**: 任务分解、并行执行、工具白名单
+- 🧠 **AI 动态编排**: AI 动态管理流程，无需预设 SOP
 - 🖼️ **多模态**: 文本、图片、音频
 - 🐍 **Python WASM**: Pyodide 沙箱执行，无需系统 Python
 - 📋 **个人助理**: 待办、提醒、日程、笔记、习惯追踪等 18 个模块
@@ -55,7 +56,7 @@ ColoBot 从第一性原理出发，解决三个被忽视的核心问题：
 colobot/
 ├── packages/
 │   ├── types/           # 类型定义
-│   ├── sentinel/        # 安全守护母 Agent
+│   ├── sentinel/        # 安全守护（旁路架构）
 │   │   ├── rule-engine/ # 规则引擎（Trie树敏感词）
 │   │   ├── heartbeat/   # 心跳协议
 │   │   ├── state/       # 状态同步
@@ -66,9 +67,11 @@ colobot/
 │   │   ├── runtime/     # Agent 运行时
 │   │   ├── memory/      # 记忆系统
 │   │   ├── tools/       # 工具系统（含 Python WASM）
-│   │   ├── subagents/   # 子 Agent
 │   │   └── config/      # 配置管理
-│   ├── assistant/       # 核心助理
+│   ├── charter/         # Charter 许可证系统（规划中）
+│   │   ├── charters/    # 许可证定义
+│   │   └── libraries/   # 文档库
+│   ├── assistant/       # 个人助理模块
 │   │   ├── task/        # 待办、提醒
 │   │   ├── schedule/    # 日程
 │   │   ├── knowledge/   # 笔记、收藏
@@ -640,6 +643,93 @@ export function registerMyTool(): void {
 
 ---
 
+## 未来规划
+
+### Charter 许可证系统
+
+ColoBot 正在从 SOP 工作流演进为 **Charter 许可证系统**：
+
+```
+默认状态：最大限制（防幻觉）
+    ↓
+Charter 许可证
+    - 解锁特定能力
+    - 绑定文档库
+    - 定义边界和免责
+    ↓
+执行：有据可查，不触发幻觉
+    ↓
+Sentinel：旁路守护
+```
+
+**核心概念：**
+
+| 状态 | 能力 | 文档库 |
+|------|------|--------|
+| 默认 | 受限 | 无 |
+| Academic Charter | 论文写作 | 引用规范、学术标准 |
+| Legal Charter | 法律文书 | 法律条款、免责模板 |
+| LongDoc Charter | 长文档 | 分区处理规则 |
+
+**为什么需要 Charter？**
+
+- AI 动态编排工作流（无需 SOP）
+- Charter 解锁能力 + 文档库防止幻觉
+- 输出有据可查，可追溯
+
+### 规划中的包
+
+```
+@colobot/charter
+    ├── charters/           # 许可证定义
+    │   ├── academic.ts     # 学术写作特许
+    │   ├── legal.ts        # 法律文书特许
+    │   └── longdoc.ts      # 长文档特许
+    ├── libraries/          # 文档库
+    │   ├── citations/      # 引用规范
+    │   ├── templates/      # 文书模板
+    │   └── regulations/    # 法规条款
+    └── index.ts
+```
+
+---
+
+## 学术论文
+
+ColoBot 的架构记录在两篇学术论文中：
+
+### 论文一：面向普通用户的异构智能体架构
+
+**标题：** 面向普通用户的异构智能体架构设计与实现
+
+**核心贡献：**
+1. 异构智能体协作（主动型 vs 被动型）
+2. 零概念用户界面设计
+3. Sentinel 作为一等公民 Agent（旁路架构）
+4. 七维用户画像
+
+**核心创新：**
+- 主动型智能体：决策（主 Agent、Sentinel）
+- 被动型智能体：执行
+- Sentinel 独立于业务智能体，异常时可接管
+
+### 论文二：多层安全守护机制
+
+**标题：** AI助手中的多层安全守护机制设计与实现
+
+**核心贡献：**
+1. 旁路式安全架构（vs 内嵌式安全）
+2. 三层防御：规则引擎 → 本地模型 → LLM 接管
+3. 带上下文的接管机制
+4. Charter 许可证系统防止幻觉
+
+**核心创新：**
+- 安全是架构原则，非附加组件
+- Sentinel 独立监控，可接管业务 Agent
+- Charter + 文档库 = 有据可查的输出
+
+---
+
 ## 项目统计
 
 | 指标       | 数值                  |
@@ -647,23 +737,10 @@ export function registerMyTool(): void {
 | 版本       | 0.3.1                 |
 | 总代码量   | ~28,500 行 TypeScript |
 | 源文件数   | 146 个                |
-| 包数量     | 7 个                  |
+| 包数量     | 8 个                  |
 | 助理模块   | 18 个 + 日志系统      |
 | 测试用例   | 522 个                |
 | 测试覆盖率 | 56%+                  |
-
----
-
-## 环境变量
-
-| 变量                     | 说明                             |
-| ------------------------ | -------------------------------- |
-| `OPENAI_API_KEY`         | OpenAI API Key                   |
-| `ANTHROPIC_API_KEY`      | Anthropic API Key                |
-| `MINIMAX_API_KEY`        | MiniMax API Key                  |
-| `COLOBOT_LOG_LEVEL`      | 日志级别 (debug/info/warn/error) |
-| `COLOBOT_LOG_CONSOLE`    | 是否输出到控制台 (true/false)    |
-| `COLOBOT_ENCRYPTION_KEY` | 密码加密密钥                     |
 
 ---
 
