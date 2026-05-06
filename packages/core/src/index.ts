@@ -218,3 +218,34 @@ export {
   type WechatArticle,
   type WechatArticleOptions,
 } from './skills/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 健康检查
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  initHealthChecker,
+  healthCheck,
+  livenessCheck,
+  readinessCheck,
+  type HealthStatus,
+  type HealthCheck,
+  type HealthCheckerConfig,
+} from './health/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 配置存储（消费者版）
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  isConfigured,
+  loadConfig,
+  saveConfig,
+  completeOnboarding,
+  verifyAdminPassword,
+  getConfigDir,
+  getDbPath,
+  resetConfig,
+  exportConfig,
+  type ColoBotConfig,
+} from './config-store/index.js'

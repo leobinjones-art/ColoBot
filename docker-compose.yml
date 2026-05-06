@@ -1,17 +1,86 @@
+# ColoBot Docker Compose
+# Complete stack with PostgreSQL and Redis
+
 services:
-  postgres:
-    image: pgvector/pgvector:pg18
-    container_name: colobot-postgres
-    environment:
-      POSTGRES_USER: colobot
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-colobot_dev_password}
-      POSTGRES_DB: colobot
+  colobot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: colobot/colobot:${VERSION:-latest}
+    container_name: colobot
+    restart: unless-stopped
     ports:
-      - '5432:5432'
-    volumes:
-      - /tmp/colobot_pgdata:/var/lib/postgresql
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # LLM Providers
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
+      - MINIMAX_GROUP_ID=${MINIMAX_GROUP_ID:-}
+      # Database
+      - DATABASE_URL=postgresql://colobot:${DB_PASSWORD:-colobot}@postgres:5432/colobot
+      # Redis (for Sentinel distributed mode)
+      - REDIS_URL=redis://redis:6379
+      # Config
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U colobot -d colobot']
-      interval: 5s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - colobot-network
+    volumes:
+      - colobot-data:/app/data
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: colobot-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=colobot
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-colobot}
+      - POSTGRES_DB=colobot
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U colobot"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - colobot-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: colobot-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - colobot-network
+
+networks:
+  colobot-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  colobot-data:
