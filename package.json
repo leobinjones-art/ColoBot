@@ -1,6 +1,6 @@
 {
   "name": "colobot-monorepo",
-  "version": "0.3.0",
+  "version": "0.2.0",
   "description": "自带安全守护的 AI Agent 框架 — 多模态 AI × 安全母 Agent × 个人助理",
   "license": "AGPL-3.0",
   "type": "module",
