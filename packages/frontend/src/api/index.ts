@@ -209,6 +209,18 @@ export const configApi = {
   export: () => http.get('/config/export'),
 }
 
+// ==================== Charter ====================
+export const charterApi = {
+  list: () => http.get('/charters'),
+  active: () => http.get('/charters/active'),
+  apply: (data: { type: string; reason: string; sessionId?: string }) =>
+    http.post('/charters/apply', data),
+  revoke: (instanceId: string) => http.post(`/charters/${instanceId}/revoke`),
+  checkCapability: (capability: string) =>
+    http.get(`/charters/check?capability=${capability}`),
+  definitions: () => http.get('/charters/definitions'),
+}
+
 // ==================== User Profile ====================
 export const userProfileApi = {
   get: () => http.get('/user/profile'),

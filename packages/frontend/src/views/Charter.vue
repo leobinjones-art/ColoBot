@@ -87,13 +87,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { charterApi } from '@/api'
 
 const { t } = useI18n()
 
 interface Charter {
   id: string
+  charterId: string
   type: string
   status: string
   expiresAt?: number
@@ -110,48 +112,11 @@ interface CharterDefinition {
 }
 
 const activeCharters = ref<Charter[]>([])
+const availableCharters = ref<CharterDefinition[]>([])
 const applyModalVisible = ref(false)
 const selectedCharter = ref<CharterDefinition | null>(null)
 const applyReason = ref('')
-
-// 可申请的许可证列表
-const availableCharters = ref<CharterDefinition[]>([
-  {
-    type: 'academic',
-    name: '学术写作许可证',
-    description: '解锁论文写作、文献综述、引用格式化能力',
-    icon: '📚',
-    capabilities: [
-      { name: 'paper-writing', description: '撰写学术论文' },
-      { name: 'literature-review', description: '文献综述' },
-      { name: 'citation-format', description: '引用格式化' },
-    ],
-    disclaimer: '此许可证启用学术写作功能。所有引用必须可追溯到可靠来源。用户需确保准确性并避免抄袭。',
-  },
-  {
-    type: 'legal',
-    name: '法律文档许可证',
-    description: '解锁合同起草、免责声明生成、法律分析能力',
-    icon: '⚖️',
-    capabilities: [
-      { name: 'contract-draft', description: '起草合同' },
-      { name: 'disclaimer-generate', description: '生成免责声明' },
-      { name: 'legal-analysis', description: '法律分析' },
-    ],
-    disclaimer: '此许可证仅提供文档模板参考，不构成法律建议。请咨询专业律师。',
-  },
-  {
-    type: 'longdoc',
-    name: '长文档许可证',
-    description: '解锁长文档处理能力，支持分区处理突破上下文限制',
-    icon: '📄',
-    capabilities: [
-      { name: 'long-document-write', description: '长文档写作' },
-      { name: 'document-merge', description: '文档合并' },
-      { name: 'toc-generate', description: '目录生成' },
-    ],
-  },
-])
+const loading = ref(false)
 
 const getCharterIcon = (type: string) => {
   const icons: Record<string, string> = {
@@ -197,18 +162,93 @@ const closeApplyModal = () => {
 }
 
 const submitApply = async () => {
-  // TODO: 调用 API 申请许可证
-  console.log('Apply for charter:', selectedCharter.value?.type, applyReason.value)
-  closeApplyModal()
+  if (!selectedCharter.value || !applyReason.value.trim()) return
+
+  loading.value = true
+  try {
+    await charterApi.apply({
+      type: selectedCharter.value.type,
+      reason: applyReason.value.trim(),
+    })
+    closeApplyModal()
+    await fetchActiveCharters()
+  } catch (error) {
+    console.error('Failed to apply charter:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
-const revokeCharter = async (charterId: string) => {
-  // TODO: 调用 API 撤销许可证
-  console.log('Revoke charter:', charterId)
+const revokeCharter = async (instanceId: string) => {
+  try {
+    await charterApi.revoke(instanceId)
+    await fetchActiveCharters()
+  } catch (error) {
+    console.error('Failed to revoke charter:', error)
+  }
 }
+
+const fetchActiveCharters = async () => {
+  try {
+    const res: any = await charterApi.active()
+    activeCharters.value = res.data || []
+  } catch (error) {
+    console.error('Failed to fetch active charters:', error)
+    activeCharters.value = []
+  }
+}
+
+const fetchDefinitions = async () => {
+  try {
+    const res: any = await charterApi.definitions()
+    availableCharters.value = res.data || getDefaultCharters()
+  } catch (error) {
+    console.error('Failed to fetch definitions:', error)
+    availableCharters.value = getDefaultCharters()
+  }
+}
+
+const getDefaultCharters = (): CharterDefinition[] => [
+  {
+    type: 'academic',
+    name: '学术写作许可证',
+    description: '解锁论文写作、文献综述、引用格式化能力',
+    icon: '📚',
+    capabilities: [
+      { name: 'paper-writing', description: '撰写学术论文' },
+      { name: 'literature-review', description: '文献综述' },
+      { name: 'citation-format', description: '引用格式化' },
+    ],
+    disclaimer: '此许可证启用学术写作功能。所有引用必须可追溯到可靠来源。用户需确保准确性并避免抄袭。',
+  },
+  {
+    type: 'legal',
+    name: '法律文档许可证',
+    description: '解锁合同起草、免责声明生成、法律分析能力',
+    icon: '⚖️',
+    capabilities: [
+      { name: 'contract-draft', description: '起草合同' },
+      { name: 'disclaimer-generate', description: '生成免责声明' },
+      { name: 'legal-analysis', description: '法律分析' },
+    ],
+    disclaimer: '此许可证仅提供文档模板参考，不构成法律建议。请咨询专业律师。',
+  },
+  {
+    type: 'longdoc',
+    name: '长文档许可证',
+    description: '解锁长文档处理能力，支持分区处理突破上下文限制',
+    icon: '📄',
+    capabilities: [
+      { name: 'long-document-write', description: '长文档写作' },
+      { name: 'document-merge', description: '文档合并' },
+      { name: 'toc-generate', description: '目录生成' },
+    ],
+  },
+]
 
 onMounted(() => {
-  // TODO: 加载活跃许可证
+  fetchActiveCharters()
+  fetchDefinitions()
 })
 </script>
 
