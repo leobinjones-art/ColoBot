@@ -42,6 +42,13 @@ const router = createRouter({
           component: () => import('@/views/Sentinel.vue'),
           meta: { title: 'Sentinel' },
         },
+        // 许可证管理
+        {
+          path: 'charter',
+          name: 'Charter',
+          component: () => import('@/views/Charter.vue'),
+          meta: { title: 'Charter' },
+        },
         // 个人助理
         {
           path: 'assistant',

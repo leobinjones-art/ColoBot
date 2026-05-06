@@ -138,6 +138,9 @@
             <router-link to="/sentinel" class="nav-item sub-item" @click="onNavClick">
               <span class="nav-label">{{ t('nav.sentinel') }}</span>
             </router-link>
+            <router-link to="/charter" class="nav-item sub-item" @click="onNavClick">
+              <span class="nav-label">{{ t('charter.title') }}</span>
+            </router-link>
           </div>
         </div>
       </nav>
