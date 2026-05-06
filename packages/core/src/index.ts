@@ -249,3 +249,23 @@ export {
   exportConfig,
   type ColoBotConfig,
 } from './config-store/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 错误处理
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  AppError,
+  UserError,
+  AuthError,
+  NotFoundError,
+  RateLimitError,
+  LLMError,
+  DatabaseError,
+  NetworkError,
+  toAppError,
+  getFriendlyMessage,
+  errorHandler,
+  ErrorCodes,
+  type ErrorCategory,
+} from './errors/index.js'
