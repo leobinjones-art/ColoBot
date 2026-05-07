@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Charter 许可证系统
-- **@colobot/charter** - 许可证系统
+- **@nexusmind/charter** - 许可证系统
   - CharterDefinition: 定义 AI 能力边界
   - DocumentLibrary: 提供可追溯的事实来源，防止幻觉
   - 内置许可证: academic, legal, longdoc
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 扩展系统: 支持社区贡献自定义许可证
 
 #### Sentinel 安全守护
-- **@colobot/sentinel** - CharterGuard 集成
+- **@nexusmind/sentinel** - CharterGuard 集成
   - 能力权限检查
   - 工具权限检查
   - 文档库条目关联

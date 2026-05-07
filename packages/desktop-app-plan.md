@@ -1,4 +1,4 @@
-# ColoBot 桌面应用规划
+# NexusMind 桌面应用规划
 
 ## 背景
 
@@ -6,13 +6,13 @@
 
 **目标用户**：
 - **消费者**：下载安装包，安装即用，通过应用内配置向导设置
-- **开发者**：`npm install @colobot/core`，代码集成或 CLI 使用
+- **开发者**：`npm install @nexusmind/core`，代码集成或 CLI 使用
 
 **分发方式**：
 | 用户类型 | 分发方式 | 说明 |
 |----------|----------|------|
 | 消费者 | 原生安装包 | .dmg / .exe / .AppImage |
-| 开发者 | npm 包 | @colobot/core, @colobot/charter 等 |
+| 开发者 | npm 包 | @nexusmind/core, @nexusmind/charter 等 |
 | CI/CD | Docker | 仅用于构建和测试，不作为分发 |
 
 **消费者体验**：
@@ -22,7 +22,7 @@
 4. 开始使用
 
 **开发者体验**：
-1. `npm install @colobot/core`
+1. `npm install @nexusmind/core`
 2. 代码中引入或使用 CLI
 3. 配置通过环境变量或代码
 
@@ -77,7 +77,7 @@
 ├─────────────────────────────────────────┤
 │  后端 (Rust + Node.js)                   │
 │  - Tauri Commands (Rust)                 │
-│  - @colobot/core (Node.js via sidecar)   │
+│  - @nexusmind/core (Node.js via sidecar)   │
 │  - 本地存储 (SQLite)                     │
 ├─────────────────────────────────────────┤
 │  系统集成                                │
@@ -169,7 +169,7 @@ if (isDesktop) {
 
 **方案 B：Rust + Node.js Sidecar**
 - Rust 处理系统集成
-- Node.js sidecar 运行 @colobot/core
+- Node.js sidecar 运行 @nexusmind/core
 - 复用现有代码
 - 推荐方案
 
@@ -178,7 +178,7 @@ if (isDesktop) {
 #[tauri::command]
 async fn charter_apply(type: String, reason: String) -> Result<Charter, String> {
     // 调用 Node.js sidecar
-    let output = Command::new_sidecar("colobot-core")
+    let output = Command::new_sidecar("nexusmind-core")
         .args(["charter", "apply", &type, &reason])
         .output()
         .await
@@ -192,7 +192,7 @@ async fn charter_apply(type: String, reason: String) -> Result<Charter, String> 
 ### 3. 数据存储
 
 ```
-~/.colobot/
+~/.nexusmind/
 ├── config.json      # 配置
 ├── data.db          # SQLite 数据库
 ├── logs/            # 日志
@@ -224,7 +224,7 @@ SystemTray::new()
 cargo tauri build --target universal-apple-darwin
 
 # 公证
-xcrun notarytool submit target/release/bundle/macos/ColoBot.app
+xcrun notarytool submit target/release/bundle/macos/NexusMind.app
 ```
 
 ### Windows
@@ -234,7 +234,7 @@ xcrun notarytool submit target/release/bundle/macos/ColoBot.app
 cargo tauri build
 
 # 签名
-signtool sign target/release/bundle/msi/ColoBot_0.5.0_x64.msi
+signtool sign target/release/bundle/msi/NexusMind_0.5.0_x64.msi
 ```
 
 ### Linux
@@ -251,7 +251,7 @@ cargo tauri build
 ## 依赖关系
 
 ```
-@colobot/desktop (Tauri)
+@nexusmind/desktop (Tauri)
 ├── packages/frontend (Vue 3)
 ├── packages/core (Node.js sidecar)
 ├── packages/charter
