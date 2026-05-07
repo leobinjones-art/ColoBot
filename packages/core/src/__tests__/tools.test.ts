@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { toolRegistry, registerBuiltinTools } from '../tools/builtin.js'
 import * as fs from 'fs'
-import type { ToolContext } from '@colobot/types'
+import type { ToolContext } from '@nexusmind/types'
 
 // Mock fs
 vi.mock('fs', () => ({

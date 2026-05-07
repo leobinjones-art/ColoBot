@@ -4,7 +4,7 @@
  * 使用 Pyodide 在 Node.js 中运行 Python，无需系统 Python 依赖
  */
 
-import type { ToolContext } from '@colobot/types'
+import type { ToolContext } from '@nexusmind/types'
 import { toolRegistry } from './registry.js'
 
 // Pyodide 类型定义

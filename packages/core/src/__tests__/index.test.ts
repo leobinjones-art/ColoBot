@@ -1,5 +1,5 @@
 /**
- * @colobot/core 测试
+ * @nexusmind/core 测试
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Plugin, RuntimeTool } from '../plugins/types.js'
@@ -7,7 +7,7 @@ import { createPluginManager } from '../plugins/manager.js'
 import { ToolRegistry } from '../tools/registry.js'
 import { AgentRuntime } from '../runtime/index.js'
 
-describe('@colobot/core', () => {
+describe('@nexusmind/core', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

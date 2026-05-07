@@ -2,7 +2,7 @@
  * 渲染组件
  */
 
-import type { ContentBlock } from '@colobot/types'
+import type { ContentBlock } from '@nexusmind/types'
 
 /**
  * ANSI 颜色代码

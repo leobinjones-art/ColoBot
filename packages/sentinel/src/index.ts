@@ -1,5 +1,5 @@
 /**
- * @colobot/sentinel - 安全守护母 Agent
+ * @nexusmind/sentinel - 安全守护母 Agent
  *
  * 平行链路架构，负责：
  * - 输入/输出扫描

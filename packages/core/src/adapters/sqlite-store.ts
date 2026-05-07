@@ -5,7 +5,7 @@
  * 注意：不支持向量检索，记忆搜索降级为文本匹配
  */
 
-import type { LLMMessage } from '@colobot/types'
+import type { LLMMessage } from '@nexusmind/types'
 import type { MemoryStore } from '../runtime/types.js'
 import Database from 'better-sqlite3'
 import { existsSync, mkdirSync } from 'fs'

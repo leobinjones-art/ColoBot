@@ -1,13 +1,13 @@
 {
-  "name": "@colobot/core",
-  "version": "0.3.0",
-  "description": "ColoBot Agent 运行时核心（含安全守护）",
+  "name": "@nexusmind/core",
+  "version": "0.2.0",
+  "description": "NexusMind Agent 运行时核心 — 多模态 AI × 安全守护 × 许可证系统",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "colobot": "./dist/cli.js"
+    "nexusmind": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -39,6 +39,14 @@
       "types": "./dist/memory/index.d.ts"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexusmind/nexusmind.git",
+    "directory": "packages/core"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -46,8 +54,8 @@
     "cli": "tsx src/cli.ts"
   },
   "dependencies": {
-    "@colobot/types": "*",
-    "@colobot/sentinel": "*",
+    "@nexusmind/types": "*",
+    "@nexusmind/sentinel": "*",
     "@xenova/transformers": "^2.17.0",
     "better-sqlite3": "^11.10.0",
     "llm-guard": "^0.1.8",

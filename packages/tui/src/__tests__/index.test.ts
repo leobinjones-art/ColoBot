@@ -1,9 +1,9 @@
 /**
- * @colobot/tui 测试
+ * @nexusmind/tui 测试
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-describe('@colobot/tui', () => {
+describe('@nexusmind/tui', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

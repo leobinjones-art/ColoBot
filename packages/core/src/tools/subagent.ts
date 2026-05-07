@@ -3,7 +3,7 @@
  */
 
 import * as path from 'path'
-import type { ToolContext, LLMMessage, ContentBlock } from '@colobot/types'
+import type { ToolContext, LLMMessage, ContentBlock } from '@nexusmind/types'
 import { toolRegistry } from './registry.js'
 import { parseToolCalls, formatToolResults } from './executor.js'
 import {

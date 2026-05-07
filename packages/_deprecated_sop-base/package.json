@@ -1,5 +1,5 @@
 {
-  "name": "@colobot/sop-base",
+  "name": "@colo-bot/sop-base",
   "version": "0.1.0",
   "description": "SOP 流程引擎基类 - 标准化流程管理框架",
   "license": "AGPL-3.0",
@@ -19,8 +19,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@colobot/types": "*",
-    "@colobot/core": "*"
+    "@colo-bot/types": "*",
+    "@colo-bot/core": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

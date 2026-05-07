@@ -4,7 +4,7 @@
  * 所有插件通过此接口使用 core 能力，不直接访问底层实现
  */
 
-import type { LLMMessage, ContentBlock, ToolCall } from '@colobot/types'
+import type { LLMMessage, ContentBlock, ToolCall } from '@nexusmind/types'
 
 // ═══════════════════════════════════════════════════════════════
 // 类型定义

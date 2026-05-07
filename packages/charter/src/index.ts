@@ -1,5 +1,5 @@
 /**
- * @colobot/charter
+ * @nexusmind/charter
  *
  * Charter 许可证系统
  *

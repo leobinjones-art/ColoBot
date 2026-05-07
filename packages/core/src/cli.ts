@@ -16,8 +16,8 @@ import { initConfig } from './config/index.js'
 import { setGlobalAllowedTools } from './subagents/index.js'
 import { configureSearch } from './search.js'
 import { toolRegistry } from './tools/registry.js'
-import { Sentinel } from '@colobot/sentinel'
-import type { ContentBlock } from '@colobot/types'
+import { Sentinel } from '@nexusmind/sentinel'
+import type { ContentBlock } from '@nexusmind/types'
 
 // CLI 日志器
 let logger: Logger
@@ -259,7 +259,7 @@ function askInput(prompt: string): Promise<string> {
 async function startTui(): Promise<void> {
   // 动态加载 TUI 模块（可选依赖，运行时加载）
   // @ts-ignore - tui 是可选依赖，构建时可能不存在
-  const { TUI } = await import('@colobot/tui')
+  const { TUI } = await import('@nexusmind/tui')
   const tui = new TUI()
 
   tui.commands.register('/exit', '退出程序', () => {

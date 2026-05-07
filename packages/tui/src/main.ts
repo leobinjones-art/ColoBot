@@ -18,16 +18,16 @@ import {
   configureSearch,
   createTuiLogger,
   type Logger,
-} from '@colobot/core'
-import { Sentinel } from '@colobot/sentinel'
-import type { ContentBlock } from '@colobot/types'
+} from '@nexusmind/core'
+import { Sentinel } from '@nexusmind/sentinel'
+import type { ContentBlock } from '@nexusmind/types'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// 检测 @colobot/assistant 是否已安装
+// 检测 @nexusmind/assistant 是否已安装
 function isAssistantInstalled(): boolean {
   try {
-    require.resolve('@colobot/assistant')
+    require.resolve('@nexusmind/assistant')
     return true
   } catch {
     return false
@@ -297,9 +297,9 @@ async function main() {
         console.log(`  ${style('✓', 'green')} ${d.name} (${d.source})`)
       })
       console.log('\n这些数据存储在本地，不会上传到云端。')
-      console.log('卸载 @colobot/assistant 可停止注入这些数据。\n')
+      console.log('卸载 @nexusmind/assistant 可停止注入这些数据。\n')
     } else {
-      console.log(`  ${style('✗', 'red')} @colobot/assistant 未安装`)
+      console.log(`  ${style('✗', 'red')} @nexusmind/assistant 未安装`)
       console.log('\n核心框架不会收集或注入任何个人数据。\n')
     }
   })
@@ -372,7 +372,7 @@ async function main() {
   // 检测并提示个人助理包
   if (isAssistantInstalled()) {
     console.log('')
-    console.log(style('[ColoBot] 检测到 @colobot/assistant 已安装。', 'yellow'))
+    console.log(style('[ColoBot] 检测到 @nexusmind/assistant 已安装。', 'yellow'))
     console.log(
       style('[ColoBot] ', 'yellow') +
         '个人助理模块会在对话中注入您的情绪、习惯、健康等 7 类个人数据作为上下文。',
@@ -380,7 +380,7 @@ async function main() {
     console.log(
       style('[ColoBot] ', 'yellow') + '这些数据仅存储在本地，不会上传。输入 /context 查看详情。',
     )
-    console.log(style('[ColoBot] ', 'yellow') + '如需关闭此功能，请卸载 @colobot/assistant。')
+    console.log(style('[ColoBot] ', 'yellow') + '如需关闭此功能，请卸载 @nexusmind/assistant。')
   }
 
   console.log(`输入 ${style('/help', 'cyan')} 查看可用命令\n`)

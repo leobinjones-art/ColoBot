@@ -2,7 +2,7 @@
  * 向量记忆 - 基于 pgvector
  */
 
-import type { MemoryResult } from '@colobot/types'
+import type { MemoryResult } from '@nexusmind/types'
 import { query } from './db.js'
 import { embed } from './embeddings.js'
 

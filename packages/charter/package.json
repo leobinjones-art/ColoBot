@@ -1,15 +1,31 @@
 {
-  "name": "@colobot/charter",
+  "name": "@nexusmind/charter",
   "version": "0.1.0",
+  "description": "NexusMind 许可证系统 — 定义 AI 能力边界，绑定文档库",
+  "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexusmind/nexusmind.git",
+    "directory": "packages/charter"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
   },
   "dependencies": {
-    "@colobot/types": "^0.1.0"
+    "@nexusmind/types": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

@@ -2,10 +2,10 @@
  * Agent 运行时核心逻辑
  */
 
-import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@colobot/types'
+import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@nexusmind/types'
 import type { RuntimeDeps, LLMResponse } from './types.js'
-import type { StateUpdater, OutputScanner, OutputScanConfig } from '@colobot/sentinel'
-import { Sentinel, OutputScanner as OutputScannerClass } from '@colobot/sentinel'
+import type { StateUpdater, OutputScanner, OutputScanConfig } from '@nexusmind/sentinel'
+import { Sentinel, OutputScanner as OutputScannerClass } from '@nexusmind/sentinel'
 import { compressMessages, estimateMessagesTokens } from '../compression.js'
 
 // 导出接口和实现

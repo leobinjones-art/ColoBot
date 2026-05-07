@@ -4,7 +4,7 @@
  * 子 Agent 负责执行层（受限权限、TTL、工具白名单）
  */
 
-import type { LLMMessage, ContentBlock, ToolContext } from '@colobot/types'
+import type { LLMMessage, ContentBlock, ToolContext } from '@nexusmind/types'
 import type { LLMProvider, AuditLogger } from '../runtime/types.js'
 
 /** 简化的工具调用（子 Agent 内部使用） */

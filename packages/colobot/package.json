@@ -1,11 +1,14 @@
 {
-  "name": "@nexusmind/types",
-  "version": "0.1.0",
-  "description": "NexusMind 共享类型定义",
+  "name": "nexusmind",
+  "version": "0.4.0",
+  "description": "自带安全守护的 AI Agent 框架 — 多模态 AI × 安全守护 × 许可证系统",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "nexusmind": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -13,17 +16,23 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/nexusmind/nexusmind.git",
-    "directory": "packages/types"
+    "directory": "packages/nexusmind"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@nexusmind/core": "*",
+    "@nexusmind/types": "*",
+    "@nexusmind/charter": "*",
+    "@nexusmind/sentinel": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

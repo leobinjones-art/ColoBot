@@ -11,7 +11,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import type { ToolContext } from '@colobot/types'
+import type { ToolContext } from '@nexusmind/types'
 import { toolRegistry } from './registry.js'
 import { search, getSearchConfig } from '../search.js'
 import { registerSubagentTools } from './subagent.js'

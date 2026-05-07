@@ -12,7 +12,7 @@ import type {
   AuditLogger,
   ResultPusher,
 } from '../runtime/types.js'
-import type { LLMMessage, ToolCall, ToolResult, ToolContext } from '@colobot/types'
+import type { LLMMessage, ToolCall, ToolResult, ToolContext } from '@nexusmind/types'
 
 // Mock LLM Provider
 const createMockLLM = (): LLMProvider => ({
@@ -228,7 +228,7 @@ describe('AgentRuntime', () => {
     })
 
     it('should handle input blocked by sentinel', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
       const sentinel = new Sentinel()
       sentinel.start()
 
@@ -276,7 +276,7 @@ describe('AgentRuntime', () => {
     })
 
     it('should handle input blocked by sentinel', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
       const sentinel = new Sentinel()
       sentinel.start()
 

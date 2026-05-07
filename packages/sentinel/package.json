@@ -1,7 +1,7 @@
 {
-  "name": "@colobot/sentinel",
+  "name": "@nexusmind/sentinel",
   "version": "0.1.0",
-  "description": "安全守护母 Agent - 输入输出扫描、进程守护、异常接管（业界首创独立安全链路）",
+  "description": "NexusMind 安全守护 — 输入输出扫描、进程守护、异常接管",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -9,9 +9,16 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexusmind/nexusmind.git",
+    "directory": "packages/sentinel"
   },
   "scripts": {
     "build": "tsc",
@@ -19,8 +26,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@colobot/types": "*",
-    "@colobot/charter": "^0.1.0"
+    "@nexusmind/types": "*",
+    "@nexusmind/charter": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

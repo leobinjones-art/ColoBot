@@ -1,5 +1,5 @@
 /**
- * @colobot/assistant - 核心助理包
+ * @nexusmind/assistant - 核心助理包
  *
  * 个人信息管理和智能辅助
  */

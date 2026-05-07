@@ -11,8 +11,8 @@ import type { HealthEntry } from '../life/health.js'
 import type { Todo, TodoPriority } from '../task/todo.js'
 import type { Goal, GoalStatus } from '../growth/goal.js'
 import type { Contact } from '../social/contact.js'
-import type { Note } from '../knowledge/note.js'
-import type { Event } from '../schedule/event.js'
+import type { Note } from '../knowledge/notes.js'
+import type { Event } from '../schedule/calendar.js'
 
 const logger = createLogger('UserProfile')
 
@@ -583,18 +583,18 @@ function analyzeHealth(healthEntries: HealthEntry[]): HealthProfile {
     }
   }
 
-  const weights = healthEntries.filter((h) => h.weight)
-  const sleeps = healthEntries.filter((h) => h.sleepHours)
-  const exercises = healthEntries.filter((h) => h.exercise)
-  const waters = healthEntries.filter((h) => h.water)
+  const weights = healthEntries.filter((h) => h.type === 'weight')
+  const sleeps = healthEntries.filter((h) => h.type === 'sleep')
+  const exercises = healthEntries.filter((h) => h.type === 'exercise')
+  const waters = healthEntries.filter((h) => h.type === 'water')
 
-  const latestWeight = weights.length > 0 ? weights[weights.length - 1].weight : undefined
+  const latestWeight = weights.length > 0 ? weights[weights.length - 1].value : undefined
   const sleepAverage =
     sleeps.length > 0
-      ? sleeps.reduce((s, h) => s + (h.sleepHours || 0), 0) / sleeps.length
+      ? sleeps.reduce((s, h) => s + h.value, 0) / sleeps.length
       : undefined
   const waterIntakeAverage =
-    waters.length > 0 ? waters.reduce((s, h) => s + (h.water || 0), 0) / waters.length : undefined
+    waters.length > 0 ? waters.reduce((s, h) => s + h.value, 0) / waters.length : undefined
 
   // 最近一周运动次数
   const weekAgo = new Date()
@@ -636,7 +636,7 @@ function analyzeHealth(healthEntries: HealthEntry[]): HealthProfile {
 
 function analyzeGrowth(goals: Goal[]): GrowthProfile {
   const activeGoals = goals.filter((g) => g.status === 'active').length
-  const completedGoals = goals.filter((g) => g.status === 'completed').length
+  const completedGoals = goals.filter((g) => g.status === 'achieved').length
 
   const activeGoalsList = goals.filter((g) => g.status === 'active')
   const averageProgress =

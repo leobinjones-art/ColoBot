@@ -2,7 +2,7 @@
  * 上下文压缩
  */
 
-import type { LLMMessage, ContentBlock } from '@colobot/types'
+import type { LLMMessage, ContentBlock } from '@nexusmind/types'
 import type { LLMProvider } from './runtime/types.js'
 
 const CHARS_PER_TOKEN = 4

@@ -2,7 +2,7 @@
  * Agent 管理工具
  */
 
-import type { ToolContext } from '@colobot/types'
+import type { ToolContext } from '@nexusmind/types'
 import { toolRegistry } from './registry.js'
 import { agentRegistry } from '../agents/registry.js'
 

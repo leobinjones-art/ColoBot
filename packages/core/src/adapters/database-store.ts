@@ -2,7 +2,7 @@
  * 数据库存储适配器 - PostgreSQL 持久化
  */
 
-import type { LLMMessage } from '@colobot/types'
+import type { LLMMessage } from '@nexusmind/types'
 import type { MemoryStore } from '../runtime/types.js'
 import { initDb, query } from '../memory/db.js'
 

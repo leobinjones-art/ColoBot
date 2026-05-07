@@ -1,5 +1,5 @@
 /**
- * @colobot/tui - 终端界面
+ * @nexusmind/tui - 终端界面
  */
 
 import { createInput, ask, confirm, select } from './input/index.js'

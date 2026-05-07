@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CharterGuard } from '../charter-guard.js'
-import { CharterManager } from '@colobot/charter'
+import { CharterManager } from '@nexusmind/charter'
 
 describe('CharterGuard', () => {
   let guard: CharterGuard

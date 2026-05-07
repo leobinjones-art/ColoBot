@@ -3,7 +3,7 @@
  */
 
 import vm from 'vm'
-import type { ToolContext } from '@colobot/types'
+import type { ToolContext } from '@nexusmind/types'
 import { toolRegistry } from './registry.js'
 
 async function execCode(args: Record<string, unknown>, _ctx: ToolContext): Promise<string> {

@@ -1,5 +1,5 @@
 /**
- * @colobot/core - Agent 运行时核心
+ * @nexusmind/core - Agent 运行时核心
  *
  * 设计原则：
  * - 只导出接口定义和高层 API
@@ -48,7 +48,7 @@ export type {
   ToolCall,
   ToolResult,
   ToolContext,
-} from '@colobot/types'
+} from '@nexusmind/types'
 
 // ═══════════════════════════════════════════════════════════════
 // Provider 实现（按需使用）

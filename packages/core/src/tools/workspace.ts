@@ -4,7 +4,7 @@
 
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import type { ToolContext } from '@colobot/types'
+import type { ToolContext } from '@nexusmind/types'
 import { toolRegistry } from './registry.js'
 import { getSubAgentWorkspacePath } from '../subagents/index.js'
 

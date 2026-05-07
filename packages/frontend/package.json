@@ -1,9 +1,17 @@
 {
-  "name": "@colobot/frontend",
+  "name": "@nexusmind/frontend",
   "version": "0.1.0",
-  "private": true,
+  "description": "NexusMind - AI Assistant Web Console",
+  "license": "AGPL-3.0",
   "type": "module",
-  "description": "ColoBot - AI Assistant Web Console",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexusmind/nexusmind.git",
+    "directory": "packages/frontend"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",

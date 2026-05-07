@@ -2,7 +2,7 @@
  * ColoBot Runtime 实现
  */
 
-import type { LLMMessage, ContentBlock } from '@colobot/types'
+import type { LLMMessage, ContentBlock } from '@nexusmind/types'
 import type {
   ColoBotRuntime,
   RuntimeDependencies,

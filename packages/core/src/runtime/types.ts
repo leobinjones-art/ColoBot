@@ -9,8 +9,8 @@ import type {
   ToolCall,
   ToolResult,
   ToolContext,
-} from '@colobot/types'
-import type { Sentinel } from '@colobot/sentinel'
+} from '@nexusmind/types'
+import type { Sentinel } from '@nexusmind/sentinel'
 
 /**
  * LLM 提供者接口

@@ -2,7 +2,7 @@
  * 工具执行器实现
  */
 
-import type { ToolCall, ToolResult, ToolContext } from '@colobot/types'
+import type { ToolCall, ToolResult, ToolContext } from '@nexusmind/types'
 import type { ToolExecutor } from '../runtime/types.js'
 import { ToolRegistry } from '../tools/registry.js'
 

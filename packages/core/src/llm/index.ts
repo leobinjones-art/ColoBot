@@ -7,7 +7,7 @@
  * - 重试 + exponential backoff
  */
 
-import type { LLMMessage, ContentBlock } from '@colobot/types'
+import type { LLMMessage, ContentBlock } from '@nexusmind/types'
 import {
   getMockLLM,
   getLlmProvider,

@@ -8,7 +8,7 @@
  */
 
 import type { LLMProvider, LLMResponse, LLMStreamChunk } from '../runtime/types.js'
-import type { LLMMessage } from '@colobot/types'
+import type { LLMMessage } from '@nexusmind/types'
 
 export interface FallbackEntry {
   provider: 'openai' | 'anthropic' | 'minimax' | 'mock'

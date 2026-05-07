@@ -2,7 +2,7 @@
  * 向量嵌入 - OpenAI / MiniMax Embeddings
  */
 
-import type { EmbedResult } from '@colobot/types'
+import type { EmbedResult } from '@nexusmind/types'
 
 export interface EmbeddingConfig {
   provider: 'openai' | 'minimax' | 'mock'

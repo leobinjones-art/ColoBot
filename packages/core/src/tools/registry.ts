@@ -2,7 +2,7 @@
  * 工具注册表
  */
 
-import type { RuntimeTool, ToolContext } from '@colobot/types'
+import type { RuntimeTool, ToolContext } from '@nexusmind/types'
 
 /**
  * 工具注册表

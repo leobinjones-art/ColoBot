@@ -2,7 +2,7 @@
  * Anthropic Provider 实现
  */
 
-import type { LLMMessage, LLMOptions } from '@colobot/types'
+import type { LLMMessage, LLMOptions } from '@nexusmind/types'
 import type { LLMProvider, LLMResponse, LLMStreamChunk } from '../runtime/types.js'
 
 export interface AnthropicConfig {

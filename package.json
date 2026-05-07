@@ -1,56 +1,31 @@
 {
-  "name": "colobot-monorepo",
+  "name": "nexusmind-monorepo",
   "version": "0.4.0",
-  "description": "自带安全守护的 AI Agent 框架 — 多模态 AI × 安全母 Agent × 许可证系统",
+  "description": "NexusMind - 自带安全守护的 AI Agent 框架",
   "license": "AGPL-3.0",
   "type": "module",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/types",
+    "packages/charter",
+    "packages/sentinel",
+    "packages/core",
+    "packages/tui",
+    "packages/nexusmind",
+    "packages/assistant",
+    "packages/frontend"
   ],
   "scripts": {
-    "release": "release-please release",
-    "dev": "tsx watch src/colobot-server.ts",
     "build": "npm run build:packages",
     "build:packages": "npm run build -w packages/types && npm run build -w packages/charter && npm run build -w packages/sentinel && npm run build -w packages/core && npm run build -w packages/tui",
     "dev:frontend": "npm run dev -w packages/frontend",
     "build:frontend": "npm run build -w packages/frontend",
-    "start": "node dist/colobot-server.js",
-    "db:init": "psql -U colobot -d colobot < sql/schema.sql",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint packages/*/src/**/*.ts --max-warnings 200",
-    "test:e2e": "vitest run e2e/",
-    "test:e2e:watch": "vitest e2e/"
-  },
-  "dependencies": {
-    "@larksuiteoapi/node-sdk": "^1.60.0",
-    "dotenv": "^16.4.5",
-    "llm-guard": "^0.1.8",
-    "pg": "^8.13.0",
-    "pgvector": "^0.2.0",
-    "sharp": "^0.34.5",
-    "ws": "^8.18.0"
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
-    "@types/pg": "^8.11.10",
-    "@types/supertest": "^7.2.0",
-    "@types/ws": "^8.5.12",
-    "@typescript-eslint/eslint-plugin": "^8.58.2",
-    "@typescript-eslint/parser": "^8.58.2",
-    "@vitest/coverage-v8": "^2.1.9",
-    "eslint": "^10.2.1",
-    "msw": "^2.13.4",
-    "release-please": "^17.6.0",
-    "supertest": "^7.2.2",
-    "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
-  },
-  "overrides": {
-    "protobufjs": "^7.5.5",
-    "@xmldom/xmldom": "^0.8.13"
   }
 }
