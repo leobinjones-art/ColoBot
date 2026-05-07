@@ -21,7 +21,7 @@ import {
   initHealthChecker,
   createGracefulShutdown,
   Logger,
-} from '@colobot/core'
+} from '@nexusmind/core'
 
 const logger = new Logger({ prefix: 'server' })
 const PORT = parseInt(process.env.PORT || '3000')

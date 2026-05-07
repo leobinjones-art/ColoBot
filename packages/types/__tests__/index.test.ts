@@ -1,11 +1,11 @@
 /**
- * @colobot/types 包测试
+ * @nexusmind/types 包测试
  * 验证类型定义正确性和导出完整性
  */
 
 import { describe, it, expect } from 'vitest'
 
-describe('@colobot/types', () => {
+describe('@nexusmind/types', () => {
   describe('LLM types', () => {
     it('should create TextContent correctly', async () => {
       const types = await import('../src/index.js')

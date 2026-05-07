@@ -1,5 +1,5 @@
 /**
- * @colobot/assistant 测试
+ * @nexusmind/assistant 测试
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'

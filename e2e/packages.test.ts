@@ -6,48 +6,48 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 
 // ── Types 包测试 ──────────────────────────────────────────────
 
-describe('E2E: @colobot/types', () => {
+describe('E2E: @nexusmind/types', () => {
   it('should export all LLM types', async () => {
     // 类型通过 type 导出，验证模块可导入
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should export all Agent types', async () => {
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should export all Tool types', async () => {
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should export all Memory types', async () => {
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should export all SOP types', async () => {
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should export all Service types', async () => {
     // 类型通过 type 导出，运行时不存在
     // 这里验证模块可以正常导入
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should export all Channel types', async () => {
     // 类型通过 type 导出，运行时不存在
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
     expect(types).toBeDefined()
   })
 
   it('should create valid type instances', async () => {
-    const types = await import('@colobot/types')
+    const types = await import('@nexusmind/types')
 
     // 创建实例验证类型正确
     const textContent: types.TextContent = { type: 'text', text: 'hello' }
@@ -72,10 +72,10 @@ describe('E2E: @colobot/types', () => {
 
 // ── Core 包测试 ──────────────────────────────────────────────
 
-describe('E2E: @colobot/core', () => {
+describe('E2E: @nexusmind/core', () => {
   describe('exports', () => {
     it('should export all modules', async () => {
-      const core = await import('@colobot/core')
+      const core = await import('@nexusmind/core')
 
       // 配置
       expect(core.ConfigManager).toBeDefined()
@@ -100,14 +100,14 @@ describe('E2E: @colobot/core', () => {
     })
 
     it('should export providers', async () => {
-      const core = await import('@colobot/core')
+      const core = await import('@nexusmind/core')
 
       expect(core.OpenAIProvider).toBeDefined()
       expect(core.AnthropicProvider).toBeDefined()
     })
 
     it('should export adapters', async () => {
-      const core = await import('@colobot/core')
+      const core = await import('@nexusmind/core')
 
       expect(core.InMemoryStore).toBeDefined()
       expect(core.ConsoleAudit).toBeDefined()
@@ -117,7 +117,7 @@ describe('E2E: @colobot/core', () => {
 
   describe('ConfigManager', () => {
     it('should create and manage config', async () => {
-      const { ConfigManager, DEFAULT_CONFIG } = await import('@colobot/core')
+      const { ConfigManager, DEFAULT_CONFIG } = await import('@nexusmind/core')
 
       const manager = new ConfigManager()
 
@@ -132,7 +132,7 @@ describe('E2E: @colobot/core', () => {
     })
 
     it('should get model capabilities', async () => {
-      const { ConfigManager } = await import('@colobot/core')
+      const { ConfigManager } = await import('@nexusmind/core')
 
       const manager = new ConfigManager()
       // getModelCapabilities is a method on ConfigManager
@@ -145,7 +145,7 @@ describe('E2E: @colobot/core', () => {
     })
 
     it('should set and get config', async () => {
-      const { ConfigManager } = await import('@colobot/core')
+      const { ConfigManager } = await import('@nexusmind/core')
 
       const manager = new ConfigManager()
 
@@ -169,7 +169,7 @@ describe('E2E: @colobot/core', () => {
         destroySubAgent,
         clearSubAgents,
         setGlobalAllowedTools,
-      } = await import('@colobot/core')
+      } = await import('@nexusmind/core')
 
       clearSubAgents()
       setGlobalAllowedTools(['read_file', 'write_file'])
@@ -198,7 +198,7 @@ describe('E2E: @colobot/core', () => {
     })
 
     it('should check tool allowed', async () => {
-      const { spawnSubAgent, isToolAllowed, clearSubAgents } = await import('@colobot/core')
+      const { spawnSubAgent, isToolAllowed, clearSubAgents } = await import('@nexusmind/core')
 
       clearSubAgents()
 
@@ -218,7 +218,7 @@ describe('E2E: @colobot/core', () => {
 
   describe('Chunking', () => {
     it('should chunk content', async () => {
-      const { readChunksByBytes, DEFAULT_CHUNK_CONFIG } = await import('@colobot/core')
+      const { readChunksByBytes, DEFAULT_CHUNK_CONFIG } = await import('@nexusmind/core')
 
       const content = 'a'.repeat(1000)
       const chunks: any[] = []
@@ -236,7 +236,7 @@ describe('E2E: @colobot/core', () => {
     })
 
     it('should merge results', async () => {
-      const { mergeText, mergeArray, mergeStats } = await import('@colobot/core')
+      const { mergeText, mergeArray, mergeStats } = await import('@nexusmind/core')
 
       const results = [
         { chunkIndex: 0, success: true, result: 'part1' },
@@ -262,7 +262,7 @@ describe('E2E: @colobot/core', () => {
 
   describe('Tools', () => {
     it('should register builtin tools', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@colobot/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -286,10 +286,10 @@ describe('E2E: @colobot/core', () => {
 
 // ── TUI 包测试 ──────────────────────────────────────────────
 
-describe('E2E: @colobot/tui', () => {
+describe('E2E: @nexusmind/tui', () => {
   describe('exports', () => {
     it('should export all components', async () => {
-      const tui = await import('@colobot/tui')
+      const tui = await import('@nexusmind/tui')
 
       expect(tui.TUI).toBeDefined()
       expect(tui.ChatUI).toBeDefined()
@@ -299,7 +299,7 @@ describe('E2E: @colobot/tui', () => {
     })
 
     it('should export render utilities', async () => {
-      const tui = await import('@colobot/tui')
+      const tui = await import('@nexusmind/tui')
 
       expect(tui.style).toBeDefined()
       expect(tui.colors).toBeDefined()
@@ -313,7 +313,7 @@ describe('E2E: @colobot/tui', () => {
     })
 
     it('should export input utilities', async () => {
-      const tui = await import('@colobot/tui')
+      const tui = await import('@nexusmind/tui')
 
       expect(tui.createInput).toBeDefined()
       expect(tui.ask).toBeDefined()
@@ -324,7 +324,7 @@ describe('E2E: @colobot/tui', () => {
 
   describe('TUI instance', () => {
     it('should create TUI with default commands', async () => {
-      const { TUI } = await import('@colobot/tui')
+      const { TUI } = await import('@nexusmind/tui')
 
       const tui = new TUI()
 
@@ -339,7 +339,7 @@ describe('E2E: @colobot/tui', () => {
     })
 
     it('should register custom commands', async () => {
-      const { TUI } = await import('@colobot/tui')
+      const { TUI } = await import('@nexusmind/tui')
 
       const tui = new TUI()
       const handler = vi.fn()
@@ -354,7 +354,7 @@ describe('E2E: @colobot/tui', () => {
 
   describe('ChatUI', () => {
     it('should add messages', async () => {
-      const { ChatUI } = await import('@colobot/tui')
+      const { ChatUI } = await import('@nexusmind/tui')
 
       const chat = new ChatUI('Test')
 
@@ -369,7 +369,7 @@ describe('E2E: @colobot/tui', () => {
 
   describe('LogPanel', () => {
     it('should add and retrieve logs', async () => {
-      const { LogPanel } = await import('@colobot/tui')
+      const { LogPanel } = await import('@nexusmind/tui')
 
       const logs = new LogPanel()
 
@@ -387,7 +387,7 @@ describe('E2E: @colobot/tui', () => {
 
   describe('render utilities', () => {
     it('should style text', async () => {
-      const { style, colors } = await import('@colobot/tui')
+      const { style, colors } = await import('@nexusmind/tui')
 
       const styled = style('test', 'red', 'bold')
       expect(styled).toContain('test')
@@ -395,7 +395,7 @@ describe('E2E: @colobot/tui', () => {
     })
 
     it('should create progress bar', async () => {
-      const { progressBar } = await import('@colobot/tui')
+      const { progressBar } = await import('@nexusmind/tui')
 
       const bar = progressBar(50, 100)
       expect(bar).toContain('50%')
@@ -411,16 +411,16 @@ describe('E2E: @colobot/tui', () => {
 
 // ── Sentinel 包测试 ──────────────────────────────────────────────
 
-describe('E2E: @colobot/sentinel', () => {
+describe('E2E: @nexusmind/sentinel', () => {
   describe('exports', () => {
     it('should export Sentinel class', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       expect(Sentinel).toBeDefined()
     })
 
     it('should create Sentinel instance', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       expect(sentinel).toBeDefined()
@@ -431,7 +431,7 @@ describe('E2E: @colobot/sentinel', () => {
 
   describe('input scanning', () => {
     it('should pass normal input', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -443,7 +443,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should block sensitive words', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -456,7 +456,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should block blocked patterns', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -469,7 +469,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should block too long input', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -485,7 +485,7 @@ describe('E2E: @colobot/sentinel', () => {
 
   describe('output scanning', () => {
     it('should scan output', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -497,7 +497,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should block sensitive output', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -511,7 +511,7 @@ describe('E2E: @colobot/sentinel', () => {
 
   describe('state management', () => {
     it('should create state updater', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       const updater = sentinel.createStateUpdater('agent-1')
@@ -521,7 +521,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should track session state', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       const updater = sentinel.createStateUpdater('agent-1')
@@ -539,7 +539,7 @@ describe('E2E: @colobot/sentinel', () => {
 
   describe('heartbeat', () => {
     it('should receive heartbeat', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.receiveHeartbeat({
@@ -559,7 +559,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should track self heartbeat', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.beat()
@@ -573,7 +573,7 @@ describe('E2E: @colobot/sentinel', () => {
 
   describe('takeover', () => {
     it('should trigger takeover', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       const message = sentinel.triggerTakeover('session-1', 'timeout')
@@ -585,7 +585,7 @@ describe('E2E: @colobot/sentinel', () => {
     })
 
     it('should return fallback response with takeover', async () => {
-      const { Sentinel } = await import('@colobot/sentinel')
+      const { Sentinel } = await import('@nexusmind/sentinel')
 
       const sentinel = new Sentinel()
       sentinel.start()
@@ -604,8 +604,8 @@ describe('E2E: @colobot/sentinel', () => {
 
 describe('E2E: Cross-package integration', () => {
   it('should use types in core', async () => {
-    const core = await import('@colobot/core')
-    const types = await import('@colobot/types')
+    const core = await import('@nexusmind/core')
+    const types = await import('@nexusmind/types')
 
     // 创建 ToolContext 使用 types
     const ctx: types.ToolContext = { agentId: 'test', sessionKey: 'test' }
@@ -626,8 +626,8 @@ describe('E2E: Cross-package integration', () => {
   })
 
   it('should use core in tui', async () => {
-    const core = await import('@colobot/core')
-    const tui = await import('@colobot/tui')
+    const core = await import('@nexusmind/core')
+    const tui = await import('@nexusmind/tui')
 
     // TUI 可以使用 core 的配置
     const { initConfig } = core
@@ -652,7 +652,7 @@ describe('E2E: Cross-package integration', () => {
 
   it('should flow: config → subAgent → task', async () => {
     const { initConfig, setGlobalAllowedTools, spawnSubAgent, clearSubAgents } =
-      await import('@colobot/core')
+      await import('@nexusmind/core')
 
     // 1. 配置
     const config = initConfig()
@@ -676,8 +676,8 @@ describe('E2E: Cross-package integration', () => {
 
   it('should integrate sentinel with core runtime', async () => {
     const { AgentRuntime, MockProvider, InMemoryStore, toolRegistry, registerBuiltinTools } =
-      await import('@colobot/core')
-    const { Sentinel } = await import('@colobot/sentinel')
+      await import('@nexusmind/core')
+    const { Sentinel } = await import('@nexusmind/sentinel')
 
     // 1. 创建 Sentinel
     const sentinel = new Sentinel()
@@ -718,8 +718,8 @@ describe('E2E: Cross-package integration', () => {
   })
 
   it('should integrate sentinel with subAgent', async () => {
-    const { spawnSubAgent, clearSubAgents, setGlobalAllowedTools } = await import('@colobot/core')
-    const { Sentinel } = await import('@colobot/sentinel')
+    const { spawnSubAgent, clearSubAgents, setGlobalAllowedTools } = await import('@nexusmind/core')
+    const { Sentinel } = await import('@nexusmind/sentinel')
 
     // 1. 创建 Sentinel
     const sentinel = new Sentinel()

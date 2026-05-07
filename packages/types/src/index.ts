@@ -1,5 +1,5 @@
 /**
- * @colobot/types - 共享类型定义
+ * @nexusmind/types - 共享类型定义
  */
 
 // LLM
