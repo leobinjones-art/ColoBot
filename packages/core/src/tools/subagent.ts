@@ -21,7 +21,7 @@ import { Logger } from '../logger.js'
 const logger = new Logger({
   file: path.join(process.env.HOME || '', '.nexusmind', 'logs', 'subagent.log'),
   prefix: 'subagent',
-  level: (process.env.COLOBOT_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
+  level: (process.env.NEXUSMIND_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
 })
 
 const ALL_TOOLS = [

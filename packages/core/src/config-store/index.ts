@@ -10,7 +10,7 @@ import { createHash, randomBytes } from 'crypto'
 
 // 配置目录
 const CONFIG_DIR =
-  process.env.COLOBOT_CONFIG_DIR || path.join(process.env.HOME || '/tmp', '.nexusmind')
+  process.env.NEXUSMIND_CONFIG_DIR || path.join(process.env.HOME || '/tmp', '.nexusmind')
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
 const DB_FILE = path.join(CONFIG_DIR, 'data.db')
 

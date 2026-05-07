@@ -192,8 +192,8 @@ export class ConfigManager {
 
   private getDefaultConfigPath(): string {
     // 优先级：环境变量 > 用户目录 > 当前目录
-    if (process.env.COLOBOT_CONFIG) {
-      return process.env.COLOBOT_CONFIG
+    if (process.env.NEXUSMIND_CONFIG) {
+      return process.env.NEXUSMIND_CONFIG
     }
 
     const homeDir = process.env.HOME || process.env.USERPROFILE || ''
@@ -566,7 +566,7 @@ Options:
   SUBAGENT_MAX_CONCURRENT   子Agent最大并发数
 
 配置文件位置 (优先级):
-  1. COLOBOT_CONFIG 环境变量
+  1. NEXUSMIND_CONFIG 环境变量
   2. ~/.nexusmind/config.json
   3. ./nexusmind.config.json
 

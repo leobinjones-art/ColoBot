@@ -169,8 +169,8 @@ const LOG_DIR = path.join(process.env.HOME || '', '.nexusmind', 'logs')
 export function createCliLogger(config: Partial<LoggerConfig> = {}): Logger {
   return new Logger({
     file: path.join(LOG_DIR, 'cli.log'),
-    level: (process.env.COLOBOT_LOG_LEVEL as LogLevel) || 'info',
-    console: process.env.COLOBOT_LOG_CONSOLE === 'true',
+    level: (process.env.NEXUSMIND_LOG_LEVEL as LogLevel) || 'info',
+    console: process.env.NEXUSMIND_LOG_CONSOLE === 'true',
     ...config,
   })
 }
@@ -181,8 +181,8 @@ export function createCliLogger(config: Partial<LoggerConfig> = {}): Logger {
 export function createTuiLogger(config: Partial<LoggerConfig> = {}): Logger {
   return new Logger({
     file: path.join(LOG_DIR, 'tui.log'),
-    level: (process.env.COLOBOT_LOG_LEVEL as LogLevel) || 'info',
-    console: process.env.COLOBOT_LOG_CONSOLE === 'true',
+    level: (process.env.NEXUSMIND_LOG_LEVEL as LogLevel) || 'info',
+    console: process.env.NEXUSMIND_LOG_CONSOLE === 'true',
     ...config,
   })
 }
