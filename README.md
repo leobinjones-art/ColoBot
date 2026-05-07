@@ -24,14 +24,14 @@ You can quickly build an intelligent assistant that manages todos, writes papers
 
 ---
 
-## 更名说明
+## Rename Notice
 
-**2025年5月**: 项目从 `ColoBot` 更名为 `NexusMind`
+**May 2025**: Project renamed from `ColoBot` to `NexusMind`
 
-- GitHub 仓库: https://github.com/leobinjones-art/NexusMind
-- npm 包: `@nexusmind/*` 和 `nexusmind`
+- GitHub Repository: https://github.com/leobinjones-art/NexusMind
+- npm Packages: `@nexusmind/*` and `nexusmind`
 
-旧包名 `@colo-bot/*` 和 `colobot` 已弃用，请使用新包名。
+Old package names `@colo-bot/*` and `colobot` are deprecated. Please use the new package names.
 
 ---
 
@@ -269,23 +269,23 @@ print(arr.sum())
 
 ### 📋 Personal Assistant (@nexusmind/assistant)
 
-> ⚠️ **隐私提示**
+> ⚠️ **Privacy Notice**
 >
-> `@nexusmind/assistant` 是一个**可选包**。安装后，NexusMind 会在每次对话中自动携带以下维度的用户数据作为上下文：
+> `@nexusmind/assistant` is an **optional package**. When installed, NexusMind automatically includes the following user data as context in each conversation:
 >
-> - 心理状态（情绪日记、心情趋势）
-> - 生活习惯（习惯追踪、睡眠、运动）
-> - 工作效率（待办、时间追踪）
-> - 社交关系（人脉管理）
-> - 财务状况（收支记录）
-> - 健康状况（运动、睡眠、体重、饮水）
-> - 成长目标（学习进度、阅读清单、目标管理）
+> - Psychological state (mood journal, mood trends)
+> - Life habits (habit tracking, sleep, exercise)
+> - Productivity (todos, time tracking)
+> - Social relationships (contact management)
+> - Financial status (income/expense records)
+> - Health status (exercise, sleep, weight, water intake)
+> - Growth goals (learning progress, reading list, goal management)
 >
-> 这些数据**全部存储在本地**（SQLite/PostgreSQL），不会上传到任何云端服务。
+> All data is **stored locally** (SQLite/PostgreSQL) and never uploaded to any cloud service.
 >
-> 如果你不希望 AI 读取这些数据，**请不要安装 `@nexusmind/assistant` 包**。NexusMind 的核心框架（`@nexusmind/core` + `@nexusmind/sentinel`）不会收集或注入任何个人数据。
+> If you don't want AI to read this data, **please do not install the `@nexusmind/assistant` package**. The core framework (`@nexusmind/core` + `@nexusmind/sentinel`) does not collect or inject any personal data.
 >
-> 已安装用户可以通过 `/context` 命令查看当前会话携带了哪些上下文维度。
+> Installed users can use the `/context` command to view which context dimensions are included in the current session.
 
 | Module                 | Features                                                |
 | ---------------------- | ------------------------------------------------------- |
