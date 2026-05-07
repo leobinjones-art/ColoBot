@@ -15,9 +15,9 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg18
         env:
-          POSTGRES_DB: colobot
-          POSTGRES_USER: colobot
-          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'colobot123' }}
+          POSTGRES_DB: nexusmind
+          POSTGRES_USER: nexusmind
+          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'nexusmind123' }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -41,20 +41,20 @@ jobs:
         run: npm run build:packages
 
       - name: Initialize database
-        run: PGPASSWORD=${{ secrets.CI_DB_PASSWORD || 'colobot123' }} psql -h localhost -U colobot -d colobot -f sql/schema.sql
+        run: PGPASSWORD=${{ secrets.CI_DB_PASSWORD || 'nexusmind123' }} psql -h localhost -U nexusmind -d nexusmind -f sql/schema.sql
         env:
-          DATABASE_URL: postgresql://colobot:${{ secrets.CI_DB_PASSWORD || 'colobot123' }}@localhost:5432/colobot
+          DATABASE_URL: postgresql://nexusmind:${{ secrets.CI_DB_PASSWORD || 'nexusmind123' }}@localhost:5432/nexusmind
           DATABASE_HOST: localhost
 
       - name: Type check packages
         run: |
           npx tsc --noEmit --skipLibCheck --project packages/types/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/charter/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/sentinel/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/core/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/assistant/tsconfig.json
           npx tsc --noEmit --skipLibCheck --project packages/tui/tsconfig.json
-          npx tsc --noEmit --skipLibCheck --project packages/sop-base/tsconfig.json
-          npx tsc --noEmit --skipLibCheck --project packages/sop-academic/tsconfig.json
+          npx tsc --noEmit --skipLibCheck --project packages/nexusmind/tsconfig.json
 
       - name: Prettier check
         run: npx prettier --check . --ignore-path .prettierignore
