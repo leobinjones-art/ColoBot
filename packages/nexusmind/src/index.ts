@@ -32,14 +32,13 @@ export { Sentinel, CharterGuard } from '@nexusmind/sentinel'
 export type { SentinelConfig } from '@nexusmind/sentinel'
 
 // Charter - 许可证系统
-export { CharterManager, ACADEMIC_CHARTER, LEGAL_CHARTER, LONGDOC_CHARTER } from '@nexusmind/charter'
+export {
+  CharterManager,
+  ACADEMIC_CHARTER,
+  LEGAL_CHARTER,
+  LONGDOC_CHARTER,
+} from '@nexusmind/charter'
 export type { CharterDefinition, CharterInstance } from '@nexusmind/charter'
 
 // Types - 共享类型
-export type {
-  LLMMessage,
-  ContentBlock,
-  TextContent,
-  ToolCall,
-  Skill,
-} from '@nexusmind/types'
+export type { LLMMessage, ContentBlock, TextContent, ToolCall, Skill } from '@nexusmind/types'

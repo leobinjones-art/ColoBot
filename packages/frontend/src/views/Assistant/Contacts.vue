@@ -6,8 +6,16 @@
         <p class="cb-page-desc">管理人脉关系</p>
       </div>
       <button class="btn-primary" @click="openCreateModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('contact.newContact') }}
       </button>
@@ -87,7 +95,9 @@
             <textarea v-model="form.note" rows="3" placeholder="备注"></textarea>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -100,7 +110,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除「{{ deletingContact?.name }}」吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteContact">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -130,12 +142,20 @@ const form = ref({
   email: '',
   phone: '',
   tagsInput: '',
-  note: ''
+  note: '',
 })
 
 function openCreateModal() {
   editingContact.value = null
-  form.value = { name: '', organization: '', role: '', email: '', phone: '', tagsInput: '', note: '' }
+  form.value = {
+    name: '',
+    organization: '',
+    role: '',
+    email: '',
+    phone: '',
+    tagsInput: '',
+    note: '',
+  }
   showModal.value = true
 }
 
@@ -148,7 +168,7 @@ function openEditModal(contact: Contact) {
     email: contact.email || '',
     phone: contact.phone || '',
     tagsInput: contact.tags?.join(', ') || '',
-    note: contact.note || ''
+    note: contact.note || '',
   }
   showModal.value = true
 }
@@ -182,11 +202,16 @@ async function searchContacts() {
 
 async function saveContact() {
   try {
-    const tags = form.value.tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+    const tags = form.value.tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
     const data = { ...form.value, tags }
     if (editingContact.value) {
       await contactApi.update(editingContact.value.id, data)
-      contacts.value = contacts.value.map(c => c.id === editingContact.value!.id ? { ...c, ...data } : c)
+      contacts.value = contacts.value.map((c) =>
+        c.id === editingContact.value!.id ? { ...c, ...data } : c,
+      )
     } else {
       const res: any = await contactApi.create(data)
       contacts.value.push(res.data)
@@ -206,7 +231,7 @@ async function deleteContact() {
   if (!deletingContact.value) return
   try {
     await contactApi.delete(deletingContact.value.id)
-    contacts.value = contacts.value.filter(c => c.id !== deletingContact.value!.id)
+    contacts.value = contacts.value.filter((c) => c.id !== deletingContact.value!.id)
     showDeleteConfirm.value = false
     deletingContact.value = null
   } catch (e) {

@@ -43,12 +43,12 @@ colobot chat "帮我写一段代码"
 
 ## 包组成
 
-| 包 | 说明 |
-|---|---|
-| @colobot/core | Agent 运行时核心 |
+| 包                | 说明                               |
+| ----------------- | ---------------------------------- |
+| @colobot/core     | Agent 运行时核心                   |
 | @colobot/sentinel | 安全守护（输入输出扫描、进程守护） |
-| @colobot/charter | 许可证系统（定义 AI 能力边界） |
-| @colobot/types | 共享类型定义 |
+| @colobot/charter  | 许可证系统（定义 AI 能力边界）     |
+| @colobot/types    | 共享类型定义                       |
 
 ## 许可证
 

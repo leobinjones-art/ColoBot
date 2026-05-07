@@ -9,7 +9,8 @@ import path from 'path'
 import { createHash, randomBytes } from 'crypto'
 
 // 配置目录
-const CONFIG_DIR = process.env.COLOBOT_CONFIG_DIR || path.join(process.env.HOME || '/tmp', '.colobot')
+const CONFIG_DIR =
+  process.env.COLOBOT_CONFIG_DIR || path.join(process.env.HOME || '/tmp', '.colobot')
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
 const DB_FILE = path.join(CONFIG_DIR, 'data.db')
 
@@ -155,7 +156,9 @@ export function verifyAdminPassword(password: string): boolean {
  */
 function hashPassword(password: string): string {
   const salt = 'colobot-salt-2024' // 固定盐值，生产环境应使用随机盐
-  return createHash('sha256').update(password + salt).digest('hex')
+  return createHash('sha256')
+    .update(password + salt)
+    .digest('hex')
 }
 
 /**
@@ -184,7 +187,9 @@ export function resetConfig(): void {
 /**
  * 导出配置（不包含敏感信息）
  */
-export function exportConfig(): Omit<ColoBotConfig, 'ai' | 'adminPasswordHash'> & { ai: { provider: string; hasKey: boolean } } {
+export function exportConfig(): Omit<ColoBotConfig, 'ai' | 'adminPasswordHash'> & {
+  ai: { provider: string; hasKey: boolean }
+} {
   const config = loadConfig()
   return {
     language: config.language,

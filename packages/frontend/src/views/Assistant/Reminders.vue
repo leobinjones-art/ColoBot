@@ -6,8 +6,16 @@
         <p class="cb-page-desc">管理提醒事项</p>
       </div>
       <button class="btn-primary" @click="openCreateModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('reminder.newReminder') }}
       </button>
@@ -15,7 +23,12 @@
 
     <!-- 提醒列表 -->
     <div class="reminder-list">
-      <div v-for="reminder in reminders" :key="reminder.id" class="cb-card reminder-item" :class="reminder.status">
+      <div
+        v-for="reminder in reminders"
+        :key="reminder.id"
+        class="cb-card reminder-item"
+        :class="reminder.status"
+      >
         <div class="reminder-icon">🔔</div>
         <div class="reminder-info" @click="openEditModal(reminder)">
           <h3 class="reminder-title">{{ reminder.title }}</h3>
@@ -28,12 +41,14 @@
           </div>
         </div>
         <div class="reminder-actions">
-          <button v-if="reminder.status === 'pending'" class="complete-btn" @click="completeReminder(reminder)">
+          <button
+            v-if="reminder.status === 'pending'"
+            class="complete-btn"
+            @click="completeReminder(reminder)"
+          >
             ✓
           </button>
-          <button class="delete-btn" @click="confirmDelete(reminder)">
-            🗑
-          </button>
+          <button class="delete-btn" @click="confirmDelete(reminder)">🗑</button>
         </div>
       </div>
     </div>
@@ -71,7 +86,9 @@
             </div>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -84,7 +101,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除「{{ deletingReminder?.title }}」吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteReminder">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -110,7 +129,7 @@ const form = ref({
   title: '',
   content: '',
   remindAt: '',
-  repeat: 'none' as 'none' | 'daily' | 'weekly' | 'monthly'
+  repeat: 'none' as 'none' | 'daily' | 'weekly' | 'monthly',
 })
 
 function formatDateTime(date: string): string {
@@ -129,7 +148,7 @@ function openEditModal(reminder: Reminder) {
     title: reminder.title,
     content: reminder.content || '',
     remindAt: reminder.remindAt.slice(0, 16),
-    repeat: reminder.repeat || 'none'
+    repeat: reminder.repeat || 'none',
   }
   showModal.value = true
 }
@@ -152,7 +171,9 @@ async function saveReminder() {
   try {
     const data = { ...form.value, remindAt: new Date(form.value.remindAt).toISOString() }
     if (editingReminder.value) {
-      reminders.value = reminders.value.map(r => r.id === editingReminder.value!.id ? { ...r, ...data } : r)
+      reminders.value = reminders.value.map((r) =>
+        r.id === editingReminder.value!.id ? { ...r, ...data } : r,
+      )
     } else {
       const res: any = await reminderApi.create(data)
       reminders.value.push(res.data)
@@ -181,7 +202,7 @@ async function deleteReminder() {
   if (!deletingReminder.value) return
   try {
     await reminderApi.delete(deletingReminder.value.id)
-    reminders.value = reminders.value.filter(r => r.id !== deletingReminder.value!.id)
+    reminders.value = reminders.value.filter((r) => r.id !== deletingReminder.value!.id)
     showDeleteConfirm.value = false
     deletingReminder.value = null
   } catch (e) {
@@ -259,7 +280,8 @@ onMounted(() => {
   gap: 8px;
 }
 
-.complete-btn, .delete-btn {
+.complete-btn,
+.delete-btn {
   padding: 8px;
   border: none;
   border-radius: var(--cb-radius-sm);

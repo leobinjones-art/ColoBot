@@ -65,7 +65,11 @@ export class CharterGuard {
   /**
    * 检查能力权限
    */
-  checkCapability(userId: string, capabilityName: string, toolName?: string): CapabilityCheckResult {
+  checkCapability(
+    userId: string,
+    capabilityName: string,
+    toolName?: string,
+  ): CapabilityCheckResult {
     const result = this.manager.checkCapability(userId, capabilityName, toolName)
 
     if (result.allowed) {
@@ -179,9 +183,7 @@ export class CharterGuard {
       return library.entries.slice(0, 3) // 返回前3条
     }
 
-    return library.entries.filter((entry) =>
-      entry.tags?.some((tag) => relevantTags.includes(tag)),
-    )
+    return library.entries.filter((entry) => entry.tags?.some((tag) => relevantTags.includes(tag)))
   }
 
   /**

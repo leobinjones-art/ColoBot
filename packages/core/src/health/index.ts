@@ -161,7 +161,10 @@ export function livenessCheck(): { status: 'ok'; timestamp: number; uptime: numb
 /**
  * 就绪检查（检查关键依赖）
  */
-export async function readinessCheck(): Promise<{ ready: boolean; checks: Record<string, boolean> }> {
+export async function readinessCheck(): Promise<{
+  ready: boolean
+  checks: Record<string, boolean>
+}> {
   const checks: Record<string, boolean> = {}
 
   if (config.checkDatabase) {

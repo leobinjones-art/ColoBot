@@ -69,7 +69,11 @@
         <div class="modal-body">
           <div class="form-item">
             <label>{{ t('charter.reason') }}</label>
-            <textarea v-model="applyReason" :placeholder="t('charter.reasonPlaceholder')" rows="3"></textarea>
+            <textarea
+              v-model="applyReason"
+              :placeholder="t('charter.reasonPlaceholder')"
+              rows="3"
+            ></textarea>
           </div>
           <div class="disclaimer" v-if="selectedCharter?.disclaimer">
             <p>{{ selectedCharter.disclaimer }}</p>
@@ -219,7 +223,8 @@ const getDefaultCharters = (): CharterDefinition[] => [
       { name: 'literature-review', description: '文献综述' },
       { name: 'citation-format', description: '引用格式化' },
     ],
-    disclaimer: '此许可证启用学术写作功能。所有引用必须可追溯到可靠来源。用户需确保准确性并避免抄袭。',
+    disclaimer:
+      '此许可证启用学术写作功能。所有引用必须可追溯到可靠来源。用户需确保准确性并避免抄袭。',
   },
   {
     type: 'legal',
@@ -365,7 +370,8 @@ onMounted(() => {
   color: var(--cb-text-secondary);
 }
 
-.btn-apply, .btn-revoke {
+.btn-apply,
+.btn-revoke {
   padding: 8px 16px;
   border-radius: var(--cb-radius-md);
   font-size: var(--cb-text-sm);

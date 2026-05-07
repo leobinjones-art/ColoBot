@@ -6,8 +6,16 @@
         <p class="cb-page-desc">追踪每日习惯养成</p>
       </div>
       <button class="btn-primary" @click="openCreateModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('habit.newHabit') }}
       </button>
@@ -38,7 +46,12 @@
 
     <!-- 习惯卡片 -->
     <div class="habit-grid">
-      <div v-for="habit in habits" :key="habit.id" class="cb-card habit-card" :class="{ checked: habit.checkedToday }">
+      <div
+        v-for="habit in habits"
+        :key="habit.id"
+        class="cb-card habit-card"
+        :class="{ checked: habit.checkedToday }"
+      >
         <div class="habit-header">
           <div class="habit-icon-wrapper">
             <span class="habit-icon">{{ habit.icon || '🎯' }}</span>
@@ -48,14 +61,25 @@
             <h4 class="habit-name">{{ habit.name }}</h4>
             <div class="habit-stats">
               <span class="streak">连续 {{ habit.streak || 0 }} 天</span>
-              <span class="frequency">{{ habit.frequency === 'daily' ? '每日' : habit.frequency === 'weekly' ? '每周' : '每月' }}</span>
+              <span class="frequency">{{
+                habit.frequency === 'daily'
+                  ? '每日'
+                  : habit.frequency === 'weekly'
+                    ? '每周'
+                    : '每月'
+              }}</span>
             </div>
           </div>
         </div>
 
         <!-- 周视图 -->
         <div class="week-view">
-          <div v-for="(day, idx) in habit.weekDays" :key="idx" class="week-day" :class="{ checked: day.checked, today: day.today }">
+          <div
+            v-for="(day, idx) in habit.weekDays"
+            :key="idx"
+            class="week-day"
+            :class="{ checked: day.checked, today: day.today }"
+          >
             <span class="day-label">{{ day.label }}</span>
             <div class="day-indicator"></div>
           </div>
@@ -69,21 +93,44 @@
             :disabled="habit.checkedToday"
           >
             <template v-if="habit.checkedToday">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
               </svg>
               已完成
             </template>
             <template v-else>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="20 6 9 17 4 12" />
               </svg>
               打卡
             </template>
           </button>
           <button class="more-btn" @click="confirmDelete(habit)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="12" cy="5" r="1" />
+              <circle cx="12" cy="19" r="1" />
             </svg>
           </button>
         </div>
@@ -109,7 +156,16 @@
             <div class="form-group">
               <label>图标</label>
               <div class="icon-picker">
-                <button v-for="icon in iconOptions" :key="icon" type="button" class="icon-opt" :class="{ active: form.icon === icon }" @click="form.icon = icon">{{ icon }}</button>
+                <button
+                  v-for="icon in iconOptions"
+                  :key="icon"
+                  type="button"
+                  class="icon-opt"
+                  :class="{ active: form.icon === icon }"
+                  @click="form.icon = icon"
+                >
+                  {{ icon }}
+                </button>
               </div>
             </div>
             <div class="form-group">
@@ -122,7 +178,9 @@
             </div>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -135,7 +193,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除「{{ deletingHabit?.name }}」吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteHabit">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -195,12 +255,14 @@ const currentAchievement = ref({ icon: '', title: '', description: '' })
 const form = ref({
   name: '',
   icon: '🎯',
-  frequency: 'daily'
+  frequency: 'daily',
 })
 
-const checkedCount = computed(() => habits.value.filter(h => h.checkedToday).length)
-const todayProgress = computed(() => habits.value.length ? (checkedCount.value / habits.value.length) * 100 : 0)
-const maxStreak = computed(() => Math.max(...habits.value.map(h => h.streak ?? 0), 0))
+const checkedCount = computed(() => habits.value.filter((h) => h.checkedToday).length)
+const todayProgress = computed(() =>
+  habits.value.length ? (checkedCount.value / habits.value.length) * 100 : 0,
+)
+const maxStreak = computed(() => Math.max(...habits.value.map((h) => h.streak ?? 0), 0))
 const todayChecked = computed(() => checkedCount.value)
 
 function generateWeekDays(): WeekDay[] {
@@ -211,7 +273,7 @@ function generateWeekDays(): WeekDay[] {
   return days.map((label, idx) => ({
     label,
     checked: idx < todayIdx ? Math.random() > 0.3 : false,
-    today: idx === todayIdx
+    today: idx === todayIdx,
   }))
 }
 
@@ -226,7 +288,7 @@ function openEditModal(habit: HabitWithStatus) {
   form.value = {
     name: habit.name,
     icon: habit.icon || '🎯',
-    frequency: habit.frequency
+    frequency: habit.frequency,
   }
   showModal.value = true
 }
@@ -243,7 +305,7 @@ async function fetchHabits() {
       ...h,
       checkedToday: false,
       streak: h.streak || Math.floor(Math.random() * 30),
-      weekDays: generateWeekDays()
+      weekDays: generateWeekDays(),
     }))
   } catch (e) {
     console.error('Failed to fetch habits', e)
@@ -253,14 +315,19 @@ async function fetchHabits() {
 async function saveHabit() {
   try {
     if (editingHabit.value) {
-      habits.value = habits.value.map(h =>
+      habits.value = habits.value.map((h) =>
         h.id === editingHabit.value!.id
           ? { ...h, name: form.value.name, icon: form.value.icon, frequency: form.value.frequency }
-          : h
+          : h,
       )
     } else {
       const res: any = await habitApi.create(form.value)
-      habits.value.push({ ...res.data, checkedToday: false, streak: 0, weekDays: generateWeekDays() })
+      habits.value.push({
+        ...res.data,
+        checkedToday: false,
+        streak: 0,
+        weekDays: generateWeekDays(),
+      })
     }
     closeModal()
   } catch (e) {
@@ -273,7 +340,7 @@ async function checkIn(habit: HabitWithStatus) {
     await habitApi.check(habit.id)
     habit.checkedToday = true
     habit.streak = (habit.streak || 0) + 1
-    const todayIdx = habit.weekDays.findIndex(d => d.today)
+    const todayIdx = habit.weekDays.findIndex((d) => d.today)
     if (todayIdx >= 0) habit.weekDays[todayIdx].checked = true
 
     // 检查成就
@@ -321,7 +388,7 @@ async function deleteHabit() {
   if (!deletingHabit.value) return
   try {
     await habitApi.delete(deletingHabit.value.id)
-    habits.value = habits.value.filter(h => h.id !== deletingHabit.value!.id)
+    habits.value = habits.value.filter((h) => h.id !== deletingHabit.value!.id)
     showDeleteConfirm.value = false
     deletingHabit.value = null
   } catch (e) {
@@ -351,8 +418,13 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .streak-info {

@@ -6,8 +6,16 @@
         <p class="cb-page-desc">管理待办事项</p>
       </div>
       <button class="btn-primary" @click="openCreateModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('todo.newTodo') }}
       </button>
@@ -17,10 +25,15 @@
     <div class="progress-overview">
       <div class="overview-ring">
         <svg viewBox="0 0 100 100">
-          <circle class="ring-bg" cx="50" cy="50" r="40"/>
-          <circle class="ring-progress" cx="50" cy="50" r="40"
+          <circle class="ring-bg" cx="50" cy="50" r="40" />
+          <circle
+            class="ring-progress"
+            cx="50"
+            cy="50"
+            r="40"
             :stroke-dasharray="circumference"
-            :stroke-dashoffset="progressOffset"/>
+            :stroke-dashoffset="progressOffset"
+          />
         </svg>
         <div class="ring-center">
           <span class="ring-value">{{ completedPercent }}%</span>
@@ -49,23 +62,78 @@
 
     <!-- 快速筛选 -->
     <div class="quick-filters">
-      <button class="filter-chip" :class="{ active: filter.status === '' }" @click="filter.status = ''">全部</button>
-      <button class="filter-chip" :class="{ active: filter.status === 'pending' }" @click="filter.status = 'pending'">待处理</button>
-      <button class="filter-chip" :class="{ active: filter.status === 'doing' }" @click="filter.status = 'doing'">进行中</button>
-      <button class="filter-chip" :class="{ active: filter.status === 'done' }" @click="filter.status = 'done'">已完成</button>
+      <button
+        class="filter-chip"
+        :class="{ active: filter.status === '' }"
+        @click="filter.status = ''"
+      >
+        全部
+      </button>
+      <button
+        class="filter-chip"
+        :class="{ active: filter.status === 'pending' }"
+        @click="filter.status = 'pending'"
+      >
+        待处理
+      </button>
+      <button
+        class="filter-chip"
+        :class="{ active: filter.status === 'doing' }"
+        @click="filter.status = 'doing'"
+      >
+        进行中
+      </button>
+      <button
+        class="filter-chip"
+        :class="{ active: filter.status === 'done' }"
+        @click="filter.status = 'done'"
+      >
+        已完成
+      </button>
       <div class="filter-divider"></div>
-      <button class="filter-chip priority-high" :class="{ active: filter.priority === 'high' }" @click="filter.priority = filter.priority === 'high' ? '' : 'high'">高优先</button>
-      <button class="filter-chip priority-medium" :class="{ active: filter.priority === 'medium' }" @click="filter.priority = filter.priority === 'medium' ? '' : 'medium'">中优先</button>
-      <button class="filter-chip priority-low" :class="{ active: filter.priority === 'low' }" @click="filter.priority = filter.priority === 'low' ? '' : 'low'">低优先</button>
+      <button
+        class="filter-chip priority-high"
+        :class="{ active: filter.priority === 'high' }"
+        @click="filter.priority = filter.priority === 'high' ? '' : 'high'"
+      >
+        高优先
+      </button>
+      <button
+        class="filter-chip priority-medium"
+        :class="{ active: filter.priority === 'medium' }"
+        @click="filter.priority = filter.priority === 'medium' ? '' : 'medium'"
+      >
+        中优先
+      </button>
+      <button
+        class="filter-chip priority-low"
+        :class="{ active: filter.priority === 'low' }"
+        @click="filter.priority = filter.priority === 'low' ? '' : 'low'"
+      >
+        低优先
+      </button>
     </div>
 
     <!-- 待办列表 -->
     <div class="todo-list" :class="viewMode">
       <TransitionGroup name="todo-list">
-        <div v-for="todo in filteredTodos" :key="todo.id" class="cb-card todo-item" :class="[todo.status, `priority-${todo.priority}`]">
+        <div
+          v-for="todo in filteredTodos"
+          :key="todo.id"
+          class="cb-card todo-item"
+          :class="[todo.status, `priority-${todo.priority}`]"
+        >
           <div class="todo-checkbox" @click="toggleComplete(todo)">
-            <svg v-if="todo.status === 'done'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"/>
+            <svg
+              v-if="todo.status === 'done'"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
             </svg>
             <div v-else-if="todo.status === 'doing'" class="doing-indicator"></div>
           </div>
@@ -73,10 +141,20 @@
             <h3 class="todo-title">{{ todo.title }}</h3>
             <p v-if="todo.description" class="todo-desc">{{ todo.description }}</p>
             <div class="todo-meta">
-              <span class="priority-badge" :class="todo.priority">{{ t(`todo.priority.${todo.priority}`) }}</span>
+              <span class="priority-badge" :class="todo.priority">{{
+                t(`todo.priority.${todo.priority}`)
+              }}</span>
               <span v-if="todo.dueDate" class="due-date" :class="{ overdue: isOverdue(todo) }">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
                 </svg>
                 {{ formatDate(todo.dueDate) }}
               </span>
@@ -86,20 +164,40 @@
             </div>
           </div>
           <div class="todo-actions">
-            <button v-if="todo.status !== 'doing'" class="action-btn start" @click.stop="startTodo(todo)" title="开始">
+            <button
+              v-if="todo.status !== 'doing'"
+              class="action-btn start"
+              @click.stop="startTodo(todo)"
+              title="开始"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"/>
+                <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
             </button>
-            <button v-if="todo.status === 'doing'" class="action-btn pause" @click.stop="pauseTodo(todo)" title="暂停">
+            <button
+              v-if="todo.status === 'doing'"
+              class="action-btn pause"
+              @click.stop="pauseTodo(todo)"
+              title="暂停"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
               </svg>
             </button>
             <button class="action-btn delete" @click.stop="confirmDelete(todo)" title="删除">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path
+                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+                />
               </svg>
             </button>
           </div>
@@ -130,9 +228,30 @@
             <div class="form-group">
               <label>{{ t('todo.priority.label') }}</label>
               <div class="priority-selector">
-                <button type="button" class="priority-opt low" :class="{ active: form.priority === 'low' }" @click="form.priority = 'low'">低</button>
-                <button type="button" class="priority-opt medium" :class="{ active: form.priority === 'medium' }" @click="form.priority = 'medium'">中</button>
-                <button type="button" class="priority-opt high" :class="{ active: form.priority === 'high' }" @click="form.priority = 'high'">高</button>
+                <button
+                  type="button"
+                  class="priority-opt low"
+                  :class="{ active: form.priority === 'low' }"
+                  @click="form.priority = 'low'"
+                >
+                  低
+                </button>
+                <button
+                  type="button"
+                  class="priority-opt medium"
+                  :class="{ active: form.priority === 'medium' }"
+                  @click="form.priority = 'medium'"
+                >
+                  中
+                </button>
+                <button
+                  type="button"
+                  class="priority-opt high"
+                  :class="{ active: form.priority === 'high' }"
+                  @click="form.priority = 'high'"
+                >
+                  高
+                </button>
               </div>
             </div>
             <div class="form-group">
@@ -145,7 +264,9 @@
             <input v-model="form.tagsInput" type="text" placeholder="标签1, 标签2, ..." />
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -158,7 +279,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除「{{ deletingTodo?.title }}」吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteTodo">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -187,16 +310,18 @@ const form = ref({
   description: '',
   priority: 'medium' as 'low' | 'medium' | 'high',
   dueDate: '',
-  tagsInput: ''
+  tagsInput: '',
 })
 
 const circumference = 2 * Math.PI * 40
 
 const stats = computed(() => {
   const total = todos.value.length
-  const done = todos.value.filter(t => t.status === 'done').length
-  const doing = todos.value.filter(t => t.status === 'doing').length
-  const overdue = todos.value.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done').length
+  const done = todos.value.filter((t) => t.status === 'done').length
+  const doing = todos.value.filter((t) => t.status === 'doing').length
+  const overdue = todos.value.filter(
+    (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done',
+  ).length
   return { total, done, doing, overdue }
 })
 
@@ -211,14 +336,16 @@ const progressOffset = computed(() => {
 })
 
 const filteredTodos = computed(() => {
-  return todos.value.filter(todo => {
-    if (filter.value.status && todo.status !== filter.value.status) return false
-    if (filter.value.priority && todo.priority !== filter.value.priority) return false
-    return true
-  }).sort((a, b) => {
-    const priorityOrder = { high: 0, medium: 1, low: 2 }
-    return priorityOrder[a.priority] - priorityOrder[b.priority]
-  })
+  return todos.value
+    .filter((todo) => {
+      if (filter.value.status && todo.status !== filter.value.status) return false
+      if (filter.value.priority && todo.priority !== filter.value.priority) return false
+      return true
+    })
+    .sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 }
+      return priorityOrder[a.priority] - priorityOrder[b.priority]
+    })
 })
 
 function isOverdue(todo: Todo): boolean {
@@ -242,7 +369,7 @@ function openEditModal(todo: Todo) {
     description: todo.description || '',
     priority: todo.priority,
     dueDate: todo.dueDate || '',
-    tagsInput: (todo.tags || []).join(', ')
+    tagsInput: (todo.tags || []).join(', '),
   }
   showModal.value = true
 }
@@ -263,7 +390,10 @@ async function fetchTodos() {
 
 async function saveTodo() {
   try {
-    const tags = form.value.tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+    const tags = form.value.tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
     const data = { ...form.value, tags }
 
     if (editingTodo.value) {
@@ -312,7 +442,7 @@ async function deleteTodo() {
   if (!deletingTodo.value) return
   try {
     await todoApi.delete(deletingTodo.value.id)
-    todos.value = todos.value.filter(t => t.id !== deletingTodo.value!.id)
+    todos.value = todos.value.filter((t) => t.id !== deletingTodo.value!.id)
     showDeleteConfirm.value = false
     deletingTodo.value = null
   } catch (e) {
@@ -397,9 +527,15 @@ onMounted(() => {
   color: var(--cb-text-primary);
 }
 
-.stat-value.doing { color: var(--cb-warning); }
-.stat-value.done { color: var(--cb-success); }
-.stat-value.overdue { color: var(--cb-danger); }
+.stat-value.doing {
+  color: var(--cb-warning);
+}
+.stat-value.done {
+  color: var(--cb-success);
+}
+.stat-value.overdue {
+  color: var(--cb-danger);
+}
 
 .stat-label {
   font-size: 12px;
@@ -435,9 +571,18 @@ onMounted(() => {
   color: white;
 }
 
-.filter-chip.priority-high.active { background: var(--cb-danger); border-color: var(--cb-danger); }
-.filter-chip.priority-medium.active { background: var(--cb-warning); border-color: var(--cb-warning); }
-.filter-chip.priority-low.active { background: var(--cb-info); border-color: var(--cb-info); }
+.filter-chip.priority-high.active {
+  background: var(--cb-danger);
+  border-color: var(--cb-danger);
+}
+.filter-chip.priority-medium.active {
+  background: var(--cb-warning);
+  border-color: var(--cb-warning);
+}
+.filter-chip.priority-low.active {
+  background: var(--cb-info);
+  border-color: var(--cb-info);
+}
 
 .filter-divider {
   width: 1px;
@@ -461,9 +606,15 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 
-.todo-item.priority-high { border-left-color: var(--cb-danger); }
-.todo-item.priority-medium { border-left-color: var(--cb-warning); }
-.todo-item.priority-low { border-left-color: var(--cb-info); }
+.todo-item.priority-high {
+  border-left-color: var(--cb-danger);
+}
+.todo-item.priority-medium {
+  border-left-color: var(--cb-warning);
+}
+.todo-item.priority-low {
+  border-left-color: var(--cb-info);
+}
 
 .todo-item.done {
   opacity: 0.6;
@@ -510,7 +661,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .todo-content {
@@ -607,9 +760,15 @@ onMounted(() => {
   background: var(--cb-bg-sunken);
 }
 
-.action-btn.start:hover { color: var(--cb-success); }
-.action-btn.pause:hover { color: var(--cb-warning); }
-.action-btn.delete:hover { color: var(--cb-danger); }
+.action-btn.start:hover {
+  color: var(--cb-success);
+}
+.action-btn.pause:hover {
+  color: var(--cb-warning);
+}
+.action-btn.delete:hover {
+  color: var(--cb-danger);
+}
 
 .empty-state {
   text-align: center;
@@ -650,9 +809,18 @@ onMounted(() => {
   transition: all 0.15s ease;
 }
 
-.priority-opt.low.active { border-color: var(--cb-info); background: rgba(52, 152, 219, 0.1); }
-.priority-opt.medium.active { border-color: var(--cb-warning); background: rgba(243, 156, 18, 0.1); }
-.priority-opt.high.active { border-color: var(--cb-danger); background: rgba(192, 57, 43, 0.1); }
+.priority-opt.low.active {
+  border-color: var(--cb-info);
+  background: rgba(52, 152, 219, 0.1);
+}
+.priority-opt.medium.active {
+  border-color: var(--cb-warning);
+  background: rgba(243, 156, 18, 0.1);
+}
+.priority-opt.high.active {
+  border-color: var(--cb-danger);
+  background: rgba(192, 57, 43, 0.1);
+}
 
 .modal-overlay {
   position: fixed;

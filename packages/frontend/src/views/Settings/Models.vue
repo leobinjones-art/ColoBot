@@ -34,11 +34,7 @@
       <div class="apikey-form">
         <label>密钥</label>
         <div class="apikey-input">
-          <input
-            :type="showApiKey ? 'text' : 'password'"
-            v-model="apiKey"
-            placeholder="sk-..."
-          />
+          <input :type="showApiKey ? 'text' : 'password'" v-model="apiKey" placeholder="sk-..." />
           <button class="toggle-visibility" @click="showApiKey = !showApiKey">
             {{ showApiKey ? '隐藏' : '显示' }}
           </button>
@@ -60,7 +56,12 @@ const showApiKey = ref(false)
 const models = [
   { id: 'gpt-4o', name: 'GPT-4o', icon: '🤖', description: 'OpenAI 最新模型，智能且快速' },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '⚡', description: '轻量版，速度更快' },
-  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', icon: '🧠', description: 'Anthropic 出品，擅长分析' },
+  {
+    id: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet',
+    icon: '🧠',
+    description: 'Anthropic 出品，擅长分析',
+  },
   { id: 'deepseek-chat', name: 'DeepSeek', icon: '🌟', description: '国产模型，性价比高' },
 ]
 

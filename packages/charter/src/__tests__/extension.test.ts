@@ -38,7 +38,7 @@ describe('Charter Extension', () => {
       }
       const result = validateCharterDefinition(charter)
       expect(result.valid).toBe(false)
-      expect(result.errors.some(e => e.includes('ID must match pattern'))).toBe(true)
+      expect(result.errors.some((e) => e.includes('ID must match pattern'))).toBe(true)
     })
 
     it('should reject validityMs out of range', () => {
@@ -86,7 +86,7 @@ describe('Charter Extension', () => {
       }
       const result = validateLibraryDefinition(library)
       expect(result.valid).toBe(false)
-      expect(result.errors.some(e => e.includes('Invalid entry type'))).toBe(true)
+      expect(result.errors.some((e) => e.includes('Invalid entry type'))).toBe(true)
     })
   })
 

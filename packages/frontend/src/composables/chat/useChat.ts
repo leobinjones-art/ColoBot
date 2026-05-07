@@ -28,7 +28,9 @@ export function useChat(options: UseChatOptions): UseChatReturn {
   const streamPhase = ref<StreamPhase>('idle')
   const queuedMessage = ref<QueuedMessage | null>(null)
 
-  const isGenerating = computed(() => streamPhase.value !== 'idle' && streamPhase.value !== 'completed')
+  const isGenerating = computed(
+    () => streamPhase.value !== 'idle' && streamPhase.value !== 'completed',
+  )
 
   const { renderMarkdown } = useMarkdownRenderer()
 

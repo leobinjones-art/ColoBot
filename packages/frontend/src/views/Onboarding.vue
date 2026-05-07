@@ -113,11 +113,7 @@
         >
           {{ t('onboarding.next') }}
         </button>
-        <button
-          v-if="currentStep === 3"
-          class="btn primary"
-          @click="complete"
-        >
+        <button v-if="currentStep === 3" class="btn primary" @click="complete">
           {{ t('onboarding.start') }}
         </button>
       </div>
@@ -144,7 +140,9 @@
           <div class="tutorial-section">
             <h4>OpenAI (ChatGPT)</h4>
             <ol>
-              <li>访问 <a href="https://platform.openai.com" target="_blank">platform.openai.com</a></li>
+              <li>
+                访问 <a href="https://platform.openai.com" target="_blank">platform.openai.com</a>
+              </li>
               <li>注册/登录账号</li>
               <li>进入 API Keys 页面</li>
               <li>点击 "Create new secret key"</li>
@@ -154,7 +152,10 @@
           <div class="tutorial-section">
             <h4>Anthropic (Claude)</h4>
             <ol>
-              <li>访问 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></li>
+              <li>
+                访问
+                <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+              </li>
               <li>注册/登录账号</li>
               <li>进入 API Keys 页面</li>
               <li>点击 "Create Key"</li>

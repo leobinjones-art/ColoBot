@@ -139,7 +139,15 @@ export const LIBRARY_SCHEMA = {
           id: { type: 'string' },
           type: {
             type: 'string',
-            enum: ['template', 'regulation', 'guideline', 'reference', 'example', 'citation', 'standard'],
+            enum: [
+              'template',
+              'regulation',
+              'guideline',
+              'reference',
+              'example',
+              'citation',
+              'standard',
+            ],
           },
           title: { type: 'string' },
           content: { type: 'string' },
@@ -279,7 +287,18 @@ export function validateLibraryDefinition(library: unknown): ValidationResult {
       if (!entry.id || !entry.type || !entry.title || !entry.content) {
         errors.push('Each entry must have: id, type, title, content')
       }
-      if (entry.type && !['template', 'regulation', 'guideline', 'reference', 'example', 'citation', 'standard'].includes(entry.type)) {
+      if (
+        entry.type &&
+        ![
+          'template',
+          'regulation',
+          'guideline',
+          'reference',
+          'example',
+          'citation',
+          'standard',
+        ].includes(entry.type)
+      ) {
         errors.push(`Invalid entry type: ${entry.type}`)
       }
     }

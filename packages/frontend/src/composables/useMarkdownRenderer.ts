@@ -6,11 +6,26 @@ import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
 
 const LANG_DISPLAY: Record<string, string> = {
-  js: 'JavaScript', javascript: 'JavaScript', ts: 'TypeScript', typescript: 'TypeScript',
-  py: 'Python', python: 'Python', java: 'Java', go: 'Go', rust: 'Rust',
-  sh: 'Shell', bash: 'Bash', shell: 'Shell', sql: 'SQL',
-  json: 'JSON', yaml: 'YAML', yml: 'YAML', html: 'HTML', css: 'CSS',
-  md: 'Markdown', markdown: 'Markdown',
+  js: 'JavaScript',
+  javascript: 'JavaScript',
+  ts: 'TypeScript',
+  typescript: 'TypeScript',
+  py: 'Python',
+  python: 'Python',
+  java: 'Java',
+  go: 'Go',
+  rust: 'Rust',
+  sh: 'Shell',
+  bash: 'Bash',
+  shell: 'Shell',
+  sql: 'SQL',
+  json: 'JSON',
+  yaml: 'YAML',
+  yml: 'YAML',
+  html: 'HTML',
+  css: 'CSS',
+  md: 'Markdown',
+  markdown: 'Markdown',
 }
 
 function escapeHtml(str: string): string {

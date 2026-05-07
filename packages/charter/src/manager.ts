@@ -176,11 +176,7 @@ export class CharterManager {
   /**
    * 检查是否有许可证允许某操作
    */
-  checkCapability(
-    userId: string,
-    capabilityName: string,
-    toolName?: string,
-  ): CharterCheckResult {
+  checkCapability(userId: string, capabilityName: string, toolName?: string): CharterCheckResult {
     const activeCharters = this.getActiveCharters(userId)
 
     for (const instance of activeCharters) {

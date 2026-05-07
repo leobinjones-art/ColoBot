@@ -6,8 +6,16 @@
         <p class="cb-page-desc">追踪个人目标进度</p>
       </div>
       <button class="btn-primary" @click="openCreateModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('goal.newGoal') }}
       </button>
@@ -48,7 +56,12 @@
     <!-- 目标列表 -->
     <div class="goal-list">
       <TransitionGroup name="goal-list">
-        <div v-for="goal in sortedGoals" :key="goal.id" class="cb-card goal-card" :class="goal.status">
+        <div
+          v-for="goal in sortedGoals"
+          :key="goal.id"
+          class="cb-card goal-card"
+          :class="goal.status"
+        >
           <!-- 目标头部 -->
           <div class="goal-header">
             <div class="goal-title-row">
@@ -64,11 +77,16 @@
           <div class="goal-progress-section">
             <div class="progress-ring">
               <svg viewBox="0 0 100 100">
-                <circle class="ring-bg" cx="50" cy="50" r="40"/>
-                <circle class="ring-fill" cx="50" cy="50" r="40"
+                <circle class="ring-bg" cx="50" cy="50" r="40" />
+                <circle
+                  class="ring-fill"
+                  cx="50"
+                  cy="50"
+                  r="40"
                   :stroke-dasharray="circumference"
                   :stroke-dashoffset="getProgressOffset(goal.progress)"
-                  :class="getProgressClass(goal.progress)"/>
+                  :class="getProgressClass(goal.progress)"
+                />
               </svg>
               <div class="ring-center">
                 <span class="progress-value">{{ goal.progress }}</span>
@@ -101,11 +119,18 @@
           <div class="goal-footer">
             <div class="goal-meta">
               <span v-if="goal.targetDate" class="target-date" :class="{ urgent: isUrgent(goal) }">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
                 {{ formatDate(goal.targetDate) }}
                 <span v-if="isUrgent(goal)" class="urgent-badge">紧迫</span>
@@ -115,20 +140,52 @@
               </span>
             </div>
             <div class="goal-actions">
-              <button class="action-btn progress" @click="updateProgress(goal, 10)" :disabled="goal.progress >= 100">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              <button
+                class="action-btn progress"
+                @click="updateProgress(goal, 10)"
+                :disabled="goal.progress >= 100"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </button>
-              <button class="action-btn regress" @click="updateProgress(goal, -10)" :disabled="goal.progress <= 0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
+              <button
+                class="action-btn regress"
+                @click="updateProgress(goal, -10)"
+                :disabled="goal.progress <= 0"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </button>
               <button class="action-btn delete" @click="confirmDelete(goal)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path
+                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+                  />
                 </svg>
               </button>
             </div>
@@ -159,7 +216,11 @@
           </div>
           <div class="form-group">
             <label>描述</label>
-            <textarea v-model="form.description" rows="3" placeholder="输入目标描述（可选）"></textarea>
+            <textarea
+              v-model="form.description"
+              rows="3"
+              placeholder="输入目标描述（可选）"
+            ></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -175,7 +236,9 @@
             </div>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -188,7 +251,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除「{{ deletingGoal?.title }}」吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteGoal">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -214,13 +279,13 @@ const form = ref({
   title: '',
   description: '',
   targetDate: '',
-  progress: 0
+  progress: 0,
 })
 
 const circumference = 2 * Math.PI * 40
 
-const activeGoals = computed(() => goals.value.filter(g => g.status === 'active').length)
-const completedGoals = computed(() => goals.value.filter(g => g.status === 'completed').length)
+const activeGoals = computed(() => goals.value.filter((g) => g.status === 'active').length)
+const completedGoals = computed(() => goals.value.filter((g) => g.status === 'completed').length)
 const averageProgress = computed(() => {
   if (goals.value.length === 0) return 0
   return Math.round(goals.value.reduce((sum, g) => sum + g.progress, 0) / goals.value.length)
@@ -272,7 +337,7 @@ function openEditModal(goal: Goal) {
     title: goal.title,
     description: goal.description || '',
     targetDate: goal.targetDate || '',
-    progress: goal.progress
+    progress: goal.progress,
   }
   showModal.value = true
 }
@@ -297,7 +362,7 @@ async function saveGoal() {
       title: form.value.title,
       description: form.value.description,
       targetDate: form.value.targetDate || undefined,
-      progress: form.value.progress
+      progress: form.value.progress,
     }
     if (editingGoal.value) {
       await goalApi.progress(editingGoal.value.id, form.value.progress)
@@ -336,7 +401,7 @@ async function deleteGoal() {
   if (!deletingGoal.value) return
   try {
     await goalApi.delete(deletingGoal.value.id)
-    goals.value = goals.value.filter(g => g.id !== deletingGoal.value!.id)
+    goals.value = goals.value.filter((g) => g.id !== deletingGoal.value!.id)
     showDeleteConfirm.value = false
     deletingGoal.value = null
   } catch (e) {
@@ -475,13 +540,23 @@ onMounted(() => {
   fill: none;
   stroke-width: 8;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+  transition:
+    stroke-dashoffset 0.5s ease,
+    stroke 0.3s ease;
 }
 
-.ring-fill.low { stroke: var(--cb-danger); }
-.ring-fill.medium { stroke: var(--cb-warning); }
-.ring-fill.high { stroke: var(--cb-info); }
-.ring-fill.complete { stroke: var(--cb-success); }
+.ring-fill.low {
+  stroke: var(--cb-danger);
+}
+.ring-fill.medium {
+  stroke: var(--cb-warning);
+}
+.ring-fill.high {
+  stroke: var(--cb-info);
+}
+.ring-fill.complete {
+  stroke: var(--cb-success);
+}
 
 .ring-center {
   position: absolute;
@@ -600,9 +675,18 @@ onMounted(() => {
   background: var(--cb-sidebar-hover);
 }
 
-.action-btn.progress:hover:not(:disabled) { color: var(--cb-success); border-color: var(--cb-success); }
-.action-btn.regress:hover:not(:disabled) { color: var(--cb-warning); border-color: var(--cb-warning); }
-.action-btn.delete:hover { color: var(--cb-danger); border-color: var(--cb-danger); }
+.action-btn.progress:hover:not(:disabled) {
+  color: var(--cb-success);
+  border-color: var(--cb-success);
+}
+.action-btn.regress:hover:not(:disabled) {
+  color: var(--cb-warning);
+  border-color: var(--cb-warning);
+}
+.action-btn.delete:hover {
+  color: var(--cb-danger);
+  border-color: var(--cb-danger);
+}
 
 .action-btn:disabled {
   opacity: 0.4;
@@ -630,9 +714,15 @@ onMounted(() => {
 }
 
 @keyframes celebrate {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .empty-state {

@@ -1,11 +1,13 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ================================================================
    CSS Variables — Light / Dark theme
    ================================================================ */
 :root {
   /* font system */
-  --cb-font-body: 'Inter', 'Avenir Next', 'SF Pro Display', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cb-font-body:
+    'Inter', 'Avenir Next', 'SF Pro Display', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
   --cb-font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
 
   /* type scale */
@@ -48,32 +50,32 @@
 
   /* sidebar */
   --cb-sidebar-bg: #ffffff;
-  --cb-sidebar-border: #DDD5CC;
-  --cb-sidebar-hover: #F5F0EB;
-  --cb-sidebar-active: #F5E4D8;
-  --cb-sidebar-text: #6B5344;
-  --cb-sidebar-text-active: #D97757;
+  --cb-sidebar-border: #ddd5cc;
+  --cb-sidebar-hover: #f5f0eb;
+  --cb-sidebar-active: #f5e4d8;
+  --cb-sidebar-text: #6b5344;
+  --cb-sidebar-text-active: #d97757;
 
   /* chat */
-  --cb-chat-bg: #FAFAF8;
+  --cb-chat-bg: #fafaf8;
   --cb-assistant-bubble-bg: #ffffff;
-  --cb-assistant-bubble-border: #DDD5CC;
-  --cb-user-bubble-bg: #D97757;
+  --cb-assistant-bubble-border: #ddd5cc;
+  --cb-user-bubble-bg: #d97757;
   --cb-user-bubble-color: #ffffff;
 
   /* code blocks */
-  --cb-code-bg: #FAF6F1;
-  --cb-code-header-bg: #EFE8DE;
-  --cb-code-text: #1C1410;
+  --cb-code-bg: #faf6f1;
+  --cb-code-header-bg: #efe8de;
+  --cb-code-text: #1c1410;
 
   /* status */
-  --cb-success: #5A8A5A;
+  --cb-success: #5a8a5a;
   --cb-warning: #f59e0b;
-  --cb-danger: #C0392B;
+  --cb-danger: #c0392b;
   --cb-info: #3b82f6;
 
   /* Element Plus override */
-  --el-color-primary: #D97757;
+  --el-color-primary: #d97757;
   --el-font-family: var(--cb-font-body);
 
   color-scheme: light;
@@ -85,30 +87,30 @@ html.dark {
   --cb-bg-sunken: #2a211c;
   --cb-surface-overlay: rgba(34, 26, 22, 0.78);
 
-  --cb-border: #3D3028;
-  --cb-border-light: #2E2420;
+  --cb-border: #3d3028;
+  --cb-border-light: #2e2420;
 
-  --cb-text-primary: #F0EAE4;
-  --cb-text-secondary: #C4A898;
-  --cb-text-tertiary: #8A7060;
+  --cb-text-primary: #f0eae4;
+  --cb-text-secondary: #c4a898;
+  --cb-text-tertiary: #8a7060;
 
   --cb-shadow-soft: 0 14px 32px rgba(0, 0, 0, 0.22);
   --cb-shadow-medium: 0 20px 60px rgba(0, 0, 0, 0.28);
 
-  --cb-sidebar-bg: #1A1410;
-  --cb-sidebar-border: #3D3028;
-  --cb-sidebar-hover: #2E2420;
+  --cb-sidebar-bg: #1a1410;
+  --cb-sidebar-border: #3d3028;
+  --cb-sidebar-hover: #2e2420;
   --cb-sidebar-active: rgba(224, 136, 96, 0.15);
-  --cb-sidebar-text: #C4A898;
-  --cb-sidebar-text-active: #E08860;
+  --cb-sidebar-text: #c4a898;
+  --cb-sidebar-text-active: #e08860;
 
-  --cb-chat-bg: #1A1410;
+  --cb-chat-bg: #1a1410;
   --cb-assistant-bubble-bg: #221a16;
-  --cb-assistant-bubble-border: #3D3028;
+  --cb-assistant-bubble-border: #3d3028;
 
   --cb-code-bg: #2a211c;
-  --cb-code-header-bg: #3D3028;
-  --cb-code-text: #F0EAE4;
+  --cb-code-header-bg: #3d3028;
+  --cb-code-text: #f0eae4;
 
   color-scheme: dark;
 }
@@ -122,7 +124,8 @@ html.dark {
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   font-family: var(--cb-font-body);
   font-size: var(--cb-text-base);
@@ -423,7 +426,9 @@ html, body {
   color: var(--cb-text-primary);
 }
 
-.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
   margin-top: 1.5em;
   margin-bottom: 0.5em;
   font-weight: 600;
@@ -433,7 +438,8 @@ html, body {
   margin-bottom: 1em;
 }
 
-.markdown-body ul, .markdown-body ol {
+.markdown-body ul,
+.markdown-body ol {
   padding-left: 1.5em;
   margin-bottom: 1em;
 }
@@ -464,26 +470,36 @@ html, body {
   display: inline-block;
 }
 
-.status-dot.healthy { background: var(--cb-success); }
-.status-dot.warning { background: var(--cb-warning); }
-.status-dot.critical { background: var(--cb-danger); }
+.status-dot.healthy {
+  background: var(--cb-success);
+}
+.status-dot.warning {
+  background: var(--cb-warning);
+}
+.status-dot.critical {
+  background: var(--cb-danger);
+}
 
 /* ================================================================
    Transitions
    ================================================================ */
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.2s ease;
 }
 
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
-.slide-enter-active, .slide-leave-active {
+.slide-enter-active,
+.slide-leave-active {
   transition: transform 0.2s ease;
 }
 
-.slide-enter-from, .slide-leave-to {
+.slide-enter-from,
+.slide-leave-to {
   transform: translateX(-100%);
 }
 

@@ -6,8 +6,16 @@
         <p class="cb-page-desc">管理个人笔记</p>
       </div>
       <button class="btn-primary" @click="createNote">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('note.newNote') }}
       </button>
@@ -15,22 +23,12 @@
 
     <!-- 搜索 -->
     <div class="search-bar">
-      <input
-        v-model="searchQuery"
-        type="search"
-        placeholder="搜索笔记..."
-        @input="searchNotes"
-      />
+      <input v-model="searchQuery" type="search" placeholder="搜索笔记..." @input="searchNotes" />
     </div>
 
     <!-- 笔记列表 -->
     <div class="note-grid">
-      <div
-        v-for="note in notes"
-        :key="note.id"
-        class="cb-card note-card"
-        @click="editNote(note)"
-      >
+      <div v-for="note in notes" :key="note.id" class="cb-card note-card" @click="editNote(note)">
         <h3 class="note-title">{{ note.title || '无标题' }}</h3>
         <p class="note-preview">{{ getPreview(note.content) }}</p>
         <div class="note-meta">
@@ -49,11 +47,7 @@
     <!-- 编辑弹窗 -->
     <div v-if="editingNote" class="modal-overlay" @click.self="closeEditor">
       <div class="modal-content">
-        <input
-          v-model="editingNote.title"
-          placeholder="标题"
-          class="note-title-input"
-        />
+        <input v-model="editingNote.title" placeholder="标题" class="note-title-input" />
         <textarea
           v-model="editingNote.content"
           placeholder="内容..."
@@ -75,7 +69,9 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button v-if="editingNote.id" type="button" class="btn-danger" @click="deleteNote">{{ t('common.delete') }}</button>
+          <button v-if="editingNote.id" type="button" class="btn-danger" @click="deleteNote">
+            {{ t('common.delete') }}
+          </button>
           <div class="actions-right">
             <button class="btn-secondary" @click="closeEditor">{{ t('common.cancel') }}</button>
             <button class="btn-primary" @click="saveNote">{{ t('common.save') }}</button>
@@ -162,7 +158,7 @@ function addTag() {
 
 function removeTag(tag: string) {
   if (!editingNote.value?.tags) return
-  editingNote.value.tags = editingNote.value.tags.filter(t => t !== tag)
+  editingNote.value.tags = editingNote.value.tags.filter((t) => t !== tag)
 }
 
 async function saveNote() {
@@ -220,7 +216,9 @@ onMounted(() => {
 
 .note-card {
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .note-card:hover {

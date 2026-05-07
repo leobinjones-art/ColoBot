@@ -590,9 +590,7 @@ function analyzeHealth(healthEntries: HealthEntry[]): HealthProfile {
 
   const latestWeight = weights.length > 0 ? weights[weights.length - 1].value : undefined
   const sleepAverage =
-    sleeps.length > 0
-      ? sleeps.reduce((s, h) => s + h.value, 0) / sleeps.length
-      : undefined
+    sleeps.length > 0 ? sleeps.reduce((s, h) => s + h.value, 0) / sleeps.length : undefined
   const waterIntakeAverage =
     waters.length > 0 ? waters.reduce((s, h) => s + h.value, 0) / waters.length : undefined
 

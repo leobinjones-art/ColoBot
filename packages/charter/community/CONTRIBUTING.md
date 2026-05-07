@@ -21,31 +21,33 @@ community/
 ```json
 {
   "$schema": "https://colobot.org/schemas/charter.json",
-  "id": "charter-{type}",           // 必填：唯一ID，格式 charter-[a-z0-9-]+
-  "type": "{type}",                  // 必填：类型标识
-  "name": "Display Name",            // 必填：显示名称
-  "description": "Description...",   // 必填：描述（10-500字符）
-  "capabilities": [                   // 必填：能力列表
+  "id": "charter-{type}", // 必填：唯一ID，格式 charter-[a-z0-9-]+
+  "type": "{type}", // 必填：类型标识
+  "name": "Display Name", // 必填：显示名称
+  "description": "Description...", // 必填：描述（10-500字符）
+  "capabilities": [
+    // 必填：能力列表
     {
-      "name": "capability-name",     // 必填：能力名称
-      "description": "...",          // 可选：能力描述
-      "allowedTools": ["tool1"],     // 可选：允许的工具
-      "disallowedTools": ["tool2"],  // 可选：禁止的工具
-      "maxOutputLength": 100000,     // 可选：最大输出长度
-      "constraints": {}              // 可选：额外约束
+      "name": "capability-name", // 必填：能力名称
+      "description": "...", // 可选：能力描述
+      "allowedTools": ["tool1"], // 可选：允许的工具
+      "disallowedTools": ["tool2"], // 可选：禁止的工具
+      "maxOutputLength": 100000, // 可选：最大输出长度
+      "constraints": {} // 可选：额外约束
     }
   ],
-  "libraryId": "library-{type}",     // 必填：绑定的文档库ID
-  "disclaimer": "...",               // 可选：免责声明
-  "validityMs": 86400000,            // 可选：有效期（毫秒），1分钟-7天
-  "requireConfirmation": true,       // 可选：是否需要审批
-  "author": {                        // 可选：作者信息
+  "libraryId": "library-{type}", // 必填：绑定的文档库ID
+  "disclaimer": "...", // 可选：免责声明
+  "validityMs": 86400000, // 可选：有效期（毫秒），1分钟-7天
+  "requireConfirmation": true, // 可选：是否需要审批
+  "author": {
+    // 可选：作者信息
     "name": "Your Name",
     "email": "your@email.com",
     "url": "https://github.com/..."
   },
-  "version": "1.0.0",                // 可选：版本号
-  "tags": ["tag1", "tag2"]           // 可选：标签
+  "version": "1.0.0", // 可选：版本号
+  "tags": ["tag1", "tag2"] // 可选：标签
 }
 ```
 
@@ -79,13 +81,13 @@ community/
 
 ### 4. 条目类型说明
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| template | 模板，可直接使用 | 合同模板、报告格式 |
-| regulation | 规范，必须遵守 | 法律条款、行业规范 |
-| guideline | 指南，建议遵循 | 写作指南、最佳实践 |
-| reference | 参考资料 | 术语表、编码规范 |
-| example | 示例 | 代码示例、格式示例 |
+| 类型       | 说明             | 示例               |
+| ---------- | ---------------- | ------------------ |
+| template   | 模板，可直接使用 | 合同模板、报告格式 |
+| regulation | 规范，必须遵守   | 法律条款、行业规范 |
+| guideline  | 指南，建议遵循   | 写作指南、最佳实践 |
+| reference  | 参考资料         | 术语表、编码规范   |
+| example    | 示例             | 代码示例、格式示例 |
 
 ## 提交贡献
 
@@ -153,6 +155,7 @@ if (result.valid) {
 ## 示例
 
 查看 `community/` 目录下的示例文件：
+
 - `charter-medical.json` - 医疗文档许可证
 - `library-medical.json` - 医疗文档库
 

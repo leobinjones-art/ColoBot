@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Charter 许可证系统
+
 - **@nexusmind/charter** - 许可证系统
   - CharterDefinition: 定义 AI 能力边界
   - DocumentLibrary: 提供可追溯的事实来源，防止幻觉
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 扩展系统: 支持社区贡献自定义许可证
 
 #### Sentinel 安全守护
+
 - **@nexusmind/sentinel** - CharterGuard 集成
   - 能力权限检查
   - 工具权限检查
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SelfHeartbeat: 自心跳健康检测
 
 #### Core 核心功能
+
 - 健康检查模块 `/health` 端点
 - 优雅关闭模块（SIGTERM/SIGINT 处理）
 - 统一错误处理（AppError 分类）
@@ -35,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 多 LLM Provider 支持（OpenAI、Anthropic、Mock、Fallback）
 
 #### 前端
+
 - Charter 管理页面
 - 命令面板（⌘K）
 - 热力图、进度环等可视化组件

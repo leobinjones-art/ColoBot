@@ -8,14 +8,14 @@
  * 错误类型
  */
 export type ErrorCategory =
-  | 'user_error'      // 用户输入错误
-  | 'auth_error'      // 认证错误
-  | 'not_found'       // 资源不存在
-  | 'rate_limit'      // 频率限制
-  | 'llm_error'       // LLM API 错误
-  | 'database_error'  // 数据库错误
-  | 'network_error'   // 网络错误
-  | 'internal_error'  // 内部错误
+  | 'user_error' // 用户输入错误
+  | 'auth_error' // 认证错误
+  | 'not_found' // 资源不存在
+  | 'rate_limit' // 频率限制
+  | 'llm_error' // LLM API 错误
+  | 'database_error' // 数据库错误
+  | 'network_error' // 网络错误
+  | 'internal_error' // 内部错误
 
 /**
  * 应用错误基类
@@ -26,7 +26,7 @@ export class AppError extends Error {
     public category: ErrorCategory = 'internal_error',
     public code: string = 'UNKNOWN',
     public statusCode: number = 500,
-    public details?: Record<string, unknown>
+    public details?: Record<string, unknown>,
   ) {
     super(message)
     this.name = 'AppError'
@@ -143,24 +143,24 @@ export const ErrorCodes = {
  */
 const friendlyMessages: Record<string, string> = {
   // LLM
-  'invalid_api_key': 'API Key 无效，请检查配置',
-  'rate_limit_exceeded': 'API 请求次数超限，请稍后再试',
-  'context_length_exceeded': '内容太长，请减少输入',
-  'model_not_found': '模型不可用',
+  invalid_api_key: 'API Key 无效，请检查配置',
+  rate_limit_exceeded: 'API 请求次数超限，请稍后再试',
+  context_length_exceeded: '内容太长，请减少输入',
+  model_not_found: '模型不可用',
 
   // 网络
-  'ECONNREFUSED': '无法连接服务器',
-  'ETIMEDOUT': '连接超时',
-  'ENOTFOUND': '网络地址无法解析',
+  ECONNREFUSED: '无法连接服务器',
+  ETIMEDOUT: '连接超时',
+  ENOTFOUND: '网络地址无法解析',
 
   // 数据库
-  'SQLITE_BUSY': '数据库繁忙，请稍后再试',
-  'SQLITE_LOCKED': '数据库被锁定',
+  SQLITE_BUSY: '数据库繁忙，请稍后再试',
+  SQLITE_LOCKED: '数据库被锁定',
 
   // Charter
-  'CHARTER_NOT_FOUND': '许可证不存在',
-  'CHARTER_EXPIRED': '许可证已过期',
-  'CAPABILITY_DENIED': '没有权限执行此操作',
+  CHARTER_NOT_FOUND: '许可证不存在',
+  CHARTER_EXPIRED: '许可证已过期',
+  CAPABILITY_DENIED: '没有权限执行此操作',
 }
 
 /**
@@ -225,9 +225,14 @@ export function toAppError(error: unknown): AppError {
 /**
  * 错误处理中间件（Express 风格）
  */
-export function errorHandler(error: unknown, req: unknown, res: {
-  status: (code: number) => { json: (body: unknown) => void }
-}, next: () => void) {
+export function errorHandler(
+  error: unknown,
+  req: unknown,
+  res: {
+    status: (code: number) => { json: (body: unknown) => void }
+  },
+  next: () => void,
+) {
   const appError = toAppError(error)
 
   console.error(`[${appError.category}] ${appError.message}`, appError.details)

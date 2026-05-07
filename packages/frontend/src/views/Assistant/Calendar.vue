@@ -6,8 +6,16 @@
         <p class="cb-page-desc">管理日程安排</p>
       </div>
       <button class="btn-primary" @click="openCreateModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         {{ t('event.newEvent') }}
       </button>
@@ -29,7 +37,12 @@
             v-for="(day, index) in calendarDays"
             :key="index"
             class="calendar-day"
-            :class="{ 'other-month': day.otherMonth, 'has-event': day.hasEvent, today: day.isToday, selected: isSelectedDay(day) }"
+            :class="{
+              'other-month': day.otherMonth,
+              'has-event': day.hasEvent,
+              today: day.isToday,
+              selected: isSelectedDay(day),
+            }"
             @click="selectDay(day)"
           >
             <span class="day-number">{{ day.date }}</span>
@@ -45,7 +58,12 @@
     <div v-if="selectedDayEvents.length" class="events-section">
       <h3>{{ selectedDateStr }} 的日程</h3>
       <div class="event-list">
-        <div v-for="event in selectedDayEvents" :key="event.id" class="cb-card event-item" @click="openEditModal(event)">
+        <div
+          v-for="event in selectedDayEvents"
+          :key="event.id"
+          class="cb-card event-item"
+          @click="openEditModal(event)"
+        >
           <div class="event-time">
             {{ formatTime(event.startAt) }}
           </div>
@@ -90,7 +108,9 @@
             <input v-model="form.location" type="text" placeholder="输入地点（可选）" />
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -103,7 +123,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除「{{ deletingEvent?.title }}」吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteEvent">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -133,7 +155,7 @@ const form = ref({
   description: '',
   startAt: '',
   endAt: '',
-  location: ''
+  location: '',
 })
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
@@ -209,14 +231,14 @@ function isSelectedDay(day: any): boolean {
 }
 
 function hasEventOnDate(date: Date): boolean {
-  return events.value.some(e => {
+  return events.value.some((e) => {
     const eventDate = new Date(e.startAt)
     return eventDate.toDateString() === date.toDateString()
   })
 }
 
 function getEventsOnDate(date: Date): Event[] {
-  return events.value.filter(e => {
+  return events.value.filter((e) => {
     const eventDate = new Date(e.startAt)
     return eventDate.toDateString() === date.toDateString()
   })
@@ -257,7 +279,7 @@ function openCreateModal() {
     description: '',
     startAt: now.toISOString().slice(0, 16),
     endAt: '',
-    location: ''
+    location: '',
   }
   showModal.value = true
 }
@@ -269,7 +291,7 @@ function openEditModal(event: Event) {
     description: event.description || '',
     startAt: event.startAt.slice(0, 16),
     endAt: event.endAt?.slice(0, 16) || '',
-    location: event.location || ''
+    location: event.location || '',
   }
   showModal.value = true
 }
@@ -295,11 +317,13 @@ async function saveEvent() {
       description: form.value.description,
       startAt: new Date(form.value.startAt).toISOString(),
       endAt: form.value.endAt ? new Date(form.value.endAt).toISOString() : undefined,
-      location: form.value.location
+      location: form.value.location,
     }
     if (editingEvent.value) {
       await eventApi.update(editingEvent.value.id, data)
-      events.value = events.value.map(e => e.id === editingEvent.value!.id ? { ...e, ...data } : e)
+      events.value = events.value.map((e) =>
+        e.id === editingEvent.value!.id ? { ...e, ...data } : e,
+      )
     } else {
       const res: any = await eventApi.create(data)
       events.value.push(res.data)
@@ -319,7 +343,7 @@ async function deleteEvent() {
   if (!deletingEvent.value) return
   try {
     await eventApi.delete(deletingEvent.value.id)
-    events.value = events.value.filter(e => e.id !== deletingEvent.value!.id)
+    events.value = events.value.filter((e) => e.id !== deletingEvent.value!.id)
     showDeleteConfirm.value = false
     deletingEvent.value = null
   } catch (e) {

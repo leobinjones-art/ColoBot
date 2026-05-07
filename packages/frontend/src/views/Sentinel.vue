@@ -68,7 +68,7 @@ const isHealthy = ref(true)
 const stats = ref({
   totalMessages: 45,
   filtered: 3,
-  blocked: 0
+  blocked: 0,
 })
 
 const recentLogs = ref([

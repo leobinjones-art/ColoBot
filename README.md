@@ -71,7 +71,7 @@ Most AI Agent frameworks focus on **how to call tools**, but overlook **how to c
 
 NexusMind solves three overlooked core problems from first principles:
 
-| Problem                   | NexusMind's Solution                                                                                                         |
+| Problem                   | NexusMind's Solution                                                                                                       |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Unbypassable Security** | Independent security parent agent guards all incoming/outgoing messages, no need to embed security checks in business code |
 | **Reusable Knowledge**    | SOP encapsulates complex workflows like "academic research" and "code refactoring" into shareable skill modules            |
@@ -552,8 +552,8 @@ nexusmind-sop-*              # Community contributions (npm publish)
 
 ### Official SOP Modules
 
-| Module                  | Scenario                              | Status         |
-| ----------------------- | ------------------------------------- | -------------- |
+| Module                    | Scenario                              | Status         |
+| ------------------------- | ------------------------------------- | -------------- |
 | `@nexusmind/sop-base`     | Flow engine base class                | ✅ Implemented |
 | `@nexusmind/sop-academic` | Paper writing, literature research    | ✅ Implemented |
 | `@nexusmind/sop-writing`  | Long-form writing, report generation  | 📋 Planned     |
@@ -851,11 +851,11 @@ export function registerMyTool(): void {
 
 ## Environment Variables
 
-| Variable                 | Description                       |
-| ------------------------ | --------------------------------- |
-| `OPENAI_API_KEY`         | OpenAI API Key                    |
-| `ANTHROPIC_API_KEY`      | Anthropic API Key                 |
-| `MINIMAX_API_KEY`        | MiniMax API Key                   |
+| Variable                   | Description                       |
+| -------------------------- | --------------------------------- |
+| `OPENAI_API_KEY`           | OpenAI API Key                    |
+| `ANTHROPIC_API_KEY`        | Anthropic API Key                 |
+| `MINIMAX_API_KEY`          | MiniMax API Key                   |
 | `NEXUSMIND_LOG_LEVEL`      | Log level (debug/info/warn/error) |
 | `NEXUSMIND_LOG_CONSOLE`    | Output to console (true/false)    |
 | `NEXUSMIND_ENCRYPTION_KEY` | Password encryption key           |

@@ -75,7 +75,14 @@
         <form @submit.prevent="saveRecord">
           <div class="form-group">
             <label>金额</label>
-            <input v-model.number="form.amount" type="number" step="0.01" min="0" required placeholder="输入金额" />
+            <input
+              v-model.number="form.amount"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              placeholder="输入金额"
+            />
           </div>
           <div class="form-group">
             <label>分类</label>
@@ -88,7 +95,9 @@
             <input v-model="form.note" type="text" placeholder="输入备注（可选）" />
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">{{ t('common.cancel') }}</button>
+            <button type="button" class="btn-secondary" @click="closeModal">
+              {{ t('common.cancel') }}
+            </button>
             <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
           </div>
         </form>
@@ -101,7 +110,9 @@
         <h2>{{ t('common.confirmDelete') }}</h2>
         <p>确定要删除这条记录吗？</p>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn-secondary" @click="showDeleteConfirm = false">
+            {{ t('common.cancel') }}
+          </button>
           <button class="btn-danger" @click="deleteRecord">{{ t('common.delete') }}</button>
         </div>
       </div>
@@ -130,13 +141,23 @@ let trendChart: echarts.ECharts | null = null
 let pieChart: echarts.ECharts | null = null
 
 const incomeCategories = ['工资', '奖金', '投资', '兼职', '其他收入']
-const expenseCategories = ['餐饮', '交通', '购物', '娱乐', '医疗', '教育', '房租', '水电', '其他支出']
+const expenseCategories = [
+  '餐饮',
+  '交通',
+  '购物',
+  '娱乐',
+  '医疗',
+  '教育',
+  '房租',
+  '水电',
+  '其他支出',
+]
 
 const form = ref({
   type: 'expense' as 'income' | 'expense',
   amount: 0,
   category: '',
-  note: ''
+  note: '',
 })
 
 const categories = ref<string[]>(expenseCategories)
@@ -208,9 +229,21 @@ function updateCharts() {
     xAxis: { type: 'category', data: last7Days },
     yAxis: { type: 'value' },
     series: [
-      { name: '收入', type: 'line', smooth: true, data: incomeByDay, itemStyle: { color: '#5a8a5a' } },
-      { name: '支出', type: 'line', smooth: true, data: expenseByDay, itemStyle: { color: '#c0392b' } },
-    ]
+      {
+        name: '收入',
+        type: 'line',
+        smooth: true,
+        data: incomeByDay,
+        itemStyle: { color: '#5a8a5a' },
+      },
+      {
+        name: '支出',
+        type: 'line',
+        smooth: true,
+        data: expenseByDay,
+        itemStyle: { color: '#c0392b' },
+      },
+    ],
   })
 
   // 饼图
@@ -223,15 +256,17 @@ function updateCharts() {
 
   pieChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
-    series: [{
-      type: 'pie',
-      radius: ['40%', '70%'],
-      avoidLabelOverlap: false,
-      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
-      label: { show: false },
-      emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
-      data: categoryData
-    }]
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+        data: categoryData,
+      },
+    ],
   })
 }
 
@@ -254,7 +289,7 @@ function confirmDelete(record: Finance) {
 async function deleteRecord() {
   if (!deletingRecord.value) return
   try {
-    records.value = records.value.filter(r => r.id !== deletingRecord.value!.id)
+    records.value = records.value.filter((r) => r.id !== deletingRecord.value!.id)
     showDeleteConfirm.value = false
     deletingRecord.value = null
     fetchStats()

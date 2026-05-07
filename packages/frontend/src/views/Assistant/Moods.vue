@@ -16,10 +16,14 @@
       </div>
       <div class="calendar-grid">
         <div class="weekday-labels">
-          <span v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day">{{ day }}</span>
+          <span v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day">{{
+            day
+          }}</span>
         </div>
         <div class="calendar-days">
-          <div v-for="(cell, idx) in calendarCells" :key="idx"
+          <div
+            v-for="(cell, idx) in calendarCells"
+            :key="idx"
             class="calendar-cell"
             :class="{ empty: !cell.day, today: cell.isToday, hasMood: cell.mood }"
             :style="cell.mood ? { backgroundColor: getMoodColor(cell.mood, cell.score) } : {}"
@@ -71,9 +75,14 @@
         <div class="analysis-score">
           <div class="score-ring" :class="moodAnalysis.overallStatus">
             <svg viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" class="bg-ring"/>
-              <circle cx="50" cy="50" r="45" class="progress-ring"
-                :stroke-dasharray="`${moodAnalysis.overallScore * 2.83} 283`"/>
+              <circle cx="50" cy="50" r="45" class="bg-ring" />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                class="progress-ring"
+                :stroke-dasharray="`${moodAnalysis.overallScore * 2.83} 283`"
+              />
             </svg>
             <div class="score-center">
               <span class="score-num">{{ moodAnalysis.overallScore }}</span>
@@ -95,16 +104,34 @@
           </div>
           <div class="detail-item">
             <span class="detail-label">记录连续性</span>
-            <span class="detail-value">{{ moodAnalysis.streakDays }}天 ({{ consistencyLabel }})</span>
+            <span class="detail-value"
+              >{{ moodAnalysis.streakDays }}天 ({{ consistencyLabel }})</span
+            >
           </div>
         </div>
       </div>
 
       <!-- 风险提示 -->
-      <div v-if="moodAnalysis.riskLevel !== 'none'" class="risk-alert" :class="moodAnalysis.riskLevel">
-        <span class="risk-icon">{{ moodAnalysis.riskLevel === 'high' ? '🚨' : moodAnalysis.riskLevel === 'medium' ? '⚠️' : '💡' }}</span>
+      <div
+        v-if="moodAnalysis.riskLevel !== 'none'"
+        class="risk-alert"
+        :class="moodAnalysis.riskLevel"
+      >
+        <span class="risk-icon">{{
+          moodAnalysis.riskLevel === 'high'
+            ? '🚨'
+            : moodAnalysis.riskLevel === 'medium'
+              ? '⚠️'
+              : '💡'
+        }}</span>
         <div class="risk-content">
-          <span class="risk-title">{{ moodAnalysis.riskLevel === 'high' ? '需要重视' : moodAnalysis.riskLevel === 'medium' ? '需要关注' : '小提示' }}</span>
+          <span class="risk-title">{{
+            moodAnalysis.riskLevel === 'high'
+              ? '需要重视'
+              : moodAnalysis.riskLevel === 'medium'
+                ? '需要关注'
+                : '小提示'
+          }}</span>
           <span class="risk-factors">{{ moodAnalysis.riskFactors.join('、') }}</span>
         </div>
       </div>
@@ -124,8 +151,12 @@
       <div v-if="moodAnalysis.suggestions.length > 0" class="suggestions-section">
         <h4>💡 个性化建议</h4>
         <div class="suggestion-list">
-          <div v-for="(suggestion, idx) in moodAnalysis.suggestions" :key="idx"
-            class="suggestion-item" :class="suggestion.priority">
+          <div
+            v-for="(suggestion, idx) in moodAnalysis.suggestions"
+            :key="idx"
+            class="suggestion-item"
+            :class="suggestion.priority"
+          >
             <span class="suggestion-title">{{ suggestion.title }}</span>
             <span class="suggestion-desc">{{ suggestion.description }}</span>
             <span class="suggestion-action">👉 {{ suggestion.actionable }}</span>
@@ -156,23 +187,24 @@
             <label>程度</label>
             <div class="score-slider">
               <input type="range" v-model="score" min="1" max="10" />
-              <div class="score-marks">
-                <span>1</span><span>5</span><span>10</span>
-              </div>
+              <div class="score-marks"><span>1</span><span>5</span><span>10</span></div>
             </div>
             <div class="score-display">
               <span class="score-value" :class="scoreClass">{{ score }}</span>
               <span class="score-hint">{{ scoreHint }}</span>
             </div>
           </div>
-          <textarea
-            v-model="note"
-            placeholder="记录一下今天的心情..."
-            rows="3"
-          ></textarea>
+          <textarea v-model="note" placeholder="记录一下今天的心情..." rows="3"></textarea>
           <button class="btn-primary save-btn" @click="saveMood">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
             </svg>
             保存记录
           </button>
@@ -184,8 +216,16 @@
     <div class="mood-trends cb-card" v-if="moods.length > 0">
       <h3>心情趋势</h3>
       <div class="trend-chart">
-        <div v-for="(mood, idx) in recentMoods" :key="idx" class="trend-bar" :style="{ height: `${mood.score * 10}%` }">
-          <div class="bar-fill" :style="{ backgroundColor: getMoodColor(mood.mood, mood.score) }"></div>
+        <div
+          v-for="(mood, idx) in recentMoods"
+          :key="idx"
+          class="trend-bar"
+          :style="{ height: `${mood.score * 10}%` }"
+        >
+          <div
+            class="bar-fill"
+            :style="{ backgroundColor: getMoodColor(mood.mood, mood.score) }"
+          ></div>
           <span class="bar-emoji">{{ getMoodEmoji(mood.mood) }}</span>
         </div>
       </div>
@@ -221,7 +261,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { moodApi } from '@/api'
 import type { Mood } from '@/types'
-import { analyzeMoods, generateMoodContextForAgent, type MoodAnalysis } from '@/services/moodAnalyzer'
+import {
+  analyzeMoods,
+  generateMoodContextForAgent,
+  type MoodAnalysis,
+} from '@/services/moodAnalyzer'
 
 const { t } = useI18n()
 
@@ -280,7 +324,7 @@ const streakDays = computed(() => {
   for (let i = 0; i < 365; i++) {
     const checkDate = new Date(today)
     checkDate.setDate(checkDate.getDate() - i)
-    const hasMood = moods.value.some(m => {
+    const hasMood = moods.value.some((m) => {
       const mDate = new Date(m.loggedAt)
       mDate.setHours(0, 0, 0, 0)
       return mDate.getTime() === checkDate.getTime()
@@ -294,7 +338,7 @@ const streakDays = computed(() => {
 const mostFrequentMood = computed(() => {
   if (moods.value.length === 0) return '-'
   const counts: Record<string, number> = {}
-  moods.value.forEach(m => {
+  moods.value.forEach((m) => {
     counts[m.mood] = (counts[m.mood] || 0) + 1
   })
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1])
@@ -304,7 +348,7 @@ const mostFrequentMood = computed(() => {
 const mostFrequentEmoji = computed(() => {
   if (moods.value.length === 0) return '😐'
   const counts: Record<string, number> = {}
-  moods.value.forEach(m => {
+  moods.value.forEach((m) => {
     counts[m.mood] = (counts[m.mood] || 0) + 1
   })
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1])
@@ -347,7 +391,7 @@ const calendarCells = computed(() => {
 
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const date = new Date(year, month, d)
-    const moodEntry = moods.value.find(m => {
+    const moodEntry = moods.value.find((m) => {
       const mDate = new Date(m.loggedAt)
       return mDate.toDateString() === date.toDateString()
     })
@@ -356,7 +400,7 @@ const calendarCells = computed(() => {
       date,
       isToday: date.toDateString() === today.toDateString(),
       mood: moodEntry?.mood,
-      score: moodEntry?.score
+      score: moodEntry?.score,
     })
   }
 
@@ -364,7 +408,7 @@ const calendarCells = computed(() => {
 })
 
 function getMoodEmoji(mood: string): string {
-  return moodOptions.find(m => m.value === mood)?.emoji || '😐'
+  return moodOptions.find((m) => m.value === mood)?.emoji || '😐'
 }
 
 function getMoodColor(mood: string, score: number = 5): string {
@@ -391,11 +435,19 @@ function formatDay(date: string): string {
 }
 
 function prevMonth() {
-  currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() - 1, 1)
+  currentMonth.value = new Date(
+    currentMonth.value.getFullYear(),
+    currentMonth.value.getMonth() - 1,
+    1,
+  )
 }
 
 function nextMonth() {
-  currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() + 1, 1)
+  currentMonth.value = new Date(
+    currentMonth.value.getFullYear(),
+    currentMonth.value.getMonth() + 1,
+    1,
+  )
 }
 
 function selectDate(cell: any) {
@@ -461,12 +513,14 @@ async function fetchMoods() {
     const res: any = await moodApi.list({ limit: 30 })
     moods.value = res.data || []
     // 分析心情数据
-    moodAnalysis.value = analyzeMoods(moods.value.map(m => ({
-      mood: m.mood,
-      score: m.score,
-      note: m.note,
-      loggedAt: m.loggedAt,
-    })))
+    moodAnalysis.value = analyzeMoods(
+      moods.value.map((m) => ({
+        mood: m.mood,
+        score: m.score,
+        note: m.note,
+        loggedAt: m.loggedAt,
+      })),
+    )
   } catch (e) {
     console.error('Failed to fetch moods', e)
   }
@@ -635,8 +689,13 @@ onMounted(() => {
 }
 
 @keyframes glow {
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 0.2; }
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
 }
 
 .mood-details {
@@ -683,10 +742,18 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.score-value.great { color: var(--cb-success); }
-.score-value.good { color: #27ae60; }
-.score-value.okay { color: var(--cb-warning); }
-.score-value.low { color: var(--cb-danger); }
+.score-value.great {
+  color: var(--cb-success);
+}
+.score-value.good {
+  color: #27ae60;
+}
+.score-value.okay {
+  color: var(--cb-warning);
+}
+.score-value.low {
+  color: var(--cb-danger);
+}
 
 .score-hint {
   font-size: 14px;
@@ -948,9 +1015,15 @@ onMounted(() => {
   transition: stroke-dasharray 0.5s ease;
 }
 
-.score-ring.warning .progress-ring { stroke: var(--cb-danger); }
-.score-ring.concerning .progress-ring { stroke: var(--cb-warning); }
-.score-ring.normal .progress-ring { stroke: var(--cb-primary); }
+.score-ring.warning .progress-ring {
+  stroke: var(--cb-danger);
+}
+.score-ring.concerning .progress-ring {
+  stroke: var(--cb-warning);
+}
+.score-ring.normal .progress-ring {
+  stroke: var(--cb-primary);
+}
 
 .score-center {
   position: absolute;
@@ -995,9 +1068,15 @@ onMounted(() => {
   color: var(--cb-text-primary);
 }
 
-.detail-value.improving { color: var(--cb-success); }
-.detail-value.declining { color: var(--cb-danger); }
-.detail-value.fluctuating { color: var(--cb-warning); }
+.detail-value.improving {
+  color: var(--cb-success);
+}
+.detail-value.declining {
+  color: var(--cb-danger);
+}
+.detail-value.fluctuating {
+  color: var(--cb-warning);
+}
 
 .risk-alert {
   display: flex;

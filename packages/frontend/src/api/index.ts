@@ -37,13 +37,12 @@ http.interceptors.response.use(
       handleAuthFailure()
     }
     return Promise.reject(err.response?.data?.msg || err.message)
-  }
+  },
 )
 
 // ==================== Auth ====================
 export const authApi = {
-  login: (data: { username: string; password: string }) =>
-    http.post('/auth/login', data),
+  login: (data: { username: string; password: string }) => http.post('/auth/login', data),
   logout: () => http.post('/auth/logout'),
   me: () => http.get('/auth/me'),
 }
@@ -74,17 +73,14 @@ export const chatApi = {
       signal,
     })
   },
-  stop: (conversationId: string) =>
-    http.post(`/chat/${conversationId}/stop`),
+  stop: (conversationId: string) => http.post(`/chat/${conversationId}/stop`),
 }
 
 // ==================== Conversation ====================
 export const conversationApi = {
   list: () => http.get('/conversations'),
-  listMessages: (conversationId: string) =>
-    http.get(`/conversations/${conversationId}/messages`),
-  delete: (conversationId: string) =>
-    http.delete(`/conversations/${conversationId}`),
+  listMessages: (conversationId: string) => http.get(`/conversations/${conversationId}/messages`),
+  delete: (conversationId: string) => http.delete(`/conversations/${conversationId}`),
   rename: (conversationId: string, title: string) =>
     http.put(`/conversations/${conversationId}/title`, { title }),
 }
@@ -106,8 +102,7 @@ export const sentinelApi = {
   sessions: () => http.get('/sentinel/sessions'),
   scanInput: (message: string, sessionId?: string) =>
     http.post('/sentinel/scan/input', { message, sessionId }),
-  scanOutput: (response: string) =>
-    http.post('/sentinel/scan/output', { response }),
+  scanOutput: (response: string) => http.post('/sentinel/scan/output', { response }),
 }
 
 // ==================== Todo ====================
@@ -131,8 +126,7 @@ export const reminderApi = {
 
 // ==================== Event ====================
 export const eventApi = {
-  list: (params?: { start?: string; end?: string }) =>
-    http.get('/events', { params }),
+  list: (params?: { start?: string; end?: string }) => http.get('/events', { params }),
   create: (data: any) => http.post('/events', data),
   update: (id: string | number, data: any) => http.put(`/events/${id}`, data),
   delete: (id: string | number) => http.delete(`/events/${id}`),
@@ -168,8 +162,7 @@ export const moodApi = {
 
 // ==================== Finance ====================
 export const financeApi = {
-  list: (params?: { start?: string; end?: string }) =>
-    http.get('/finances', { params }),
+  list: (params?: { start?: string; end?: string }) => http.get('/finances', { params }),
   create: (data: any) => http.post('/finances', data),
   stats: () => http.get('/finances/stats'),
   monthly: () => http.get('/finances/monthly'),
@@ -216,8 +209,7 @@ export const charterApi = {
   apply: (data: { type: string; reason: string; sessionId?: string }) =>
     http.post('/charters/apply', data),
   revoke: (instanceId: string) => http.post(`/charters/${instanceId}/revoke`),
-  checkCapability: (capability: string) =>
-    http.get(`/charters/check?capability=${capability}`),
+  checkCapability: (capability: string) => http.get(`/charters/check?capability=${capability}`),
   definitions: () => http.get('/charters/definitions'),
 }
 
@@ -232,8 +224,7 @@ export const userProfileApi = {
 
 // ==================== Security Log ====================
 export const securityLogApi = {
-  list: (params?: { start?: string; end?: string }) =>
-    http.get('/security/logs', { params }),
+  list: (params?: { start?: string; end?: string }) => http.get('/security/logs', { params }),
   stats: () => http.get('/security/logs/stats'),
 }
 

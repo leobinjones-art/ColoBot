@@ -10,12 +10,7 @@
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label>{{ t('auth.username') }}</label>
-          <input
-            v-model="form.username"
-            type="text"
-            :placeholder="t('auth.username')"
-            required
-          />
+          <input v-model="form.username" type="text" :placeholder="t('auth.username')" required />
         </div>
 
         <div class="form-group">

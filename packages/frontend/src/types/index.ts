@@ -86,9 +86,16 @@ export interface ToolCallMeta {
 
 // ==================== 流控制 ====================
 export type StreamPhase =
-  | 'preparing_context' | 'reading_memory' | 'reasoning'
-  | 'thinking' | 'streaming' | 'executing_tool'
-  | 'awaiting_approval' | 'completed' | 'failed' | 'idle'
+  | 'preparing_context'
+  | 'reading_memory'
+  | 'reasoning'
+  | 'thinking'
+  | 'streaming'
+  | 'executing_tool'
+  | 'awaiting_approval'
+  | 'completed'
+  | 'failed'
+  | 'idle'
 
 export interface QueuedMessage {
   content: string

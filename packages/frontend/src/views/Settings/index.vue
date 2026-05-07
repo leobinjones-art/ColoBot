@@ -10,8 +10,17 @@
       <div class="settings-section">
         <div class="section-header" @click="toggleSection('behavior')">
           <h2>{{ t('settings.behavior') }}</h2>
-          <svg class="expand-icon" :class="{ rotated: expandedSections.behavior }" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
+          <svg
+            class="expand-icon"
+            :class="{ rotated: expandedSections.behavior }"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </div>
         <div v-if="expandedSections.behavior" class="section-content">
@@ -97,8 +106,17 @@
       <div class="settings-section">
         <div class="section-header" @click="toggleSection('mentalHealth')">
           <h2>{{ t('settings.mentalHealth') }}</h2>
-          <svg class="expand-icon" :class="{ rotated: expandedSections.mentalHealth }" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
+          <svg
+            class="expand-icon"
+            :class="{ rotated: expandedSections.mentalHealth }"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </div>
         <div v-if="expandedSections.mentalHealth" class="section-content">
@@ -122,10 +140,22 @@
           </div>
           <div class="setting-item inline">
             <span>{{ t('mentalHealth.triggerDays') }}</span>
-            <input type="number" v-model.number="mentalHealth.triggerDays" min="1" max="30" class="number-input" />
+            <input
+              type="number"
+              v-model.number="mentalHealth.triggerDays"
+              min="1"
+              max="30"
+              class="number-input"
+            />
             <span>{{ t('mentalHealth.days') }}</span>
             <span>{{ t('mentalHealth.threshold') }}</span>
-            <input type="number" v-model.number="mentalHealth.threshold" min="1" max="10" class="number-input" />
+            <input
+              type="number"
+              v-model.number="mentalHealth.threshold"
+              min="1"
+              max="10"
+              class="number-input"
+            />
             <span>{{ t('mentalHealth.score') }}</span>
           </div>
         </div>
@@ -135,8 +165,17 @@
       <div class="settings-section">
         <div class="section-header" @click="toggleSection('privacy')">
           <h2>{{ t('settings.privacy') }}</h2>
-          <svg class="expand-icon" :class="{ rotated: expandedSections.privacy }" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
+          <svg
+            class="expand-icon"
+            :class="{ rotated: expandedSections.privacy }"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </div>
         <div v-if="expandedSections.privacy" class="section-content">
@@ -206,8 +245,17 @@
       <div class="settings-section">
         <div class="section-header" @click="toggleSection('advanced')">
           <h2>{{ t('nav.advanced') }}</h2>
-          <svg class="expand-icon" :class="{ rotated: expandedSections.advanced }" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
+          <svg
+            class="expand-icon"
+            :class="{ rotated: expandedSections.advanced }"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </div>
         <div v-if="expandedSections.advanced" class="section-content">
@@ -237,12 +285,12 @@
         <div class="modal-body">
           <div class="log-section">
             <h4>{{ t('securityLog.today') }}</h4>
-            <div v-if="securityLogs.length === 0" class="empty-log">
-              暂无日志记录
-            </div>
+            <div v-if="securityLogs.length === 0" class="empty-log">暂无日志记录</div>
             <div v-for="log in securityLogs" :key="log.id" class="log-item">
               <span class="log-time">{{ log.time }}</span>
-              <span class="log-status" :class="log.status">{{ log.status === 'passed' ? '✓' : '⚠' }}</span>
+              <span class="log-status" :class="log.status">{{
+                log.status === 'passed' ? '✓' : '⚠'
+              }}</span>
               <span>{{ log.message }}</span>
             </div>
           </div>
@@ -250,10 +298,21 @@
             <h4>{{ t('securityLog.thisWeek') }}</h4>
             <div class="log-stats">
               <div class="stat-item">
-                <span>{{ t('securityLog.inputAudit') }}: {{ securityStats.inputTotal }} 次，{{ securityStats.inputPassed === securityStats.inputTotal ? t('securityLog.allPassed') : `${securityStats.inputTotal - securityStats.inputPassed} ${t('securityLog.intercepted')}` }}</span>
+                <span
+                  >{{ t('securityLog.inputAudit') }}: {{ securityStats.inputTotal }} 次，{{
+                    securityStats.inputPassed === securityStats.inputTotal
+                      ? t('securityLog.allPassed')
+                      : `${securityStats.inputTotal - securityStats.inputPassed} ${t('securityLog.intercepted')}`
+                  }}</span
+                >
               </div>
               <div class="stat-item">
-                <span>{{ t('securityLog.outputAudit') }}: {{ securityStats.outputTotal }} 次，{{ securityStats.outputIntercepted }} {{ t('securityLog.intercepted') }}</span>
+                <span
+                  >{{ t('securityLog.outputAudit') }}: {{ securityStats.outputTotal }} 次，{{
+                    securityStats.outputIntercepted
+                  }}
+                  {{ t('securityLog.intercepted') }}</span
+                >
               </div>
             </div>
           </div>
@@ -271,9 +330,7 @@
         <div class="modal-body">
           <div class="data-section">
             <h4>{{ t('data.memories') }}</h4>
-            <div v-if="memories.length === 0" class="empty-data">
-              AI 还没有记住任何关于你的事
-            </div>
+            <div v-if="memories.length === 0" class="empty-data">AI 还没有记住任何关于你的事</div>
             <div v-else class="memory-list">
               <div v-for="memory in memories" :key="memory.id" class="memory-item">
                 • {{ memory.content }}
@@ -392,7 +449,7 @@ async function loadSecurityLogs() {
   try {
     const [logsRes, statsRes]: any[] = await Promise.all([
       securityLogApi.list(),
-      securityLogApi.stats()
+      securityLogApi.stats(),
     ])
     securityLogs.value = logsRes.data || []
     securityStats.value = statsRes.data
@@ -419,7 +476,7 @@ async function saveBehavior() {
     await behaviorApi.update({
       ...behavior,
       mentalHealth,
-      safetyMode: privacy.safetyMode
+      safetyMode: privacy.safetyMode,
     })
   } catch (e) {
     console.error('Failed to save behavior', e)

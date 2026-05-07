@@ -6,7 +6,12 @@
     </div>
 
     <div v-if="phase === 'thinking'" class="thinking-steps">
-      <div v-for="(step, idx) in thinkingSteps" :key="idx" class="step-item" :class="{ active: idx <= currentStep }">
+      <div
+        v-for="(step, idx) in thinkingSteps"
+        :key="idx"
+        class="step-item"
+        :class="{ active: idx <= currentStep }"
+      >
         <span class="step-icon">{{ step.icon }}</span>
         <span class="step-text">{{ step.text }}</span>
         <span v-if="idx === currentStep" class="step-spinner"></span>
@@ -15,8 +20,17 @@
 
     <div v-if="phase === 'executing_tool'" class="tool-execution">
       <div class="tool-name">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-3.77 3.77"/>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-3.77 3.77a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-3.77 3.77"
+          />
         </svg>
         {{ currentTool || '执行工具' }}
       </div>
@@ -28,15 +42,11 @@
     </div>
 
     <div v-if="phase === 'streaming'" class="streaming-indicator">
-      <div class="typing-dots">
-        <span></span><span></span><span></span>
-      </div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>
       <span class="streaming-text">正在生成回复...</span>
     </div>
 
-    <div v-if="elapsedTime > 0" class="elapsed-time">
-      {{ elapsedTime.toFixed(1) }}s
-    </div>
+    <div v-if="elapsedTime > 0" class="elapsed-time">{{ elapsedTime.toFixed(1) }}s</div>
   </div>
 </template>
 
@@ -55,28 +65,40 @@ const props = withDefaults(defineProps<Props>(), {
   currentStep: 0,
   currentTool: '',
   toolProgress: 0,
-  elapsedTime: 0
+  elapsedTime: 0,
 })
 
 const phaseIcon = computed(() => {
   switch (props.phase) {
-    case 'thinking': return '🧠'
-    case 'executing_tool': return '🔧'
-    case 'streaming': return '✍️'
-    case 'completed': return '✅'
-    case 'failed': return '❌'
-    default: return '⏳'
+    case 'thinking':
+      return '🧠'
+    case 'executing_tool':
+      return '🔧'
+    case 'streaming':
+      return '✍️'
+    case 'completed':
+      return '✅'
+    case 'failed':
+      return '❌'
+    default:
+      return '⏳'
   }
 })
 
 const phaseLabel = computed(() => {
   switch (props.phase) {
-    case 'thinking': return '深度思考'
-    case 'executing_tool': return '执行工具'
-    case 'streaming': return '生成回复'
-    case 'completed': return '完成'
-    case 'failed': return '失败'
-    default: return '准备中'
+    case 'thinking':
+      return '深度思考'
+    case 'executing_tool':
+      return '执行工具'
+    case 'streaming':
+      return '生成回复'
+    case 'completed':
+      return '完成'
+    case 'failed':
+      return '失败'
+    default:
+      return '准备中'
   }
 })
 
@@ -151,7 +173,9 @@ const thinkingSteps = [
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tool-execution {
@@ -203,12 +227,22 @@ const thinkingSteps = [
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
 
 @keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
 }
 
 .streaming-text {

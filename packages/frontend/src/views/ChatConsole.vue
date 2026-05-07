@@ -5,8 +5,16 @@
       <div class="panel-header">
         <h2>{{ t('chat.conversations') }}</h2>
         <button class="new-chat-btn" @click="newConversation" :title="t('chat.newChat')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
       </div>
@@ -44,12 +52,7 @@
     <div class="chat-area">
       <!-- 消息列表 -->
       <div class="message-list" ref="messageListRef">
-        <div
-          v-for="msg in messages"
-          :key="msg.id"
-          class="message-wrapper"
-          :class="msg.role"
-        >
+        <div v-for="msg in messages" :key="msg.id" class="message-wrapper" :class="msg.role">
           <div class="msg-avatar">
             <span v-if="msg.role === 'user'">👤</span>
             <span v-else>🤖</span>
@@ -76,9 +79,16 @@
 
             <!-- 消息内容 -->
             <div class="msg-bubble">
-              <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+              <div
+                v-if="msg.role === 'assistant'"
+                class="markdown-body"
+                v-html="renderMarkdown(msg.content)"
+              ></div>
               <template v-else>{{ msg.content }}</template>
-              <span v-if="msg.status === 'generating' && !msg.metadata?.toolCalls?.length" class="typing-cursor"></span>
+              <span
+                v-if="msg.status === 'generating' && !msg.metadata?.toolCalls?.length"
+                class="typing-cursor"
+              ></span>
             </div>
           </div>
         </div>
@@ -100,23 +110,29 @@
           rows="1"
         ></textarea>
         <div class="input-actions">
-          <button
-            v-if="isGenerating"
-            class="stop-btn"
-            @click="stopGeneration"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="6" y="6" width="12" height="12"/>
+          <button v-if="isGenerating" class="stop-btn" @click="stopGeneration">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="6" y="6" width="12" height="12" />
             </svg>
           </button>
-          <button
-            v-else
-            class="send-btn"
-            :disabled="!canSend"
-            @click="sendMessage"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          <button v-else class="send-btn" :disabled="!canSend" @click="sendMessage">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
           </button>
         </div>
@@ -346,9 +362,13 @@ function scrollToBottom() {
   }
 }
 
-watch(messages, () => {
-  nextTick(scrollToBottom)
-}, { deep: true })
+watch(
+  messages,
+  () => {
+    nextTick(scrollToBottom)
+  },
+  { deep: true },
+)
 
 onMounted(() => {
   agentStore.fetchAgents()
@@ -537,8 +557,14 @@ async function loadUserProfileContext() {
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .message-wrapper {
@@ -592,7 +618,8 @@ async function loadUserProfileContext() {
   align-items: flex-end;
 }
 
-.send-btn, .stop-btn {
+.send-btn,
+.stop-btn {
   padding: 12px;
   border: none;
   border-radius: var(--cb-radius-md);

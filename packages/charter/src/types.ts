@@ -19,7 +19,15 @@ export type CharterType = 'academic' | 'legal' | 'longdoc' | 'custom' | string
  */
 export interface LibraryEntry {
   id: string
-  type: 'citation' | 'template' | 'regulation' | 'guideline' | 'reference' | 'example' | 'standard' | string
+  type:
+    | 'citation'
+    | 'template'
+    | 'regulation'
+    | 'guideline'
+    | 'reference'
+    | 'example'
+    | 'standard'
+    | string
   title: string
   content: string
   source?: string

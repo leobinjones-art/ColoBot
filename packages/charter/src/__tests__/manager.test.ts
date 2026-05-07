@@ -158,7 +158,7 @@ describe('Built-in charters', () => {
   it('should have longdoc charter', () => {
     const longdoc = getBuiltinCharter('longdoc')
     expect(longdoc).toBeDefined()
-    expect(longdoc?.capabilities.some(c => c.name === 'long-document-write')).toBe(true)
+    expect(longdoc?.capabilities.some((c) => c.name === 'long-document-write')).toBe(true)
   })
 })
 

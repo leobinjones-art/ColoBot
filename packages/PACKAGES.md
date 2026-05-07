@@ -39,14 +39,14 @@
 
 ### 导出类型
 
-| 分类 | 类型 | 说明 |
-|------|------|------|
-| LLM | `LLMMessage`, `ContentBlock`, `ToolDefinition` | LLM 消息格式、工具定义 |
-| Agent | `SubAgentType`, `Skill`, `ApprovalRequest` | 子Agent类型、技能、审批 |
-| Memory | `MemoryResult`, `KnowledgeEntry` | 记忆存储、知识库条目 |
-| Channel | `ChannelMessage`, `ChannelAdapter` | 通道消息、适配器接口 |
-| SOP | `SopStep`, `SopState` | SOP步骤、状态（已弃用） |
-| Tool | `ToolCall`, `ToolResult`, `ToolContext` | 工具调用、结果、上下文 |
+| 分类    | 类型                                           | 说明                    |
+| ------- | ---------------------------------------------- | ----------------------- |
+| LLM     | `LLMMessage`, `ContentBlock`, `ToolDefinition` | LLM 消息格式、工具定义  |
+| Agent   | `SubAgentType`, `Skill`, `ApprovalRequest`     | 子Agent类型、技能、审批 |
+| Memory  | `MemoryResult`, `KnowledgeEntry`               | 记忆存储、知识库条目    |
+| Channel | `ChannelMessage`, `ChannelAdapter`             | 通道消息、适配器接口    |
+| SOP     | `SopStep`, `SopState`                          | SOP步骤、状态（已弃用） |
+| Tool    | `ToolCall`, `ToolResult`, `ToolContext`        | 工具调用、结果、上下文  |
 
 ### 设计原则
 
@@ -64,16 +64,16 @@
 
 ### 核心能力
 
-| 模块 | 功能 | 关键导出 |
-|------|------|----------|
-| Runtime | Agent 运行时 | `AgentRuntime`, `RunOptions`, `RunResult` |
-| Providers | LLM 提供者 | `OpenAIProvider`, `AnthropicProvider`, `MiniMaxProvider` |
-| Tools | 工具系统 | `ToolRegistry`, `registerBuiltinTools` |
-| SubAgents | 子智能体 | `spawnSubAgent`, `runSubAgentTask` |
-| Chunking | 大文件分块 | `readChunksByBytes`, `readChunksByTokens` |
-| Memory | 记忆存储 | `InMemoryStore`, `SQLiteStore` |
-| Skills | 技能系统 | `executeSkill`, `evolveSkillFromConversation` |
-| Vision | 视觉分析 | `analyzeImage`, `analyzeImageLocal` |
+| 模块      | 功能         | 关键导出                                                 |
+| --------- | ------------ | -------------------------------------------------------- |
+| Runtime   | Agent 运行时 | `AgentRuntime`, `RunOptions`, `RunResult`                |
+| Providers | LLM 提供者   | `OpenAIProvider`, `AnthropicProvider`, `MiniMaxProvider` |
+| Tools     | 工具系统     | `ToolRegistry`, `registerBuiltinTools`                   |
+| SubAgents | 子智能体     | `spawnSubAgent`, `runSubAgentTask`                       |
+| Chunking  | 大文件分块   | `readChunksByBytes`, `readChunksByTokens`                |
+| Memory    | 记忆存储     | `InMemoryStore`, `SQLiteStore`                           |
+| Skills    | 技能系统     | `executeSkill`, `evolveSkillFromConversation`            |
+| Vision    | 视觉分析     | `analyzeImage`, `analyzeImageLocal`                      |
 
 ### 子 Agent 架构
 
@@ -89,7 +89,7 @@
 // 示例：大文件分区处理
 const chunks = readChunksByTokens(largeFile, { maxTokens: 10000 })
 const results = await Promise.all(
-  chunks.map(chunk => runSubAgentTask({ task: 'analyze', input: chunk }))
+  chunks.map((chunk) => runSubAgentTask({ task: 'analyze', input: chunk })),
 )
 const merged = mergeResults(results)
 ```
@@ -110,13 +110,13 @@ const merged = mergeResults(results)
 
 ### 核心职责
 
-| 模块 | 功能 | 响应时间 |
-|------|------|----------|
-| RuleEngine | 敏感词/正则扫描 | < 1ms |
-| Heartbeat | Agent 心跳监控 | 2s 间隔 |
-| TimeoutMonitor | 会话超时监控 | 可配置 |
-| Takeover | 异常接管 | 即时 |
-| CharterGuard | 许可证权限检查 | < 1ms |
+| 模块           | 功能            | 响应时间 |
+| -------------- | --------------- | -------- |
+| RuleEngine     | 敏感词/正则扫描 | < 1ms    |
+| Heartbeat      | Agent 心跳监控  | 2s 间隔  |
+| TimeoutMonitor | 会话超时监控    | 可配置   |
+| Takeover       | 异常接管        | 即时     |
+| CharterGuard   | 许可证权限检查  | < 1ms    |
 
 ### 安全架构
 
@@ -166,35 +166,38 @@ const entries = result.libraryEntries
 
 ### 核心概念
 
-| 概念 | 说明 |
-|------|------|
-| Charter 许可证 | 定义一组能力和约束 |
-| Document Library | 提供可追溯的事实来源 |
-| Capability | 具体能力，如 `paper-writing`、`contract-draft` |
-| Instance | 用户申请后的许可证实例 |
+| 概念             | 说明                                           |
+| ---------------- | ---------------------------------------------- |
+| Charter 许可证   | 定义一组能力和约束                             |
+| Document Library | 提供可追溯的事实来源                           |
+| Capability       | 具体能力，如 `paper-writing`、`contract-draft` |
+| Instance         | 用户申请后的许可证实例                         |
 
 ### 内置许可证
 
-| 许可证 | 能力 | 文档库 | 有效期 |
-|--------|------|--------|--------|
-| academic | 论文写作、文献综述、引用格式 | 学术规范库 | 24小时 |
-| legal | 合同起草、免责声明、法律分析 | 法律模板库 | 12小时 |
-| longdoc | 长文档写作、分区处理、目录生成 | 通用写作库 | 6小时 |
+| 许可证   | 能力                           | 文档库     | 有效期 |
+| -------- | ------------------------------ | ---------- | ------ |
+| academic | 论文写作、文献综述、引用格式   | 学术规范库 | 24小时 |
+| legal    | 合同起草、免责声明、法律分析   | 法律模板库 | 12小时 |
+| longdoc  | 长文档写作、分区处理、目录生成 | 通用写作库 | 6小时  |
 
 ### 文档库内容
 
 **学术规范库 (academic)**
+
 - APA/MLA/IEEE 引用格式
 - 学术伦理准则
 - 论文结构模板
 
 **法律模板库 (legal)**
+
 - 免责声明模板
 - 隐私声明模板
 - NDA 模板
 - 标准合同条款
 
 **通用写作库 (general)**
+
 - 文档结构指南
 - 写作风格规范
 - 目录模板
@@ -208,7 +211,7 @@ import { charterManager } from '@colobot/charter'
 const instance = charterManager.requestCharter(userId, {
   type: 'academic',
   reason: '撰写毕业论文',
-  sessionId: 'session-123'
+  sessionId: 'session-123',
 })
 
 // 2. 管理员审批（如果需要）
@@ -242,6 +245,7 @@ if (result.allowed) {
 **问题**：SOP（标准操作流程）是预设的工作流编排，但 AI 本身已经具备动态编排能力，SOP 变得冗余。
 
 **解决**：Charter 许可证系统
+
 - 不预设工作流，AI 自主决策
 - 通过许可证定义能力边界
 - 通过文档库提供事实依据
@@ -251,6 +255,7 @@ if (result.allowed) {
 **问题**：业务 Agent 可能崩溃、超时、被攻击，需要独立的安全守护。
 
 **解决**：平行链路架构
+
 - Sentinel 与业务 Agent 完全独立
 - 业务崩溃不影响安全守护
 - 自身心跳确保 Sentinel 本身存活
@@ -260,6 +265,7 @@ if (result.allowed) {
 **问题**：LLM 会话有上下文限制（如 128K tokens），无法处理大文件。
 
 **解决**：分区处理
+
 - 主 Agent 协调，子 Agent 处理分区
 - 合并结果返回
 - 突破单会话限制

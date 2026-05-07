@@ -16,20 +16,20 @@ ColoBot Frontend — AI Companion for Everyone
 
 ### Core Features
 
-| Feature | Description |
-|---------|-------------|
-| Chat | Talk to AI, it remembers what you said |
+| Feature    | Description                                       |
+| ---------- | ------------------------------------------------- |
+| Chat       | Talk to AI, it remembers what you said            |
 | Automation | Daily reminders, mood check-ins, weekly summaries |
-| Safety | Auto-filters sensitive info to prevent leaks |
-| Assistant | Todos, habits, moods, goals, finances, etc. |
+| Safety     | Auto-filters sensitive info to prevent leaks      |
+| Assistant  | Todos, habits, moods, goals, finances, etc.       |
 
 ### Settings
 
-| Setting | Options |
-|---------|---------|
-| AI Behavior | Brief/Normal/Detailed, Passive/Greeting/Caring |
+| Setting       | Options                                                      |
+| ------------- | ------------------------------------------------------------ |
+| AI Behavior   | Brief/Normal/Detailed, Passive/Greeting/Caring               |
 | Mental Health | Mood tracking, check-in when down, remind to contact friends |
-| Privacy | View what AI remembers, export data, delete data |
+| Privacy       | View what AI remembers, export data, delete data             |
 
 ---
 

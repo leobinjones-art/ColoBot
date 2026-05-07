@@ -3,8 +3,16 @@
     <div v-if="visible" class="command-palette-overlay" @click.self="close">
       <div class="command-palette">
         <div class="search-input-wrapper">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             ref="inputRef"
@@ -76,56 +84,139 @@ const commands: CommandGroup[] = [
   {
     name: '导航',
     commands: [
-      { id: 'nav-chat', label: '对话', icon: '💬', shortcut: 'G C', action: () => router.push('/chat') },
-      { id: 'nav-agents', label: 'Agent 管理', icon: '🤖', shortcut: 'G A', action: () => router.push('/agents') },
-      { id: 'nav-skills', label: '技能', icon: '⚡', shortcut: 'G S', action: () => router.push('/skills') },
-      { id: 'nav-sentinel', label: '安全守护', icon: '🛡️', shortcut: 'G W', action: () => router.push('/sentinel') },
-    ]
+      {
+        id: 'nav-chat',
+        label: '对话',
+        icon: '💬',
+        shortcut: 'G C',
+        action: () => router.push('/chat'),
+      },
+      {
+        id: 'nav-agents',
+        label: 'Agent 管理',
+        icon: '🤖',
+        shortcut: 'G A',
+        action: () => router.push('/agents'),
+      },
+      {
+        id: 'nav-skills',
+        label: '技能',
+        icon: '⚡',
+        shortcut: 'G S',
+        action: () => router.push('/skills'),
+      },
+      {
+        id: 'nav-sentinel',
+        label: '安全守护',
+        icon: '🛡️',
+        shortcut: 'G W',
+        action: () => router.push('/sentinel'),
+      },
+    ],
   },
   {
     name: '助理',
     commands: [
-      { id: 'nav-todos', label: '待办事项', icon: '✅', action: () => router.push('/assistant/todos') },
-      { id: 'nav-calendar', label: '日程', icon: '📅', action: () => router.push('/assistant/calendar') },
+      {
+        id: 'nav-todos',
+        label: '待办事项',
+        icon: '✅',
+        action: () => router.push('/assistant/todos'),
+      },
+      {
+        id: 'nav-calendar',
+        label: '日程',
+        icon: '📅',
+        action: () => router.push('/assistant/calendar'),
+      },
       { id: 'nav-notes', label: '笔记', icon: '📝', action: () => router.push('/assistant/notes') },
-      { id: 'nav-habits', label: '习惯', icon: '🎯', action: () => router.push('/assistant/habits') },
+      {
+        id: 'nav-habits',
+        label: '习惯',
+        icon: '🎯',
+        action: () => router.push('/assistant/habits'),
+      },
       { id: 'nav-goals', label: '目标', icon: '🏆', action: () => router.push('/assistant/goals') },
-      { id: 'nav-contacts', label: '人脉', icon: '👥', action: () => router.push('/assistant/contacts') },
-    ]
+      {
+        id: 'nav-contacts',
+        label: '人脉',
+        icon: '👥',
+        action: () => router.push('/assistant/contacts'),
+      },
+    ],
   },
   {
     name: '操作',
     commands: [
-      { id: 'action-new-chat', label: '新建对话', icon: '➕', shortcut: '⌘N', action: () => emit('close') },
-      { id: 'action-new-todo', label: '新建待办', icon: '✓', action: () => { router.push('/assistant/todos'); emit('close') } },
-      { id: 'action-new-note', label: '新建笔记', icon: '📄', action: () => { router.push('/assistant/notes'); emit('close') } },
-      { id: 'action-settings', label: '设置', icon: '⚙️', action: () => router.push('/settings/models') },
-    ]
+      {
+        id: 'action-new-chat',
+        label: '新建对话',
+        icon: '➕',
+        shortcut: '⌘N',
+        action: () => emit('close'),
+      },
+      {
+        id: 'action-new-todo',
+        label: '新建待办',
+        icon: '✓',
+        action: () => {
+          router.push('/assistant/todos')
+          emit('close')
+        },
+      },
+      {
+        id: 'action-new-note',
+        label: '新建笔记',
+        icon: '📄',
+        action: () => {
+          router.push('/assistant/notes')
+          emit('close')
+        },
+      },
+      {
+        id: 'action-settings',
+        label: '设置',
+        icon: '⚙️',
+        action: () => router.push('/settings/models'),
+      },
+    ],
   },
   {
     name: '快捷指令',
     commands: [
-      { id: 'cmd-translate', label: '/translate - 翻译文本', icon: '🌐', action: () => emit('close') },
-      { id: 'cmd-summarize', label: '/summarize - 总结内容', icon: '📋', action: () => emit('close') },
+      {
+        id: 'cmd-translate',
+        label: '/translate - 翻译文本',
+        icon: '🌐',
+        action: () => emit('close'),
+      },
+      {
+        id: 'cmd-summarize',
+        label: '/summarize - 总结内容',
+        icon: '📋',
+        action: () => emit('close'),
+      },
       { id: 'cmd-explain', label: '/explain - 解释代码', icon: '💡', action: () => emit('close') },
       { id: 'cmd-fix', label: '/fix - 修复问题', icon: '🔧', action: () => emit('close') },
-    ]
-  }
+    ],
+  },
 ]
 
 const filteredGroups = computed(() => {
   if (!query.value.trim()) return commands
 
-  return commands.map(group => ({
-    name: group.name,
-    commands: group.commands.filter(cmd =>
-      cmd.label.toLowerCase().includes(query.value.toLowerCase())
-    )
-  })).filter(group => group.commands.length > 0)
+  return commands
+    .map((group) => ({
+      name: group.name,
+      commands: group.commands.filter((cmd) =>
+        cmd.label.toLowerCase().includes(query.value.toLowerCase()),
+      ),
+    }))
+    .filter((group) => group.commands.length > 0)
 })
 
 const totalCommands = computed(() =>
-  filteredGroups.value.reduce((sum, g) => sum + g.commands.length, 0)
+  filteredGroups.value.reduce((sum, g) => sum + g.commands.length, 0),
 )
 
 function getGlobalIndex(group: CommandGroup, localIndex: number): number {
@@ -173,11 +264,14 @@ function close() {
   emit('close')
 }
 
-watch(() => props.visible, (val) => {
-  if (val) {
-    setTimeout(() => inputRef.value?.focus(), 50)
-  }
-})
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) {
+      setTimeout(() => inputRef.value?.focus(), 50)
+    }
+  },
+)
 
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKey)

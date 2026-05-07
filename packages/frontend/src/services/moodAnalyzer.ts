@@ -78,8 +78,8 @@ export function analyzeMoods(moods: MoodRecord[]): MoodAnalysis {
     return getEmptyAnalysis()
   }
 
-  const sortedMoods = [...moods].sort((a, b) =>
-    new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+  const sortedMoods = [...moods].sort(
+    (a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime(),
   )
 
   // 计算整体分数
@@ -143,13 +143,15 @@ function getEmptyAnalysis(): MoodAnalysis {
     streakDays: 0,
     consistency: 'low',
     patterns: [],
-    suggestions: [{
-      type: 'activity',
-      priority: 'medium',
-      title: '开始记录心情',
-      description: '记录心情可以帮助你更好地了解自己',
-      actionable: '每天花一分钟记录今天的心情',
-    }],
+    suggestions: [
+      {
+        type: 'activity',
+        priority: 'medium',
+        title: '开始记录心情',
+        description: '记录心情可以帮助你更好地了解自己',
+        actionable: '每天花一分钟记录今天的心情',
+      },
+    ],
     riskLevel: 'none',
     riskFactors: [],
   }
@@ -186,7 +188,7 @@ function analyzeTrend(moods: MoodRecord[]): 'improving' | 'stable' | 'declining'
   const diff = recentAvg - olderAvg
 
   // 计算波动性
-  const scores = recent.map(m => m.score)
+  const scores = recent.map((m) => m.score)
   const variance = scores.reduce((s, v) => s + Math.pow(v - recentAvg, 2), 0) / scores.length
   const stdDev = Math.sqrt(variance)
 
@@ -199,13 +201,13 @@ function analyzeTrend(moods: MoodRecord[]): 'improving' | 'stable' | 'declining'
 function analyzeDistribution(moods: MoodRecord[]): Record<string, number> {
   const distribution: Record<string, number> = {}
 
-  moods.forEach(m => {
+  moods.forEach((m) => {
     distribution[m.mood] = (distribution[m.mood] || 0) + 1
   })
 
   // 转换为百分比
   const total = moods.length
-  Object.keys(distribution).forEach(key => {
+  Object.keys(distribution).forEach((key) => {
     distribution[key] = Math.round((distribution[key] / total) * 100)
   })
 
@@ -237,7 +239,7 @@ function calculateStreak(moods: MoodRecord[]): number {
     const checkDate = new Date(today)
     checkDate.setDate(checkDate.getDate() - i)
 
-    const hasMood = moods.some(m => {
+    const hasMood = moods.some((m) => {
       const mDate = new Date(m.loggedAt)
       mDate.setHours(0, 0, 0, 0)
       return mDate.getTime() === checkDate.getTime()
@@ -253,9 +255,7 @@ function calculateStreak(moods: MoodRecord[]): number {
 function analyzeConsistency(moods: MoodRecord[], streak: number): 'high' | 'medium' | 'low' {
   if (moods.length < 7) return 'low'
 
-  const daysWithMoods = new Set(
-    moods.map(m => new Date(m.loggedAt).toDateString())
-  ).size
+  const daysWithMoods = new Set(moods.map((m) => new Date(m.loggedAt).toDateString())).size
 
   const last30Days = Math.min(30, daysWithMoods)
   const expectedDays = Math.min(30, moods.length > 30 ? 30 : moods.length)
@@ -274,7 +274,7 @@ function identifyPatterns(moods: MoodRecord[]): MoodPattern[] {
 
   // 星期几模式
   const weekdayMoods: Record<number, { total: number; count: number }> = {}
-  moods.forEach(m => {
+  moods.forEach((m) => {
     const day = new Date(m.loggedAt).getDay()
     if (!weekdayMoods[day]) weekdayMoods[day] = { total: 0, count: 0 }
     weekdayMoods[day].total += m.score
@@ -294,16 +294,17 @@ function identifyPatterns(moods: MoodRecord[]): MoodPattern[] {
     patterns.push({
       type: 'weekday',
       description: `${dayNames[bestDay.day]}心情最好，${dayNames[worstDay.day]}心情较低`,
-      insight: bestDay.day === 0 || bestDay.day === 6
-        ? '周末更放松，注意工作日调节'
-        : '可以考虑在低落的日子安排一些喜欢的活动',
+      insight:
+        bestDay.day === 0 || bestDay.day === 6
+          ? '周末更放松，注意工作日调节'
+          : '可以考虑在低落的日子安排一些喜欢的活动',
     })
   }
 
   // 连续低落模式
   let consecutiveLow = 0
   let maxConsecutiveLow = 0
-  moods.slice(0, 14).forEach(m => {
+  moods.slice(0, 14).forEach((m) => {
     if (m.score <= 4) {
       consecutiveLow++
       maxConsecutiveLow = Math.max(maxConsecutiveLow, consecutiveLow)
@@ -321,7 +322,7 @@ function identifyPatterns(moods: MoodRecord[]): MoodPattern[] {
   }
 
   // 焦虑模式
-  const anxiousCount = moods.slice(0, 10).filter(m => m.mood === 'anxious').length
+  const anxiousCount = moods.slice(0, 10).filter((m) => m.mood === 'anxious').length
   if (anxiousCount >= 4) {
     patterns.push({
       type: 'trigger',
@@ -336,7 +337,7 @@ function identifyPatterns(moods: MoodRecord[]): MoodPattern[] {
 function assessRisk(
   moods: MoodRecord[],
   trend: string,
-  patterns: MoodPattern[]
+  patterns: MoodPattern[],
 ): { riskLevel: 'none' | 'low' | 'medium' | 'high'; riskFactors: string[] } {
   const riskFactors: string[] = []
   let riskScore = 0
@@ -351,7 +352,7 @@ function assessRisk(
   }
 
   // 连续低落风险
-  const recentLow = moods.slice(0, 7).filter(m => m.score <= 3).length
+  const recentLow = moods.slice(0, 7).filter((m) => m.score <= 3).length
   if (recentLow >= 5) {
     riskScore += 3
     riskFactors.push('最近一周大部分时间心情低落')
@@ -361,17 +362,17 @@ function assessRisk(
   }
 
   // 模式风险
-  const hasConsecutiveLowPattern = patterns.some(p =>
-    p.type === 'sequence' && p.description.includes('连续')
+  const hasConsecutiveLowPattern = patterns.some(
+    (p) => p.type === 'sequence' && p.description.includes('连续'),
   )
   if (hasConsecutiveLowPattern) {
     riskScore += 2
   }
 
   // 负面情绪占比
-  const negativeMoods = moods.slice(0, 14).filter(m =>
-    ['sad', 'angry', 'anxious'].includes(m.mood)
-  ).length
+  const negativeMoods = moods
+    .slice(0, 14)
+    .filter((m) => ['sad', 'angry', 'anxious'].includes(m.mood)).length
   if (negativeMoods >= 10) {
     riskScore += 2
     riskFactors.push('负面情绪占比较高')
@@ -446,7 +447,7 @@ function generateSuggestions(context: {
   }
 
   // 基于模式
-  context.patterns.forEach(pattern => {
+  context.patterns.forEach((pattern) => {
     if (pattern.type === 'weekday') {
       suggestions.push({
         type: 'activity',
@@ -479,8 +480,8 @@ function generateSuggestions(context: {
   }
 
   // 去重并排序
-  const uniqueSuggestions = suggestions.filter((s, idx, arr) =>
-    arr.findIndex(x => x.title === s.title) === idx
+  const uniqueSuggestions = suggestions.filter(
+    (s, idx, arr) => arr.findIndex((x) => x.title === s.title) === idx,
   )
 
   return uniqueSuggestions
@@ -491,7 +492,10 @@ function generateSuggestions(context: {
     .slice(0, 5)
 }
 
-function getOverallStatus(score: number, risk: string): 'excellent' | 'good' | 'normal' | 'concerning' | 'warning' {
+function getOverallStatus(
+  score: number,
+  risk: string,
+): 'excellent' | 'good' | 'normal' | 'concerning' | 'warning' {
   if (risk === 'high') return 'warning'
   if (risk === 'medium') return 'concerning'
 
@@ -525,7 +529,9 @@ export function generateMoodContextForAgent(moods: MoodRecord[]): string {
 
   // 整体状态
   parts.push(`用户心理状态分析：`)
-  parts.push(`- 整体评分：${analysis.overallScore}/100（${getStatusLabel(analysis.overallStatus)}）`)
+  parts.push(
+    `- 整体评分：${analysis.overallScore}/100（${getStatusLabel(analysis.overallStatus)}）`,
+  )
   parts.push(`- 趋势：${analysis.trendDescription}`)
   parts.push(`- 最常见心情：${analysis.dominantMood}`)
   parts.push(`- 连续记录：${analysis.streakDays}天`)
@@ -537,7 +543,7 @@ export function generateMoodContextForAgent(moods: MoodRecord[]): string {
 
   // 模式
   if (analysis.patterns.length > 0) {
-    parts.push(`- 发现模式：${analysis.patterns.map(p => p.description).join('；')}`)
+    parts.push(`- 发现模式：${analysis.patterns.map((p) => p.description).join('；')}`)
   }
 
   // 建议
