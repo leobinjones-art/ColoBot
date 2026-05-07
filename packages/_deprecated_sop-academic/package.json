@@ -1,5 +1,5 @@
 {
-  "name": "@colo-bot/sop-academic",
+  "name": "@nexusmind/sop-academic",
   "version": "0.1.0",
   "description": "NexusMind SOP 学术研究流程",
   "license": "AGPL-3.0",
@@ -18,8 +18,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@colo-bot/core": "*",
-    "@colo-bot/types": "*"
+    "@nexusmind/core": "*",
+    "@nexusmind/types": "*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
