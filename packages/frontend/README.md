@@ -1,6 +1,6 @@
-# @colobot/frontend
+# @nexusmind/frontend
 
-ColoBot Frontend — AI Companion for Everyone
+NexusMind Frontend — AI Companion for Everyone
 
 ---
 

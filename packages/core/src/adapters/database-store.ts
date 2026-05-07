@@ -31,7 +31,7 @@ export class DatabaseStore implements MemoryStore {
   private initialized: boolean = false
 
   constructor(config: DatabaseStoreConfig = {}) {
-    this.tablePrefix = config.tablePrefix || 'colobot'
+    this.tablePrefix = config.tablePrefix || 'nexusmind'
 
     // 初始化数据库连接
     initDb({

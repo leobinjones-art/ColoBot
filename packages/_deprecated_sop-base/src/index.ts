@@ -1,5 +1,5 @@
 /**
- * @colobot/sop-base - SOP 流程引擎基类
+ * @nexusmind/sop-base - SOP 流程引擎基类
  */
 
 export * from './types.js'

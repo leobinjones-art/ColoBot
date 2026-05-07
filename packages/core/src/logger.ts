@@ -161,7 +161,7 @@ export class Logger {
 }
 
 // 默认日志目录
-const LOG_DIR = path.join(process.env.HOME || '', '.colobot', 'logs')
+const LOG_DIR = path.join(process.env.HOME || '', '.nexusmind', 'logs')
 
 /**
  * 创建 CLI 日志器

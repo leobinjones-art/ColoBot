@@ -38,7 +38,7 @@
 
 **报告渠道**:
 
-- 电子邮件: conduct@colobot.ai
+- 电子邮件: conduct@nexusmind.ai
 - GitHub Issues: 使用 "行为准则" 标签
 
 所有投诉都将得到及时、公正的审查和调查。项目团队有义务对事件报告者保密。
@@ -119,4 +119,4 @@ https://www.contributor-covenant.org/zh-cn/version/2/1/code_of_conduct.html
 
 ---
 
-_本行为准则旨在为 ColoBot 社区的所有参与者创造一个积极、包容的环境。我们期待与您共建美好的开源社区！_
+_本行为准则旨在为 NexusMind 社区的所有参与者创造一个积极、包容的环境。我们期待与您共建美好的开源社区！_

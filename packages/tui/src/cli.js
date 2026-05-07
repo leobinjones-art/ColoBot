@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ColoBot CLI 入口 - 纯 JS 避免 TypeScript 编译问题
+ * NexusMind CLI 入口 - 纯 JS 避免 TypeScript 编译问题
  */
 
 const args = process.argv.slice(2)
@@ -9,10 +9,10 @@ const firstArg = args[0]
 // 快速处理 help/version，不加载任何模块
 if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
   console.log(`
-ColoBot TUI - 终端交互界面
+NexusMind TUI - 终端交互界面
 
 用法:
-  colobot-tui [命令]
+  nexusmind-tui [命令]
 
 命令:
   init        交互式配置
@@ -26,13 +26,13 @@ ColoBot TUI - 终端交互界面
   /tools      显示工具列表
 
 配置文件:
-  ~/.colobot/config.json
+  ~/.nexusmind/config.json
 `)
   process.exit(0)
 }
 
 if (firstArg === 'version' || firstArg === '-v' || firstArg === '--version') {
-  console.log(`ColoBot v${process.env.npm_package_version || '0.1.0'}`)
+  console.log(`NexusMind v${process.env.npm_package_version || '0.1.0'}`)
   process.exit(0)
 }
 

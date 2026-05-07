@@ -19,7 +19,7 @@ import { Logger } from '../logger.js'
 
 // 子 Agent 日志器 - 写入单独的日志文件
 const logger = new Logger({
-  file: path.join(process.env.HOME || '', '.colobot', 'logs', 'subagent.log'),
+  file: path.join(process.env.HOME || '', '.nexusmind', 'logs', 'subagent.log'),
   prefix: 'subagent',
   level: (process.env.COLOBOT_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
 })

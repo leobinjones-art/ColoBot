@@ -1,6 +1,6 @@
 export default {
   app: {
-    title: 'ColoBot - AI Assistant',
+    title: 'NexusMind - AI Assistant',
   },
   nav: {
     chat: 'Chat',
@@ -194,7 +194,7 @@ export default {
     password: 'Password',
   },
   onboarding: {
-    welcome: 'Welcome to ColoBot',
+    welcome: 'Welcome to NexusMind',
     selectLanguage: 'Choose your language',
     setupApiKey: 'Connect to AI',
     apiKeyDesc: 'Enter your API key. It stays on your computer only.',

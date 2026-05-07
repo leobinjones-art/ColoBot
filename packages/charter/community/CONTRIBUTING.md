@@ -20,7 +20,7 @@ community/
 
 ```json
 {
-  "$schema": "https://colobot.org/schemas/charter.json",
+  "$schema": "https://nexusmind.org/schemas/charter.json",
   "id": "charter-{type}", // 必填：唯一ID，格式 charter-[a-z0-9-]+
   "type": "{type}", // 必填：类型标识
   "name": "Display Name", // 必填：显示名称
@@ -55,7 +55,7 @@ community/
 
 ```json
 {
-  "$schema": "https://colobot.org/schemas/library.json",
+  "$schema": "https://nexusmind.org/schemas/library.json",
   "id": "library-{type}",            // 必填：唯一ID
   "name": "Library Name",            // 必填：名称
   "description": "Description...",   // 必填：描述
@@ -101,7 +101,7 @@ community/
 ### 方式二：直接加载
 
 ```typescript
-import { loadCharter, loadLibrary } from '@colobot/charter'
+import { loadCharter, loadLibrary } from '@nexusmind/charter'
 
 // 加载自定义 Charter
 const myCharter = require('./my-charter.json')

@@ -1,10 +1,10 @@
 /**
- * ColoBot Runtime 实现
+ * NexusMind Runtime 实现
  */
 
 import type { LLMMessage, ContentBlock } from '@nexusmind/types'
 import type {
-  ColoBotRuntime,
+  NexusMindRuntime,
   RuntimeDependencies,
   ChatOptions,
   AgentConfig,
@@ -18,7 +18,7 @@ import type {
   Skill,
 } from './interface.js'
 
-export class ColoBotRuntimeImpl implements ColoBotRuntime {
+export class NexusMindRuntimeImpl implements NexusMindRuntime {
   constructor(private deps: RuntimeDependencies) {}
 
   // === 状态管理 ===

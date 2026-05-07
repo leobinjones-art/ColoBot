@@ -1,5 +1,5 @@
 /**
- * E2E 测试 - ColoBot 完整流程测试
+ * E2E 测试 - NexusMind 完整流程测试
  */
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'

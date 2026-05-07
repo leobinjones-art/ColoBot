@@ -1,5 +1,5 @@
 /**
- * ColoBot - 自带安全守护的 AI Agent 框架
+ * NexusMind - 自带安全守护的 AI Agent 框架
  *
  * 这是伞包，重新导出所有子包的功能
  */

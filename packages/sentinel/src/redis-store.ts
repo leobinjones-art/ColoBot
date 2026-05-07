@@ -24,7 +24,7 @@ export interface RedisConfig {
 const DEFAULT_CONFIG: RedisConfig = {
   host: 'localhost',
   port: 6379,
-  keyPrefix: 'colobot:',
+  keyPrefix: 'nexusmind:',
   ttl: 3600, // 1 小时
 }
 
@@ -143,7 +143,7 @@ export class RedisStateStore {
 
   constructor(client: IRedisClient, config?: Partial<RedisConfig>) {
     this.client = client
-    this.keyPrefix = config?.keyPrefix ?? 'colobot:'
+    this.keyPrefix = config?.keyPrefix ?? 'nexusmind:'
     this.ttl = config?.ttl ?? 3600
   }
 

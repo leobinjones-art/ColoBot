@@ -24,7 +24,7 @@ export function getDb(config: AssistantDbConfig = {}): Database.Database {
   if (config.inMemory) {
     db = new Database(':memory:')
   } else {
-    const dbPath = config.path || path.join(process.env.HOME || '', '.colobot', 'assistant.db')
+    const dbPath = config.path || path.join(process.env.HOME || '', '.nexusmind', 'assistant.db')
     const dir = path.dirname(dbPath)
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })

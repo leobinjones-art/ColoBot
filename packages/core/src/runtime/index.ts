@@ -10,8 +10,8 @@ import { compressMessages, estimateMessagesTokens } from '../compression.js'
 
 // 导出接口和实现
 export * from './interface.js'
-export { ColoBotRuntimeImpl } from './runtime.js'
-export type { ColoBotRuntime, RuntimeDependencies } from './interface.js'
+export { NexusMindRuntimeImpl } from './runtime.js'
+export type { NexusMindRuntime, RuntimeDependencies } from './interface.js'
 
 export interface RunOptions {
   agentId: string

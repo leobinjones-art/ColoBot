@@ -16,7 +16,7 @@ export interface RedisSignalBusConfig {
 }
 
 const DEFAULT_CONFIG: RedisSignalBusConfig = {
-  channelPrefix: 'colobot:signal:',
+  channelPrefix: 'nexusmind:signal:',
 }
 
 // 信号类型

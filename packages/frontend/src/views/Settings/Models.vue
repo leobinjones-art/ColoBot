@@ -67,19 +67,19 @@ const models = [
 
 function selectModel(modelId: string) {
   selectedModel.value = modelId
-  localStorage.setItem('colobot_model', modelId)
+  localStorage.setItem('nexusmind_model', modelId)
 }
 
 function saveApiKey() {
-  localStorage.setItem('colobot_api_key', apiKey.value)
+  localStorage.setItem('nexusmind_api_key', apiKey.value)
   alert('已保存')
 }
 
 onMounted(() => {
-  const savedModel = localStorage.getItem('colobot_model')
+  const savedModel = localStorage.getItem('nexusmind_model')
   if (savedModel) selectedModel.value = savedModel
 
-  const savedKey = localStorage.getItem('colobot_api_key')
+  const savedKey = localStorage.getItem('nexusmind_api_key')
   if (savedKey) apiKey.value = savedKey
 })
 </script>

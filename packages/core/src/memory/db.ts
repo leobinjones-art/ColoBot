@@ -25,7 +25,7 @@ export function initDb(config: DbConfig = {}): void {
   pool = new Pool({
     host: config.host || process.env.DB_HOST || 'localhost',
     port: config.port || parseInt(process.env.DB_PORT || '5432'),
-    database: config.database || process.env.DB_NAME || 'colobot',
+    database: config.database || process.env.DB_NAME || 'nexusmind',
     user: config.user || process.env.DB_USER || 'colonies',
     password: config.password || process.env.DB_PASSWORD,
   })

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://colobot.org/schemas/library.json",
+  "$schema": "https://nexusmind.org/schemas/library.json",
   "id": "library-medical",
   "name": "Medical Document Library",
   "description": "Medical terminology, clinical documentation standards, and healthcare writing guidelines",

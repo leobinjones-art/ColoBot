@@ -2,7 +2,7 @@
  * SOP 学术研究流程 - 主入口
  */
 
-import type { ColoBotRuntime } from '@colobot/core'
+import type { NexusMindRuntime } from '@nexusmind/core'
 import type { SopState, TaskAnalysis, SopResult, SopConfig } from './types.js'
 import { SopEngine } from './engine.js'
 
@@ -13,7 +13,7 @@ export { SopEngine } from './engine.js'
 /**
  * 创建 SOP 引擎
  */
-export function createSopEngine(runtime: ColoBotRuntime, config?: Partial<SopConfig>): SopEngine {
+export function createSopEngine(runtime: NexusMindRuntime, config?: Partial<SopConfig>): SopEngine {
   return new SopEngine(runtime, config)
 }
 

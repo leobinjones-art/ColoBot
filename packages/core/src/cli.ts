@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ColoBot CLI 入口
+ * NexusMind CLI 入口
  */
 
 import * as readline from 'readline'
@@ -29,10 +29,10 @@ let pendingImages: {
 }[] = []
 
 const HELP_TEXT = `
-ColoBot - Multi-modal AI Assistant
+NexusMind - Multi-modal AI Assistant
 
 Usage:
-  colobot [command]
+  nexusmind [command]
 
 Commands:
   init        Interactive configuration
@@ -51,14 +51,14 @@ Interactive commands:
   /exit              Exit program
 
 Config file:
-  ~/.colobot/config.json
+  ~/.nexusmind/config.json
 `
 
 const HELP_TEXT_ZH = `
-ColoBot - 多模态 AI 助手
+NexusMind - 多模态 AI 助手
 
 用法:
-  colobot [命令]
+  nexusmind [命令]
 
 命令:
   init        交互式配置
@@ -77,13 +77,13 @@ ColoBot - 多模态 AI 助手
   /exit              退出程序
 
 配置文件:
-  ~/.colobot/config.json
+  ~/.nexusmind/config.json
 `
 
 // 多语言文本
 const i18n = {
   zh: {
-    welcome: '\n欢迎使用 ColoBot！首次运行需要配置。\n',
+    welcome: '\n欢迎使用 NexusMind！首次运行需要配置。\n',
     selectProvider: '选择 LLM 提供商:\n',
     pleaseSelect: '请选择: ',
     invalidSelect: '无效选择',
@@ -96,7 +96,7 @@ const i18n = {
     selectModel: '\n选择模型:\n',
     selectSearchEngine: '\n选择搜索引擎:\n',
     selectSearchDefault: '请选择 (默认 duckduckgo): ',
-    configSaved: '\n配置已保存！运行 colobot 启动。\n',
+    configSaved: '\n配置已保存！运行 nexusmind 启动。\n',
     providerOptions: [
       { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
       {
@@ -107,7 +107,7 @@ const i18n = {
     ],
   },
   en: {
-    welcome: '\nWelcome to ColoBot! First run requires configuration.\n',
+    welcome: '\nWelcome to NexusMind! First run requires configuration.\n',
     selectProvider: 'Select LLM provider:\n',
     pleaseSelect: 'Select: ',
     invalidSelect: 'Invalid selection',
@@ -120,7 +120,7 @@ const i18n = {
     selectModel: '\nSelect model:\n',
     selectSearchEngine: '\nSelect search engine:\n',
     selectSearchDefault: 'Select (default: duckduckgo): ',
-    configSaved: '\nConfiguration saved! Run colobot to start.\n',
+    configSaved: '\nConfiguration saved! Run nexusmind to start.\n',
     providerOptions: [
       { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
       {
@@ -216,7 +216,7 @@ async function interactiveInit(): Promise<void> {
   const searchEngine = sidx >= 0 && sidx < searchEngines.length ? searchEngines[sidx] : 'duckduckgo'
 
   // 保存配置
-  const configDir = path.join(process.env.HOME || '', '.colobot')
+  const configDir = path.join(process.env.HOME || '', '.nexusmind')
   const configPath = path.join(configDir, 'config.json')
   const config = {
     model: { provider, model, apiKey, baseUrl },
@@ -267,7 +267,7 @@ async function startTui(): Promise<void> {
     process.exit(0)
   })
 
-  await tui.start('ColoBot TUI')
+  await tui.start('NexusMind TUI')
   console.log('输入 /help 查看可用命令\n')
   // @ts-ignore
   await tui.run(async (message) => message)
@@ -299,7 +299,7 @@ async function startCli(): Promise<void> {
     config.model.apiKey || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || ''
 
   if (!apiKey) {
-    console.error('Error: No API key provided. Run `colobot init` first.')
+    console.error('Error: No API key provided. Run `nexusmind init` first.')
     process.exit(1)
   }
 
@@ -324,7 +324,7 @@ async function startCli(): Promise<void> {
   registerAllTools()
 
   const memory = new SQLiteStore({
-    path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
+    path: path.join(process.env.HOME || '', '.nexusmind', 'chat.db'),
   })
 
   // 创建安全守护母 Agent
@@ -343,7 +343,7 @@ async function startCli(): Promise<void> {
   logger.info('CLI_READY', { provider: config.model.provider, model: config.model.model })
 
   console.log('╔══════════════════════════════════════╗')
-  console.log('║          ColoBot CLI Ready           ║')
+  console.log('║          NexusMind CLI Ready           ║')
   console.log('╚══════════════════════════════════════╝')
   console.log(`\nProvider: ${config.model.provider}`)
   console.log(`Model: ${config.model.model}`)
@@ -540,7 +540,7 @@ async function main() {
   const firstArg = args[0]
 
   // 读取配置中的语言设置
-  const configPath = path.join(process.env.HOME || '', '.colobot', 'config.json')
+  const configPath = path.join(process.env.HOME || '', '.nexusmind', 'config.json')
   let lang: Lang = 'en' // 默认英文
   try {
     if (fs.existsSync(configPath)) {
@@ -557,7 +557,7 @@ async function main() {
   }
 
   if (firstArg === 'version' || firstArg === '-v' || firstArg === '--version') {
-    console.log(`ColoBot v${process.env.npm_package_version || '0.1.0'}`)
+    console.log(`NexusMind v${process.env.npm_package_version || '0.1.0'}`)
     process.exit(0)
   }
 

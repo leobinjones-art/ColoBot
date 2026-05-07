@@ -1,11 +1,11 @@
-# @colobot/core
+# @nexusmind/core
 
-ColoBot Agent 运行时核心库。
+NexusMind Agent 运行时核心库。
 
 ## 安装
 
 ```bash
-npm install @colobot/core
+npm install @nexusmind/core
 ```
 
 ## 功能模块
@@ -30,13 +30,13 @@ export LLM_PROVIDER=anthropic
 export ANTHROPIC_API_KEY=your-api-key
 
 # 运行 CLI
-npx colobot-core
+npx nexusmind-core
 
 # 指定模型
-colobot-core -p anthropic -m claude-sonnet-4-20250514
+nexusmind-core -p anthropic -m claude-sonnet-4-20250514
 
 # 指定配置文件
-colobot-core -c /path/to/config.json
+nexusmind-core -c /path/to/config.json
 ```
 
 ### CLI 命令
@@ -74,7 +74,7 @@ SUBAGENT_MAX_CONCURRENT=10
 
 ### 配置文件
 
-`~/.colobot/config.json` 或 `./colobot.config.json`
+`~/.nexusmind/config.json` 或 `./nexusmind.config.json`
 
 ```json
 {
@@ -137,7 +137,7 @@ import {
   initConfig,
   setGlobalAllowedTools,
   OpenAIProvider,
-} from '@colobot/core'
+} from '@nexusmind/core'
 
 // 初始化配置
 const config = initConfig()
@@ -169,7 +169,7 @@ const result = await runtime.run({
 ### 任务拆解
 
 ```typescript
-import { analyzeRequest, executeDynamicTask } from '@colobot/core'
+import { analyzeRequest, executeDynamicTask } from '@nexusmind/core'
 
 // 分析请求
 const analysis = await analyzeRequest('分析销售数据', llm, deps)
@@ -181,7 +181,7 @@ const result = await executeDynamicTask('分析销售数据', 'parent-1', llm, d
 ### 子Agent管理
 
 ```typescript
-import { spawnSubAgent, runSubAgentTask } from '@colobot/core'
+import { spawnSubAgent, runSubAgentTask } from '@nexusmind/core'
 
 // 创建子Agent
 const agent = spawnSubAgent({
@@ -198,7 +198,7 @@ const result = await runSubAgentTask(agent, '分析数据', 'parent-1', deps)
 ### 大文件处理
 
 ```typescript
-import { processChunksParallel, mergeText } from '@colobot/core'
+import { processChunksParallel, mergeText } from '@nexusmind/core'
 
 // 分块并行处理
 const results = await processChunksParallel(
@@ -217,7 +217,7 @@ const final = mergeText(results)
 ### 模型能力
 
 ```typescript
-import { getModelCapabilities } from '@colobot/core'
+import { getModelCapabilities } from '@nexusmind/core'
 
 // 获取模型能力（自动计算分块参数）
 const caps = getModelCapabilities('gpt-4o')
@@ -230,7 +230,7 @@ const caps2 = getModelCapabilities('claude-sonnet-4-20250514')
 ### 向量搜索
 
 ```typescript
-import { initDb, addMemory, searchMemory, hybridSearch } from '@colobot/core'
+import { initDb, addMemory, searchMemory, hybridSearch } from '@nexusmind/core'
 
 initDb()
 
@@ -247,7 +247,7 @@ const hybrid = await hybridSearch('agent-1', '记忆')
 ### 内容安全
 
 ```typescript
-import { ContentScanner, detectThreat, validateContent } from '@colobot/core'
+import { ContentScanner, detectThreat, validateContent } from '@nexusmind/core'
 
 const scanner = new ContentScanner()
 

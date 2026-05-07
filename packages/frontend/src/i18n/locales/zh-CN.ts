@@ -1,6 +1,6 @@
 export default {
   app: {
-    title: 'ColoBot - AI 伙伴',
+    title: 'NexusMind - AI 伙伴',
   },
   nav: {
     chat: '对话',
@@ -210,7 +210,7 @@ export default {
     password: '密码',
   },
   onboarding: {
-    welcome: '欢迎使用 ColoBot',
+    welcome: '欢迎使用 NexusMind',
     selectLanguage: '选择你的语言',
     setupApiKey: '连接 AI',
     apiKeyDesc: '输入你的 API Key 来连接 AI。密钥只存在你的电脑上。',

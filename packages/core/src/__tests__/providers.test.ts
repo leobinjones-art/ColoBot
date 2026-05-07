@@ -301,7 +301,7 @@ describe('LLM Providers', () => {
       const provider = new MockProvider()
 
       const result = await provider.chat([{ role: 'user', content: '介绍一下你自己' }])
-      expect(result.content).toContain('ColoBot')
+      expect(result.content).toContain('NexusMind')
       expect(result.content).toContain('Mock')
     })
 

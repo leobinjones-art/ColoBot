@@ -138,7 +138,7 @@ const mockFinances = [
 
 // Auth API
 const ADMIN_USER = 'admin'
-const ADMIN_PASS = 'colobot2024'
+const ADMIN_PASS = 'nexusmind2024'
 
 app.post('/api/v1/auth/login', (req, res) => {
   const { username, password } = req.body
@@ -507,7 +507,7 @@ app.get('/api/v1/user/memories', (req, res) =>
     code: 200,
     data: [
       { id: '1', content: '你是程序员，主要用 TypeScript', createdAt: '2026-05-01T10:00:00' },
-      { id: '2', content: '最近在做一个叫 ColoBot 的项目', createdAt: '2026-05-02T14:00:00' },
+      { id: '2', content: '最近在做一个叫 NexusMind 的项目', createdAt: '2026-05-02T14:00:00' },
       { id: '3', content: '每天大概 11 点睡觉', createdAt: '2026-05-02T20:00:00' },
     ],
   }),
@@ -632,7 +632,7 @@ app.post('/api/v1/chat/stream', (req, res) => {
       // 普通回复
       res.write(`data: ${JSON.stringify({ type: 'phase', phase: 'streaming' })}\n\n`)
 
-      const response = `收到消息: "${message}"\n\n这是一个模拟响应。实际部署需要连接到 ColoBot Core 后端。`
+      const response = `收到消息: "${message}"\n\n这是一个模拟响应。实际部署需要连接到 NexusMind Core 后端。`
 
       let i = 0
       const interval = setInterval(() => {

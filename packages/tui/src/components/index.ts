@@ -10,7 +10,7 @@ import { style, colors, printDivider } from '../render/index.js'
 export class ChatUI {
   private lines: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = []
 
-  constructor(private title: string = 'ColoBot Chat') {}
+  constructor(private title: string = 'NexusMind Chat') {}
 
   /**
    * 添加消息

@@ -1,7 +1,7 @@
 {
   "name": "@colo-bot/sop-academic",
   "version": "0.1.0",
-  "description": "ColoBot SOP 学术研究流程",
+  "description": "NexusMind SOP 学术研究流程",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",

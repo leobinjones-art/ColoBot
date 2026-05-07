@@ -1,4 +1,4 @@
-# ColoBot
+# NexusMind
 
 <div align="center">
 
@@ -16,7 +16,7 @@
 
 ## 简介
 
-ColoBot 是一个**自带安全守护**的 TypeScript AI Agent 框架。
+NexusMind 是一个**自带安全守护**的 TypeScript AI Agent 框架。
 
 它把"个人助理"做成了可编程、可扩展的模块化系统，并内置了**业界首创的独立安全母 Agent**。
 
@@ -24,13 +24,13 @@ ColoBot 是一个**自带安全守护**的 TypeScript AI Agent 框架。
 
 ---
 
-## 为什么选择 ColoBot
+## 为什么选择 NexusMind
 
 大多数 AI Agent 框架专注于**如何调用工具**，却忽略了**如何安全调用**和**如何防止幻觉**。
 
-ColoBot 从第一性原理出发，解决三个被忽视的核心问题：
+NexusMind 从第一性原理出发，解决三个被忽视的核心问题：
 
-| 问题             | ColoBot 的解法                                                        |
+| 问题             | NexusMind 的解法                                                        |
 | ---------------- | --------------------------------------------------------------------- |
 | **安全不可绕过** | 独立的 Sentinel Agent 守护所有消息，异常时可接管                      |
 | **幻觉防护**     | Charter 许可证 + 文档库 = 有据可查的输出                              |
@@ -53,7 +53,7 @@ ColoBot 从第一性原理出发，解决三个被忽视的核心问题：
 ## 包结构
 
 ```
-colobot/
+nexusmind/
 ├── packages/
 │   ├── types/           # 类型定义
 │   ├── sentinel/        # 安全守护（旁路架构）
@@ -94,8 +94,8 @@ colobot/
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-repo/colobot.git
-cd colobot
+git clone https://github.com/your-repo/nexusmind.git
+cd nexusmind
 
 # 安装依赖
 npm install
@@ -108,11 +108,11 @@ npm run build:packages
 
 ```bash
 # 交互式配置
-npx colobot init
+npx nexusmind init
 
 # 或手动创建配置文件
-mkdir -p ~/.colobot
-cat > ~/.colobot/config.json << 'EOF'
+mkdir -p ~/.nexusmind
+cat > ~/.nexusmind/config.json << 'EOF'
 {
   "model": {
     "provider": "openai",
@@ -135,10 +135,10 @@ EOF
 
 ```bash
 # CLI 模式
-npx colobot
+npx nexusmind
 
 # TUI 模式
-npx colobot tui
+npx nexusmind tui
 ```
 
 ---
@@ -156,7 +156,7 @@ npx colobot tui
 | 子 Agent    | 创建、委托、销毁子 Agent            |
 | 工具白名单  | 子 Agent 受限权限控制               |
 
-### 🛡️ 安全守护 (@colobot/sentinel)
+### 🛡️ 安全守护 (@nexusmind/sentinel)
 
 独立的安全母 Agent，平行链路架构：
 
@@ -186,7 +186,7 @@ graph TD
 | **分布式**   | Redis 共享状态、Pub/Sub 信号                     |
 
 ```typescript
-import { Sentinel } from '@colobot/sentinel'
+import { Sentinel } from '@nexusmind/sentinel'
 
 const sentinel = new Sentinel()
 sentinel.start()
@@ -228,7 +228,7 @@ print(arr.sum())
 })
 ```
 
-### 📋 个人助理 (@colobot/assistant)
+### 📋 个人助理 (@nexusmind/assistant)
 
 | 模块         | 功能                         |
 | ------------ | ---------------------------- |
@@ -276,11 +276,11 @@ delegate_task  - 委托任务
 ### 基础运行时
 
 ```typescript
-import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@colobot/core'
+import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@nexusmind/core'
 
 const runtime = new AgentRuntime({
   llm: new OpenAIProvider({ apiKey: 'your-key', defaultModel: 'gpt-4o' }),
-  memory: new SQLiteStore({ path: '~/.colobot/chat.db' }),
+  memory: new SQLiteStore({ path: '~/.nexusmind/chat.db' }),
 })
 
 const result = await runtime.run({
@@ -295,7 +295,7 @@ console.log(result.response)
 ### Python 执行
 
 ```typescript
-import { PyodideRuntime } from '@colobot/core/tools'
+import { PyodideRuntime } from '@nexusmind/core/tools'
 
 const runtime = new PyodideRuntime()
 const { output, error } = await runtime.runCode(`
@@ -317,7 +317,7 @@ import {
   parseIntent,
   setLogLevel,
   createLogger,
-} from '@colobot/assistant'
+} from '@nexusmind/assistant'
 
 // 创建待办
 const todo = createTodo({
@@ -348,26 +348,26 @@ logger.info('操作完成', { userId: 'user1', action: 'create' })
 
 ## SOP 开源生态
 
-ColoBot 支持可插拔的 SOP (Standard Operating Procedure) 流程模块，用于封装复杂的多步骤任务。
+NexusMind 支持可插拔的 SOP (Standard Operating Procedure) 流程模块，用于封装复杂的多步骤任务。
 
 ### 架构
 
 ```
-@colobot/sop-base          # 流程引擎基类（官方）
-@colobot/sop-academic      # 学术研究流程（官方示例）
-colobot-sop-*              # 社区贡献（npm 发布）
+@nexusmind/sop-base          # 流程引擎基类（官方）
+@nexusmind/sop-academic      # 学术研究流程（官方示例）
+nexusmind-sop-*              # 社区贡献（npm 发布）
 ```
 
 ### 官方 SOP 模块
 
 | 模块                    | 场景               | 状态      |
 | ----------------------- | ------------------ | --------- |
-| `@colobot/sop-base`     | 流程引擎基类       | ✅ 已实现 |
-| `@colobot/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
-| `@colobot/sop-writing`  | 长文写作、报告生成 | 📋 规划中 |
-| `@colobot/sop-coding`   | 项目开发、代码重构 | 📋 规划中 |
+| `@nexusmind/sop-base`     | 流程引擎基类       | ✅ 已实现 |
+| `@nexusmind/sop-academic` | 论文写作、文献调研 | ✅ 已实现 |
+| `@nexusmind/sop-writing`  | 长文写作、报告生成 | 📋 规划中 |
+| `@nexusmind/sop-coding`   | 项目开发、代码重构 | 📋 规划中 |
 
-### @colobot/sop-base 核心概念
+### @nexusmind/sop-base 核心概念
 
 #### 类型定义
 
@@ -409,7 +409,7 @@ interface SopTask {
 #### SopEngine 基类
 
 ```typescript
-import { SopEngine } from '@colobot/sop-base'
+import { SopEngine } from '@nexusmind/sop-base'
 
 class MySopEngine extends SopEngine {
   // 必须实现：分析用户请求，返回步骤列表
@@ -464,7 +464,7 @@ const engine = new MySopEngine(
 #### 1. 创建包结构
 
 ```
-colobot-sop-my-domain/
+nexusmind-sop-my-domain/
 ├── package.json
 ├── tsconfig.json
 └── src/
@@ -485,8 +485,8 @@ colobot-sop-my-domain/
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@colobot/sop-base": "^0.1.0",
-    "@colobot/core": "^0.3.0"
+    "@nexusmind/sop-base": "^0.1.0",
+    "@nexusmind/core": "^0.3.0"
   }
 }
 ```
@@ -495,7 +495,7 @@ colobot-sop-my-domain/
 
 ```typescript
 // src/engine.ts
-import { SopEngine, type TaskAnalysis } from '@colobot/sop-base'
+import { SopEngine, type TaskAnalysis } from '@nexusmind/sop-base'
 
 export class MyDomainSopEngine extends SopEngine {
   constructor() {
@@ -563,7 +563,7 @@ import {
   STEP_EXECUTION_PROMPT,
   OUTPUT_GENERATION_PROMPT,
   buildPrompt,
-} from '@colobot/sop-base'
+} from '@nexusmind/sop-base'
 
 // 使用模板
 const prompt = buildPrompt(TASK_ANALYSIS_PROMPT, {
@@ -647,7 +647,7 @@ export function registerMyTool(): void {
 
 ### Charter 许可证系统
 
-ColoBot 正在从 SOP 工作流演进为 **Charter 许可证系统**：
+NexusMind 正在从 SOP 工作流演进为 **Charter 许可证系统**：
 
 ```
 默认状态：最大限制（防幻觉）
@@ -680,7 +680,7 @@ Sentinel：旁路守护
 ### 规划中的包
 
 ```
-@colobot/charter
+@nexusmind/charter
     ├── charters/           # 许可证定义
     │   ├── academic.ts     # 学术写作特许
     │   ├── legal.ts        # 法律文书特许
@@ -696,7 +696,7 @@ Sentinel：旁路守护
 
 ## 学术论文
 
-ColoBot 的架构记录在两篇学术论文中：
+NexusMind 的架构记录在两篇学术论文中：
 
 ### 论文一：面向普通用户的异构智能体架构
 

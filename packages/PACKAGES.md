@@ -1,4 +1,4 @@
-# ColoBot 包说明
+# NexusMind 包说明
 
 ## 核心包架构
 
@@ -31,7 +31,7 @@
 
 ---
 
-## @colobot/types
+## @nexusmind/types
 
 **共享类型定义包**
 
@@ -56,7 +56,7 @@
 
 ---
 
-## @colobot/core
+## @nexusmind/core
 
 **Agent 运行时核心**
 
@@ -102,7 +102,7 @@ const merged = mergeResults(results)
 
 ---
 
-## @colobot/sentinel
+## @nexusmind/sentinel
 
 **安全守护母 Agent**
 
@@ -141,7 +141,7 @@ const merged = mergeResults(results)
 ### CharterGuard 集成
 
 ```typescript
-import { CharterGuard } from '@colobot/sentinel'
+import { CharterGuard } from '@nexusmind/sentinel'
 
 const guard = new CharterGuard()
 
@@ -158,7 +158,7 @@ const entries = result.libraryEntries
 
 ---
 
-## @colobot/charter
+## @nexusmind/charter
 
 **许可证系统**
 
@@ -205,7 +205,7 @@ const entries = result.libraryEntries
 ### 使用示例
 
 ```typescript
-import { charterManager } from '@colobot/charter'
+import { charterManager } from '@nexusmind/charter'
 
 // 1. 用户申请许可证
 const instance = charterManager.requestCharter(userId, {

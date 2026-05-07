@@ -10,11 +10,11 @@ import { createHash, randomBytes } from 'crypto'
 
 // 配置目录
 const CONFIG_DIR =
-  process.env.COLOBOT_CONFIG_DIR || path.join(process.env.HOME || '/tmp', '.colobot')
+  process.env.COLOBOT_CONFIG_DIR || path.join(process.env.HOME || '/tmp', '.nexusmind')
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
 const DB_FILE = path.join(CONFIG_DIR, 'data.db')
 
-export interface ColoBotConfig {
+export interface NexusMindConfig {
   // AI 配置
   ai: {
     provider: 'openai' | 'anthropic' | 'minimax' | 'other'
@@ -36,7 +36,7 @@ export interface ColoBotConfig {
   updatedAt: number
 }
 
-const DEFAULT_CONFIG: ColoBotConfig = {
+const DEFAULT_CONFIG: NexusMindConfig = {
   ai: {
     provider: 'openai',
     apiKey: '',
@@ -75,7 +75,7 @@ export function isConfigured(): boolean {
 /**
  * 加载配置
  */
-export function loadConfig(): ColoBotConfig {
+export function loadConfig(): NexusMindConfig {
   ensureConfigDir()
 
   if (!fs.existsSync(CONFIG_FILE)) {
@@ -84,7 +84,7 @@ export function loadConfig(): ColoBotConfig {
 
   try {
     const content = fs.readFileSync(CONFIG_FILE, 'utf-8')
-    const config = JSON.parse(content) as ColoBotConfig
+    const config = JSON.parse(content) as NexusMindConfig
     return { ...DEFAULT_CONFIG, ...config }
   } catch (error) {
     console.error('Failed to load config:', error)
@@ -95,11 +95,11 @@ export function loadConfig(): ColoBotConfig {
 /**
  * 保存配置
  */
-export function saveConfig(config: Partial<ColoBotConfig>): ColoBotConfig {
+export function saveConfig(config: Partial<NexusMindConfig>): NexusMindConfig {
   ensureConfigDir()
 
   const current = loadConfig()
-  const updated: ColoBotConfig = {
+  const updated: NexusMindConfig = {
     ...current,
     ...config,
     updatedAt: Date.now(),
@@ -123,14 +123,14 @@ export function completeOnboarding(data: {
   language: string
   careLevel: string
   adminPassword?: string
-}): ColoBotConfig {
+}): NexusMindConfig {
   const config = saveConfig({
     ai: {
-      provider: data.provider as ColoBotConfig['ai']['provider'],
+      provider: data.provider as NexusMindConfig['ai']['provider'],
       apiKey: data.apiKey,
     },
-    language: data.language as ColoBotConfig['language'],
-    careLevel: data.careLevel as ColoBotConfig['careLevel'],
+    language: data.language as NexusMindConfig['language'],
+    careLevel: data.careLevel as NexusMindConfig['careLevel'],
     adminPasswordHash: data.adminPassword,
     onboarded: true,
   })
@@ -155,7 +155,7 @@ export function verifyAdminPassword(password: string): boolean {
  * 哈希密码
  */
 function hashPassword(password: string): string {
-  const salt = 'colobot-salt-2024' // 固定盐值，生产环境应使用随机盐
+  const salt = 'nexusmind-salt-2024' // 固定盐值，生产环境应使用随机盐
   return createHash('sha256')
     .update(password + salt)
     .digest('hex')
@@ -187,7 +187,7 @@ export function resetConfig(): void {
 /**
  * 导出配置（不包含敏感信息）
  */
-export function exportConfig(): Omit<ColoBotConfig, 'ai' | 'adminPasswordHash'> & {
+export function exportConfig(): Omit<NexusMindConfig, 'ai' | 'adminPasswordHash'> & {
   ai: { provider: string; hasKey: boolean }
 } {
   const config = loadConfig()

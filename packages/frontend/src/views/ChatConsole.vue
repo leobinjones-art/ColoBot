@@ -94,8 +94,8 @@
         </div>
 
         <div v-if="messages.length === 0" class="empty-chat">
-          <img src="/logo.svg" alt="ColoBot" class="empty-logo" />
-          <h2>ColoBot</h2>
+          <img src="/logo.svg" alt="NexusMind" class="empty-logo" />
+          <h2>NexusMind</h2>
           <p>{{ t('chat.selectAgent') }}</p>
         </div>
       </div>

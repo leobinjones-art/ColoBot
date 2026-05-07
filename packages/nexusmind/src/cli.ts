@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ColoBot CLI 入口
+ * NexusMind CLI 入口
  * 代理到 @nexusmind/core 的 CLI
  */
 

@@ -1,13 +1,13 @@
-# ColoBot Docker Compose
+# NexusMind Docker Compose
 # Complete stack with PostgreSQL and Redis
 
 services:
-  colobot:
+  nexusmind:
     build:
       context: .
       dockerfile: Dockerfile
-    image: colobot/colobot:${VERSION:-latest}
-    container_name: colobot
+    image: nexusmind/nexusmind:${VERSION:-latest}
+    container_name: nexusmind
     restart: unless-stopped
     ports:
       - '${PORT:-3000}:3000'
@@ -21,7 +21,7 @@ services:
       - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
       - MINIMAX_GROUP_ID=${MINIMAX_GROUP_ID:-}
       # Database
-      - DATABASE_URL=postgresql://colobot:${DB_PASSWORD:-colobot}@postgres:5432/colobot
+      - DATABASE_URL=postgresql://nexusmind:${DB_PASSWORD:-nexusmind}@postgres:5432/nexusmind
       # Redis (for Sentinel distributed mode)
       - REDIS_URL=redis://redis:6379
       # Config
@@ -38,32 +38,32 @@ services:
       retries: 3
       start_period: 10s
     networks:
-      - colobot-network
+      - nexusmind-network
     volumes:
-      - colobot-data:/app/data
+      - nexusmind-data:/app/data
 
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: colobot-postgres
+    container_name: nexusmind-postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=colobot
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-colobot}
-      - POSTGRES_DB=colobot
+      - POSTGRES_USER=nexusmind
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-nexusmind}
+      - POSTGRES_DB=nexusmind
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U colobot']
+      test: ['CMD-SHELL', 'pg_isready -U nexusmind']
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - colobot-network
+      - nexusmind-network
 
   redis:
     image: redis:7-alpine
-    container_name: colobot-redis
+    container_name: nexusmind-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
@@ -74,13 +74,13 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - colobot-network
+      - nexusmind-network
 
 networks:
-  colobot-network:
+  nexusmind-network:
     driver: bridge
 
 volumes:
   postgres-data:
   redis-data:
-  colobot-data:
+  nexusmind-data:

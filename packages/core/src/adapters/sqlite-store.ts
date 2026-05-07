@@ -29,8 +29,8 @@ export class SQLiteStore implements MemoryStore {
   private initialized: boolean = false
 
   constructor(config: SQLiteStoreConfig = {}) {
-    const dbPath = resolve(config.path || './data/colobot.db')
-    this.tablePrefix = config.tablePrefix || 'colobot'
+    const dbPath = resolve(config.path || './data/nexusmind.db')
+    this.tablePrefix = config.tablePrefix || 'nexusmind'
 
     // 确保目录存在
     const dbDir = dirname(dbPath)

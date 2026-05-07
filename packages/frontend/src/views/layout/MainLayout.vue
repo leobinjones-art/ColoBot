@@ -16,9 +16,9 @@
     >
       <!-- Logo -->
       <div class="sidebar-logo">
-        <img src="/logo.svg" alt="ColoBot" />
+        <img src="/logo.svg" alt="NexusMind" />
         <div v-if="!sidebarCollapsed || isMobile" class="logo-text">
-          <span class="logo-name">ColoBot</span>
+          <span class="logo-name">NexusMind</span>
         </div>
         <button class="collapse-btn" @click="toggleSidebar">
           <svg

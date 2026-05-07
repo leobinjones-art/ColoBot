@@ -1,16 +1,16 @@
-# ColoBot 隐私说明
+# NexusMind 隐私说明
 
-## 核心框架（@colobot/core + @colobot/sentinel）
+## 核心框架（@nexusmind/core + @nexusmind/sentinel）
 
 - **不收集、不存储、不注入**任何用户个人数据
 - 安全母 Agent 仅做输入/输出内容安全审核，不读取用户身份信息
 - 所有对话数据仅用于当前会话，不会持久化到本地存储
 
-## 个人助理包（@colobot/assistant）
+## 个人助理包（@nexusmind/assistant）
 
 ### 可选安装
 
-`@colobot/assistant` 是完全可选的包。不安装则完全不涉及用户个人数据。
+`@nexusmind/assistant` 是完全可选的包。不安装则完全不涉及用户个人数据。
 
 ### 数据存储
 
@@ -35,11 +35,11 @@
 ### 用户控制
 
 - 输入 `/context` 查看当前注入的上下文维度
-- 卸载 `@colobot/assistant` 即停止所有个人数据的收集和使用
+- 卸载 `@nexusmind/assistant` 即停止所有个人数据的收集和使用
 
 ```bash
 # 卸载个人助理包
-npm uninstall @colobot/assistant
+npm uninstall @nexusmind/assistant
 ```
 
 ## 数据安全
@@ -50,7 +50,7 @@ npm uninstall @colobot/assistant
 
 ## 信任承诺
 
-ColoBot 的设计理念：
+NexusMind 的设计理念：
 
 1. **安全母 Agent 守护你不被模型伤害** — 输入/输出双重审核
 2. **你自己的数据完全在你自己手里** — 本地存储，可选安装

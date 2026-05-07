@@ -1,10 +1,10 @@
 /**
  * SOP 学术研究流程引擎
  *
- * 通过 ColoBotRuntime 接口使用 core 能力
+ * 通过 NexusMindRuntime 接口使用 core 能力
  */
 
-import type { ColoBotRuntime } from '@colobot/core'
+import type { NexusMindRuntime } from '@nexusmind/core'
 import type { SopState, SopStep, TaskAnalysis, SopResult, SopAction, SopConfig } from './types.js'
 import { SOP_PROMPTS, fillPrompt } from './prompts.js'
 
@@ -18,7 +18,7 @@ export class SopEngine {
   private config: SopConfig
 
   constructor(
-    private runtime: ColoBotRuntime,
+    private runtime: NexusMindRuntime,
     config?: Partial<SopConfig>,
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config }

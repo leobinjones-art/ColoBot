@@ -150,7 +150,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  const onboarded = localStorage.getItem('colobot_onboarded')
+  const onboarded = localStorage.getItem('nexusmind_onboarded')
 
   if (to.name === 'Login' && isLoggedIn()) {
     next({ path: '/' })

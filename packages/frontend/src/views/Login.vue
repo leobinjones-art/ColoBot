@@ -2,8 +2,8 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <img src="/logo.svg" alt="ColoBot" class="login-logo" />
-        <h1 class="login-title">ColoBot</h1>
+        <img src="/logo.svg" alt="NexusMind" class="login-logo" />
+        <h1 class="login-title">NexusMind</h1>
         <p class="login-subtitle">{{ t('app.title') }}</p>
       </div>
 

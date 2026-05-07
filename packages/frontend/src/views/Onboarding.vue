@@ -163,7 +163,7 @@
             </ol>
           </div>
           <div class="tutorial-note">
-            <p>💡 API Key 仅存储在你的设备上，ColoBot 不会上传到任何服务器。</p>
+            <p>💡 API Key 仅存储在你的设备上，NexusMind 不会上传到任何服务器。</p>
           </div>
         </div>
       </div>
@@ -231,11 +231,11 @@ function nextStep() {
 
 function complete() {
   // 保存设置
-  localStorage.setItem('colobot_language', selectedLanguage.value)
-  localStorage.setItem('colobot_provider', selectedProvider.value)
-  localStorage.setItem('colobot_api_key', apiKey.value)
-  localStorage.setItem('colobot_care_level', careLevel.value)
-  localStorage.setItem('colobot_onboarded', 'true')
+  localStorage.setItem('nexusmind_language', selectedLanguage.value)
+  localStorage.setItem('nexusmind_provider', selectedProvider.value)
+  localStorage.setItem('nexusmind_api_key', apiKey.value)
+  localStorage.setItem('nexusmind_care_level', careLevel.value)
+  localStorage.setItem('nexusmind_onboarded', 'true')
 
   // 跳转到主页
   router.push('/chat')

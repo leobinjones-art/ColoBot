@@ -45,7 +45,7 @@ export class TUI {
   /**
    * 启动 TUI
    */
-  async start(title = 'ColoBot'): Promise<void> {
+  async start(title = 'NexusMind'): Promise<void> {
     clear()
     printTitle(title)
     console.log(`输入 ${style('/help', 'cyan')} 查看可用命令\n`)

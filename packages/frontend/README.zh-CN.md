@@ -1,6 +1,6 @@
-# @colobot/frontend
+# @nexusmind/frontend
 
-ColoBot 前端 — 普通用户的 AI 伙伴
+NexusMind 前端 — 普通用户的 AI 伙伴
 
 ---
 

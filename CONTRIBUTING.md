@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢关注 ColoBot！本指南帮助你顺利完成贡献。
+感谢关注 NexusMind！本指南帮助你顺利完成贡献。
 
 ## 开发环境
 
@@ -14,8 +14,8 @@
 
 ```bash
 # 克隆
-git clone https://github.com/leobinjones-art/ColoBot.git
-cd colobot
+git clone https://github.com/leobinjones-art/NexusMind.git
+cd nexusmind
 
 # 安装依赖
 npm install
@@ -169,7 +169,7 @@ npm run test:e2e
 
 ## 配置优先级
 
-ColoBot 配置采用三级优先级：
+NexusMind 配置采用三级优先级：
 
 ```
 数据库配置 > 环境变量 > 默认值
@@ -194,7 +194,7 @@ ColoBot 配置采用三级优先级：
 1. 在 `src/config/` 下创建配置文件
 2. 定义默认值和类型
 3. 实现数据库读取/保存函数
-4. 在 `colobot-server.ts` 添加 API 端点
+4. 在 `nexusmind-server.ts` 添加 API 端点
 5. 在 Dashboard 添加编辑界面
 6. 添加单元测试
 

@@ -23,7 +23,7 @@ const logger = {
  */
 export const CHARTER_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://colobot.org/schemas/charter.json',
+  $id: 'https://nexusmind.org/schemas/charter.json',
   title: 'Charter Definition',
   description: 'AI capability license definition',
   type: 'object',
@@ -109,7 +109,7 @@ export const CHARTER_SCHEMA = {
  */
 export const LIBRARY_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://colobot.org/schemas/library.json',
+  $id: 'https://nexusmind.org/schemas/library.json',
   title: 'Document Library',
   description: 'Fact source library for preventing hallucination',
   type: 'object',

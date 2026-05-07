@@ -14,7 +14,7 @@
 // 运行时接口
 export {
   AgentRuntime,
-  ColoBotRuntimeImpl,
+  NexusMindRuntimeImpl,
   type RunOptions,
   type RunResult,
   type RuntimeDeps,
@@ -27,7 +27,7 @@ export {
   type ResultPusher,
   type AuditEntry,
   // 新接口
-  type ColoBotRuntime,
+  type NexusMindRuntime,
   type RuntimeDependencies,
   type ChatOptions,
   type AgentConfig,
@@ -247,7 +247,7 @@ export {
   getDbPath,
   resetConfig,
   exportConfig,
-  type ColoBotConfig,
+  type NexusMindConfig,
 } from './config-store/index.js'
 
 // ═══════════════════════════════════════════════════════════════

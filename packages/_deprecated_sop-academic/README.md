@@ -1,6 +1,6 @@
-# @colobot/sop-academic
+# @nexusmind/sop-academic
 
-ColoBot SOP 学术研究流程包。
+NexusMind SOP 学术研究流程包。
 
 ## 功能
 
@@ -13,14 +13,14 @@ ColoBot SOP 学术研究流程包。
 ## 安装
 
 ```bash
-npm install @colobot/sop-academic @colobot/core
+npm install @nexusmind/sop-academic @nexusmind/core
 ```
 
 ## 使用
 
 ```typescript
-import { createSopEngine, isAcademicIntent, detectSopCommand } from '@colobot/sop-academic'
-import { ColoBotRuntimeImpl, type RuntimeDependencies } from '@colobot/core'
+import { createSopEngine, isAcademicIntent, detectSopCommand } from '@nexusmind/sop-academic'
+import { NexusMindRuntimeImpl, type RuntimeDependencies } from '@nexusmind/core'
 
 // 创建运行时
 const deps: RuntimeDependencies = {
@@ -30,7 +30,7 @@ const deps: RuntimeDependencies = {
   fileSystem: new LocalFileSystemAdapter(),
   // ... 其他依赖
 }
-const runtime = new ColoBotRuntimeImpl(deps)
+const runtime = new NexusMindRuntimeImpl(deps)
 
 // 创建 SOP 引擎
 const sop = createSopEngine(runtime)
@@ -142,8 +142,8 @@ interface TaskAnalysis {
 
 ## 依赖
 
-- `@colobot/core` - 核心运行时
-- `@colobot/types` - 类型定义
+- `@nexusmind/core` - 核心运行时
+- `@nexusmind/types` - 类型定义
 
 ## License
 

@@ -197,12 +197,12 @@ export class ConfigManager {
     }
 
     const homeDir = process.env.HOME || process.env.USERPROFILE || ''
-    const userConfig = path.join(homeDir, '.colobot', 'config.json')
+    const userConfig = path.join(homeDir, '.nexusmind', 'config.json')
     if (fs.existsSync(userConfig)) {
       return userConfig
     }
 
-    return path.join(process.cwd(), 'colobot.config.json')
+    return path.join(process.cwd(), 'nexusmind.config.json')
   }
 
   /**
@@ -541,9 +541,9 @@ export function applyCLIOptions(manager: ConfigManager, options: CLIOptions): vo
 // ── 帮助信息 ──────────────────────────────────────────────
 
 export const HELP_TEXT = `
-ColoBot Core CLI
+NexusMind Core CLI
 
-Usage: colobot-core [options]
+Usage: nexusmind-core [options]
 
 Options:
   -c, --config <path>       配置文件路径
@@ -567,11 +567,11 @@ Options:
 
 配置文件位置 (优先级):
   1. COLOBOT_CONFIG 环境变量
-  2. ~/.colobot/config.json
-  3. ./colobot.config.json
+  2. ~/.nexusmind/config.json
+  3. ./nexusmind.config.json
 
 示例:
-  colobot-core -p anthropic -m claude-sonnet-4-20250514
-  colobot-core --provider openai --model gpt-4o --max-concurrent 5
-  colobot-core -c /path/to/config.json
+  nexusmind-core -p anthropic -m claude-sonnet-4-20250514
+  nexusmind-core --provider openai --model gpt-4o --max-concurrent 5
+  nexusmind-core -c /path/to/config.json
 `

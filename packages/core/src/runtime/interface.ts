@@ -1,5 +1,5 @@
 /**
- * ColoBot Runtime 接口定义
+ * NexusMind Runtime 接口定义
  *
  * 所有插件通过此接口使用 core 能力，不直接访问底层实现
  */
@@ -88,7 +88,7 @@ export interface AuditLog {
 // 核心接口
 // ═══════════════════════════════════════════════════════════════
 
-export interface ColoBotRuntime {
+export interface NexusMindRuntime {
   // === 状态管理 ===
   saveState(namespace: string, key: string, state: unknown): Promise<void>
   loadState(namespace: string, key: string): Promise<unknown | null>

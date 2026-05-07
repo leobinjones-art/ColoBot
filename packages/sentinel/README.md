@@ -1,4 +1,4 @@
-# @colobot/sentinel
+# @nexusmind/sentinel
 
 安全守护母 Agent - 输入输出扫描、进程守护、异常接管
 
@@ -203,7 +203,7 @@ receiver.onTakeover((signal) => {
 ### Redis 共享状态
 
 ```typescript
-import { createRedisClient, RedisStateStore } from '@colobot/sentinel'
+import { createRedisClient, RedisStateStore } from '@nexusmind/sentinel'
 
 const client = await createRedisClient({ host: 'localhost', port: 6379 })
 const store = new RedisStateStore(client)
@@ -216,7 +216,7 @@ const state = await store.getSessionState('session-1')
 ### Redis Pub/Sub
 
 ```typescript
-import { RedisSignalBus, RedisTakeoverManager } from '@colobot/sentinel'
+import { RedisSignalBus, RedisTakeoverManager } from '@nexusmind/sentinel'
 
 const signalBus = new RedisSignalBus(client)
 const manager = new RedisTakeoverManager(signalBus)
@@ -238,13 +238,13 @@ await manager.trigger('session-1', 'timeout')
 ## 安装
 
 ```bash
-npm install @colobot/sentinel
+npm install @nexusmind/sentinel
 ```
 
 ## 使用示例
 
 ```typescript
-import { Sentinel } from '@colobot/sentinel'
+import { Sentinel } from '@nexusmind/sentinel'
 
 // 创建安全守护
 const sentinel = new Sentinel({

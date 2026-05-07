@@ -1,5 +1,5 @@
 /**
- * ColoBot CLI 主模块
+ * NexusMind CLI 主模块
  */
 
 import { TUI, printError, printSuccess, style, printTable, ask, select } from './index.js'
@@ -63,7 +63,7 @@ async function interactiveInit(): Promise<{
   baseUrl?: string
   searchEngine: string
 }> {
-  console.log('\n欢迎使用 ColoBot！首次运行需要配置。\n')
+  console.log('\n欢迎使用 NexusMind！首次运行需要配置。\n')
 
   // 1. 选择 Provider
   console.log('选择 LLM 提供商:\n')
@@ -122,7 +122,7 @@ async function interactiveInit(): Promise<{
   const searchEngine = sidx >= 0 && sidx < searchEngines.length ? searchEngines[sidx] : 'duckduckgo'
 
   // 保存配置
-  const configDir = path.join(process.env.HOME || '', '.colobot')
+  const configDir = path.join(process.env.HOME || '', '.nexusmind')
   const configPath = path.join(configDir, 'config.json')
   const config = {
     model: { provider, model, apiKey, baseUrl },
@@ -167,7 +167,7 @@ async function main() {
   // init 命令强制进入交互式配置
   if (firstArg === 'init') {
     const initResult = await interactiveInit()
-    console.log(`\n配置完成！运行 colobot 启动。\n`)
+    console.log(`\n配置完成！运行 nexusmind 启动。\n`)
     process.exit(0)
   }
 
@@ -225,7 +225,7 @@ async function main() {
 
   // 创建运行时
   const memory = new SQLiteStore({
-    path: path.join(process.env.HOME || '', '.colobot', 'chat.db'),
+    path: path.join(process.env.HOME || '', '.nexusmind', 'chat.db'),
   })
 
   // 创建安全守护
@@ -254,7 +254,7 @@ async function main() {
   })
 
   tui.commands.register('/version', '显示版本', () => {
-    console.log(`\nColoBot v${process.env.npm_package_version || '0.1.0'}\n`)
+    console.log(`\nNexusMind v${process.env.npm_package_version || '0.1.0'}\n`)
   })
 
   tui.commands.register('/config', '显示配置', () => {
@@ -364,7 +364,7 @@ async function main() {
   })
 
   // 启动 TUI
-  await tui.start('ColoBot')
+  await tui.start('NexusMind')
 
   console.log(`Provider: ${style(config.model.provider, 'cyan')}`)
   console.log(`Model: ${style(config.model.model, 'cyan')}`)
@@ -372,15 +372,15 @@ async function main() {
   // 检测并提示个人助理包
   if (isAssistantInstalled()) {
     console.log('')
-    console.log(style('[ColoBot] 检测到 @nexusmind/assistant 已安装。', 'yellow'))
+    console.log(style('[NexusMind] 检测到 @nexusmind/assistant 已安装。', 'yellow'))
     console.log(
-      style('[ColoBot] ', 'yellow') +
+      style('[NexusMind] ', 'yellow') +
         '个人助理模块会在对话中注入您的情绪、习惯、健康等 7 类个人数据作为上下文。',
     )
     console.log(
-      style('[ColoBot] ', 'yellow') + '这些数据仅存储在本地，不会上传。输入 /context 查看详情。',
+      style('[NexusMind] ', 'yellow') + '这些数据仅存储在本地，不会上传。输入 /context 查看详情。',
     )
-    console.log(style('[ColoBot] ', 'yellow') + '如需关闭此功能，请卸载 @nexusmind/assistant。')
+    console.log(style('[NexusMind] ', 'yellow') + '如需关闭此功能，请卸载 @nexusmind/assistant。')
   }
 
   console.log(`输入 ${style('/help', 'cyan')} 查看可用命令\n`)
