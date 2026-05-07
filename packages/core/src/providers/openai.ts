@@ -8,6 +8,8 @@ import type { LLMProvider, LLMResponse, LLMStreamChunk } from '../runtime/types.
 export interface OpenAIConfig {
   apiKey: string
   baseUrl?: string
+  /** @deprecated Use defaultModel instead */
+  model?: string
   defaultModel?: string
 }
 
@@ -20,7 +22,8 @@ export class OpenAIProvider implements LLMProvider {
   constructor(config: OpenAIConfig) {
     this.apiKey = config.apiKey
     this.baseUrl = config.baseUrl || 'https://api.openai.com/v1'
-    this.defaultModel = config.defaultModel || 'gpt-4o'
+    // Support both model and defaultModel for backwards compatibility
+    this.defaultModel = config.defaultModel || config.model || 'gpt-4o'
   }
 
   async chat(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResponse> {
