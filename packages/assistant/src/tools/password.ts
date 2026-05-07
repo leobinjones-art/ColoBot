@@ -18,7 +18,8 @@ export interface PasswordEntry {
 }
 
 // 加密密钥（应从配置获取）
-let encryptionKey: string = process.env.NEXUSMIND_ENCRYPTION_KEY || 'default-key-change-in-production'
+let encryptionKey: string =
+  process.env.NEXUSMIND_ENCRYPTION_KEY || 'default-key-change-in-production'
 
 /**
  * 设置加密密钥
