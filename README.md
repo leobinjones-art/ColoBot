@@ -26,7 +26,7 @@ You can quickly build an intelligent assistant that manages todos, writes papers
 
 ## Rename Notice
 
-**May 2025**: Project renamed from `ColoBot` to `NexusMind`
+**May 2026**: Project renamed from `ColoBot` to `NexusMind`
 
 - GitHub Repository: https://github.com/leobinjones-art/NexusMind
 - npm Packages: `@nexusmind/*` and `nexusmind`
