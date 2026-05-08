@@ -1,6 +1,6 @@
 {
   "name": "nexusmind-monorepo",
-  "version": "0.4.0",
+  "version": "0.2.0",
   "description": "NexusMind - 自带安全守护的 AI Agent 框架",
   "license": "AGPL-3.0",
   "type": "module",
