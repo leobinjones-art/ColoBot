@@ -80,6 +80,37 @@ const DEFAULT_BLOCKED_WORDS = [
   'format disk',
   '删除所有',
   '清空数据库',
+  // 恶意软件/攻击
+  'malware',
+  'virus',
+  'ransomware',
+  'keylogger',
+  'trojan',
+  'backdoor',
+  'exploit',
+  'payload',
+  '恶意软件',
+  '病毒',
+  '勒索软件',
+  '键盘记录',
+  '后门',
+  '漏洞利用',
+  // 密码/凭证相关
+  'steal password',
+  'hack password',
+  'crack password',
+  '盗取密码',
+  '窃取密码',
+  '破解密码',
+  '盗密码',
+  '偷密码',
+  // 攻击行为
+  'hack into',
+  'break into',
+  '入侵',
+  '攻击系统',
+  '渗透测试',
+  '网络攻击',
 ]
 
 // ═══════════════════════════════════════════════════════════════

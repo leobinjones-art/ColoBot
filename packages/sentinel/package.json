@@ -1,6 +1,6 @@
 {
   "name": "@nexusmind/sentinel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "NexusMind 安全守护 — 输入输出扫描、进程守护、异常接管",
   "license": "AGPL-3.0",
   "type": "module",
