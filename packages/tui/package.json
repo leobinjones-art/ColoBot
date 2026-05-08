@@ -33,7 +33,7 @@
     "@nexusmind/types": "*"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.6.2",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
   }
