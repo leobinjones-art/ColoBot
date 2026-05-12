@@ -12,11 +12,11 @@ import type {
   CharterManager,
   DocumentLibrary,
   LibraryEntry,
-} from '@nexusmind/charter'
+} from '@colomind/charter'
 import {
   CharterManager as CharterManagerClass,
   charterManager as defaultCharterManager,
-} from '@nexusmind/charter'
+} from '@colomind/charter'
 import { createLogger } from './logger.js'
 
 const logger = createLogger('CharterGuard')

@@ -1,7 +1,7 @@
 {
-  "name": "@nexusmind/sentinel",
-  "version": "0.1.1",
-  "description": "NexusMind 安全守护 — 输入输出扫描、进程守护、异常接管",
+  "name": "@colomind/sentinel",
+  "version": "0.1.2",
+  "description": "ColoMind Security Guardian - Input/output scanning, process monitoring, exception takeover",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexusmind/nexusmind.git",
+    "url": "https://github.com/colomind/colomind.git",
     "directory": "packages/sentinel"
   },
   "scripts": {
@@ -26,8 +26,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexusmind/types": "*",
-    "@nexusmind/charter": "*"
+    "@colomind/types": "*",
+    "@colomind/charter": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

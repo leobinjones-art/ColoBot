@@ -1,5 +1,5 @@
 /**
- * @nexusmind/sentinel - 安全守护母 Agent
+ * @colomind/sentinel - 安全守护母 Agent
  *
  * 平行链路架构，负责：
  * - 输入/输出扫描
@@ -15,6 +15,51 @@ export {
   getRuleEngine,
   resetRuleEngine,
 } from './rule-engine.js'
+
+// 推理代理（第二层）
+export {
+  InferenceAgent,
+  InferenceAgentConfig,
+  InferenceContext,
+  InferenceResult,
+  getInferenceAgent,
+  resetInferenceAgent,
+} from './inference-agent.js'
+
+// 合法指引（第三层）
+export {
+  LegalGuidanceGenerator,
+  LegalGuidanceConfig,
+  LegalGuidance,
+  GuidanceContext,
+  getLegalGuidanceGenerator,
+  resetLegalGuidanceGenerator,
+} from './legal-guidance.js'
+
+// 法律知识库
+export {
+  LegalKnowledgeBase,
+  LegalProvision,
+  Jurisdiction,
+  LegalConsequence,
+  ViolationElements,
+  JurisdictionModule,
+  ComplianceChannel,
+  ReasoningContext,
+  LegalReasoningResult,
+  getLegalKnowledgeBase,
+  resetLegalKnowledgeBase,
+} from './legal-knowledge.js'
+
+// 法律条文学习器
+export {
+  LegalLearner,
+  LegalLearnerConfig,
+  LegalDocument,
+  LearningResult,
+  getLegalLearner,
+  resetLegalLearner,
+} from './legal-learner.js'
 
 // 静态兜底话术
 export {
@@ -134,7 +179,11 @@ import {
   SessionTimeoutConfig,
   defaultTimeoutMessages,
 } from './timeout-monitor.js'
+import { InferenceAgent, InferenceResult, InferenceContext } from './inference-agent.js'
+import { LegalGuidanceGenerator, LegalGuidance } from './legal-guidance.js'
 import { createLogger } from './logger.js'
+import { getLegalKnowledgeBase, type Jurisdiction } from './legal-knowledge.js'
+import type { LLMProvider } from '@colomind/core'
 
 const logger = createLogger('Sentinel')
 
@@ -146,6 +195,14 @@ export interface SentinelConfig {
   timeoutConfig?: Partial<SessionTimeoutConfig>
   selfCheckInterval?: number
   selfCheckThreshold?: number
+  /** LLM Provider 用于第二层推理和第三层指引 */
+  llmProvider?: LLMProvider
+  /** 推理模型 */
+  inferenceModel?: string
+  /** 法律文档目录 */
+  legalDocsPath?: string
+  /** 默认法域 */
+  defaultJurisdiction?: Jurisdiction
 }
 
 export class Sentinel {
@@ -157,6 +214,10 @@ export class Sentinel {
   private takeoverManager: TakeoverManager
   private timeoutMonitor: SessionTimeoutMonitor
   private selfHeartbeat: SentinelSelfHeartbeat
+  // 第二层：推理代理
+  private inferenceAgent: InferenceAgent
+  // 第三层：合法指引生成器
+  private legalGuidanceGenerator: LegalGuidanceGenerator
 
   constructor(config?: SentinelConfig) {
     this.ruleEngine = config?.ruleEngine ?? getRuleEngine()
@@ -200,6 +261,28 @@ export class Sentinel {
     this.selfHeartbeat.setOnStatusChange((status) => {
       logger.info('Self health status changed', { status })
     })
+
+    // 第二层：推理代理
+    this.inferenceAgent = new InferenceAgent({
+      llmProvider: config?.llmProvider,
+      model: config?.inferenceModel,
+    })
+
+    // 第三层：合法指引生成器
+    this.legalGuidanceGenerator = new LegalGuidanceGenerator({
+      llmProvider: config?.llmProvider,
+      model: config?.inferenceModel,
+    })
+
+    // 初始化法律知识库
+    const knowledgeBase = getLegalKnowledgeBase()
+    if (config?.legalDocsPath) {
+      knowledgeBase.loadFromDirectory(config.legalDocsPath).then(count => {
+        logger.info(`Loaded ${count} legal provisions from ${config.legalDocsPath}`)
+      })
+    } else {
+      knowledgeBase.initializeDefaults()
+    }
   }
 
   /**
@@ -250,7 +333,7 @@ export class Sentinel {
   // ─── 输入扫描 ───────────────────────────────────────────────
 
   /**
-   * 扫描输入（同步，<1ms）
+   * 扫描输入（同步，<1ms）- 第一层防御
    */
   scanInput(message: string, sessionId?: string): RuleScanResult {
     return this.ruleEngine.scanInput(message, sessionId)
@@ -274,6 +357,136 @@ export class Sentinel {
     }
 
     return { pass: true }
+  }
+
+  /**
+   * 三层防御扫描 - 完整的安全检查流程
+   *
+   * 第一层：规则引擎（毫秒级，不可绕过）
+   * 第二层：推理代理（LLM 语义分析）
+   * 第三层：合法指引生成
+   */
+  async fullScan(
+    message: string,
+    sessionId?: string,
+    conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
+    jurisdiction?: Jurisdiction,
+  ): Promise<{
+    pass: boolean
+    response?: string
+    guidance?: LegalGuidance
+    inference?: InferenceResult
+  }> {
+    const userJurisdiction = jurisdiction || 'CN'
+
+    // 第一层：规则引擎
+    const ruleResult = this.scanInput(message, sessionId)
+
+    if (!ruleResult.pass) {
+      logger.info('Layer 1 blocked', { reason: ruleResult.reason, matched: ruleResult.matched })
+
+      // 第二层：推理代理分析
+      const inferenceResult = await this.inferenceAgent.infer({
+        message,
+        sessionId,
+        conversationHistory,
+        matchedRule: {
+          type: ruleResult.reason as 'blocked_word' | 'blocked_pattern',
+          matched: ruleResult.matched || ruleResult.pattern || '',
+        },
+        jurisdiction: userJurisdiction,
+      })
+
+      logger.info('Layer 2 inference', { scenario: inferenceResult.scenario, confidence: inferenceResult.confidence })
+
+      // 根据推理结果决定是否需要接管
+      if (inferenceResult.needsTakeover || inferenceResult.scenario === 'blocked') {
+        // 第三层：生成合法指引
+        const guidance = await this.legalGuidanceGenerator.generate({
+          userMessage: message,
+          inferenceResult,
+          sessionId,
+          jurisdiction: userJurisdiction,
+        })
+
+        logger.info('Layer 3 guidance generated', { type: guidance.type })
+
+        return {
+          pass: false,
+          response: guidance.message,
+          guidance,
+          inference: inferenceResult,
+        }
+      }
+
+      // 推理结果为合法帮助，生成指引但允许继续
+      if (inferenceResult.scenario === 'legal_help') {
+        const guidance = await this.legalGuidanceGenerator.generate({
+          userMessage: message,
+          inferenceResult,
+          sessionId,
+          jurisdiction: userJurisdiction,
+        })
+
+        // 返回指引，但标记为通过（让主 Agent 继续处理）
+        return {
+          pass: true,
+          guidance,
+          inference: inferenceResult,
+        }
+      }
+
+      // 模糊试探，返回安全提示
+      if (inferenceResult.scenario === 'ambiguous_probing') {
+        const guidance = await this.legalGuidanceGenerator.generate({
+          userMessage: message,
+          inferenceResult,
+          sessionId,
+          jurisdiction: userJurisdiction,
+        })
+
+        return {
+          pass: false,
+          response: guidance.message,
+          guidance,
+          inference: inferenceResult,
+        }
+      }
+    }
+
+    // 第一层通过，进行语义安全检查
+    const inferenceResult = await this.inferenceAgent.infer({
+      message,
+      sessionId,
+      conversationHistory,
+      jurisdiction: userJurisdiction,
+    })
+
+    if (inferenceResult.needsTakeover) {
+      const guidance = await this.legalGuidanceGenerator.generate({
+        userMessage: message,
+        inferenceResult,
+        sessionId,
+        jurisdiction: userJurisdiction,
+      })
+
+      return {
+        pass: false,
+        response: guidance.message,
+        guidance,
+        inference: inferenceResult,
+      }
+    }
+
+    return { pass: true, inference: inferenceResult }
+  }
+
+  /**
+   * 设置 LLM Provider（用于动态配置）
+   */
+  setLLMProvider(provider: LLMProvider): void {
+    this.inferenceAgent.setLLMProvider(provider)
+    this.legalGuidanceGenerator.setLLMProvider(provider)
   }
 
   // ─── 输出扫描 ───────────────────────────────────────────────

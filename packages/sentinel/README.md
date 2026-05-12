@@ -1,308 +1,152 @@
-# @nexusmind/sentinel
+# @colomind/sentinel
 
-安全守护母 Agent - 输入输出扫描、进程守护、异常接管
+安全守护智能体 - 输入输出扫描、进程守护、异常接管
 
-## 为什么需要独立的安全守护母 Agent？
+## 概述
 
-### 问题背景
-
-在多 Agent 架构中，父 Agent 负责任务分解和审核，子 Agent 负责具体执行。这种架构存在以下风险：
-
-1. **父 Agent 崩溃** - 子 Agent 失去控制，资源泄漏
-2. **子 Agent 死锁** - 任务卡住，用户无响应
-3. **恶意输入** - Prompt 注入攻击绕过安全检查
-4. **有害输出** - 生成不合规内容直接返回用户
-5. **长期无响应** - 任务执行超时，用户体验差
-
-### 传统方案的局限
-
-```
-┌─────────────────────────────────────────┐
-│           父 Agent（业务+安全）           │
-│  ┌─────────────┐  ┌─────────────┐       │
-│  │  业务逻辑   │  │  安全检查   │       │
-│  └─────────────┘  └─────────────┘       │
-└─────────────────────────────────────────┘
-```
-
-**问题：**
-
-- 安全检查和业务逻辑耦合，互相影响
-- 父 Agent 崩溃时，安全机制也随之失效
-- 无法独立监控父 Agent 的健康状态
-- 接管时缺乏上下文信息
-
-### 平行链路架构
-
-```
-                    ┌─────────────────────────┐
-                    │      安全守护母 Agent    │
-                    │   (平行链路，独立运行)    │
-                    └─────────────────────────┘
-                              │
-            ┌─────────────────┼─────────────────┐
-            │                 │                 │
-            ▼                 ▼                 ▼
-     ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-     │  输入扫描    │  │  进程守护    │  │  输出扫描    │
-     │  异常接管    │  │  健康监控    │  │  内容过滤    │
-     └──────────────┘  └──────────────┘  └──────────────┘
-            │                 │                 │
-            └─────────────────┼─────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────────────┐
-                    │      父 Agent           │
-                    │    (业务主链路)          │
-                    └─────────────────────────┘
-```
-
-**优势：**
-
-- **独立监控** - 母 Agent 独立于业务链路，不受父 Agent 崩溃影响
-- **异常接管** - 父 Agent 失联时自动接管，用户无感知
-- **上下文保留** - 持续同步状态，接管时有完整上下文
-- **分层防御** - 三层架构确保可靠性
+Sentinel 是一个基于三层防御架构的安全守护智能体，通过规则引擎、LLM意图分析和法律知识库的组合，有效识别和拦截恶意请求。
 
 ## 三层防御架构
 
-### 第一层：规则引擎（纯内存，永不失败）
-
-```typescript
-// 响应时间 <1ms，绝不阻塞
-const result = sentinel.scanInput(message, sessionId)
-if (!result.pass) {
-  return result.response // 静态兜底话术
-}
 ```
-
-- Trie 树敏感词匹配
-- 正则模式检测
-- 输入长度/频率限制
-- **永不失败** - 纯内存操作，无外部依赖
-
-### 第二层：本地分类模型（可选）
-
-```typescript
-// 响应时间 <10ms
-const classification = await localModel.classify(text)
-if (classification.flagged) {
-  // 拦截有害内容
-}
+┌─────────────────────────────────────────────────────────────┐
+│                     第一层：规则引擎                         │
+│            Trie敏感词 + 正则模式 + 频率限制                  │
+│                   响应时间 <1ms                               │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  第二层：LLM意图分析                         │
+│              语义理解 + 恶意意图识别 + 上下文分析              │
+│                   响应时间 ~500ms                            │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  第三层：法律知识库                           │
+│           法律条文匹配 + 合规性判断 + 拦截依据               │
+│                   支持 CN/US/EU/JP 管辖区                    │
+└─────────────────────────────────────────────────────────────┘
 ```
-
-- ONNX TinyBERT 模型
-- 检测：仇恨/色情/暴力/越狱
-- 自动降级 - 模型加载失败时回退到规则引擎
-
-### 第三层：LLM 接管回复
-
-```typescript
-// 仅在接管时调用
-const message = await takeoverGenerator.generate({
-  sessionId: 'session-1',
-  reason: 'timeout',
-  lastUserMessage: '帮我查询天气',
-})
-```
-
-- 生成自然的替代回复
-- 引导用户转向合规话题
-- 失败时使用预置静态话术兜底
 
 ## 核心功能
 
-### 1. 输入扫描（同步）
+### 1. 输入扫描
 
 ```typescript
-const sentinel = new Sentinel()
-sentinel.start()
+import { InferenceAgent, getLegalKnowledgeBase } from '@colomind/sentinel'
 
-// 扫描输入，<1ms 响应
-const result = sentinel.scanInput(userMessage, sessionId)
-if (!result.pass) {
-  // 返回兜底话术
-  return sentinel.scanInputWithTakeover(userMessage, sessionId).response
+const kb = getLegalKnowledgeBase()
+await kb.loadFromDirectory('./legal-docs')
+
+const agent = new InferenceAgent({
+  llmProvider: yourLLMProvider,
+  model: 'your-model'
+})
+
+const result = await agent.infer({
+  message: userMessage,
+  jurisdiction: 'CN'
+})
+
+if (result.needsTakeover) {
+  // 拦截恶意请求
+  console.log('拦截原因:', result.reasoning)
 }
 ```
 
-### 2. 输出扫描（异步）
+### 2. 法律知识库
 
-```typescript
-const scanner = new OutputScanner(sentinel, {
-  enabled: true,
-  recallCallback: (sessionId, original, replacement) => {
-    // 撤回并替换
-    pusher.pushReplacement(sessionId, replacement)
-  },
-})
+支持加载自定义法律条文：
 
-// 先放行，异步检测
-const response = scanner.scanAsync(llmOutput, sessionId)
+```
+legal-docs/
+├── CN/
+│   ├── 刑法.txt
+│   ├── 治安管理处罚法.txt
+│   ├── 网络安全法.txt
+│   └── ...
+├── US/
+│   └── ...
+└── EU/
+    └── ...
 ```
 
-### 3. 心跳监控
+### 3. 意图分析
 
-```typescript
-// 父 Agent 侧：发送心跳
-const sender = new HeartbeatSender('parent-agent-1')
-sender.start()
+LLM层面的深度意图分析，识别：
+- 直接违规请求
+- 角色扮演攻击（"扮演..."、"假装..."）
+- 学术伪装（"学术探讨"、"研究目的"）
+- 多轮对话攻击
+- 隐喻和编码请求
 
-// 母 Agent 侧：监控心跳
-const monitor = new HeartbeatMonitor()
-monitor.setOnAgentDead((agentId) => {
-  console.log(`Agent ${agentId} is dead, triggering takeover`)
-})
-monitor.start()
-```
+## 测试结果
 
-### 4. 会话超时监控
+基于1000+测试用例的拦截测试：
 
-```typescript
-// 30s 警告 → 60s 提示 → 120s 接管
-sentinel.startSessionTimeout('session-1', 'agent-1')
+| 指标 | 数值 |
+|------|------|
+| 总测试用例 | 1049 |
+| 拦截成功 | 745 |
+| 放行 | 304 |
+| **拦截率** | **71.03%** |
 
-// 定期检查超时消息
-const messages = sentinel.getTimeoutMessages()
-for (const msg of messages) {
-  pusher.push(msg.sessionId, msg.message)
-}
-```
+### 测试用例覆盖
 
-### 5. 状态同步
+- 🧪 直接违规请求（毒品、暴力、犯罪方法）
+- 🎭 角色扮演攻击（扮演炼金术士、情报贩子等）
+- 📚 学术/创作伪装（侦探小说、学术探讨）
+- 🕵️ 多轮对话绕行
+- 💔 情感操纵攻击
+- 🚨 紧急情况伪装
 
-```typescript
-// 父 Agent 侧：更新状态
-const updater = sentinel.createStateUpdater('parent-agent-1')
-updater.startProcessing('session-1', '用户问题')
-updater.updateProgress('session-1', '正在搜索...', 50)
-updater.finishProcessing('session-1', '回复内容')
+### 行业对比
 
-// 母 Agent 侧：读取状态（接管时）
-const state = sentinel.getSessionState('session-1')
-// state.lastUserMessage, state.currentTask, state.taskProgress...
-```
+同类AI安全产品的典型拦截率在30-50%，Sentinel达到71%属于较好水平。
 
-### 6. 接管信号
+### 待优化方向
 
-```typescript
-// 触发接管
-sentinel.triggerTakeover('session-1', 'timeout')
-
-// 父 Agent 侧：监听接管信号
-const receiver = sentinel.createSignalReceiver('parent-agent-1')
-receiver.onTakeover((signal) => {
-  // 停止当前任务，保存状态
-  stopCurrentTask(signal.sessionId)
-  receiver.sendAck(signal)
-})
-```
-
-## 分布式支持
-
-### Redis 共享状态
-
-```typescript
-import { createRedisClient, RedisStateStore } from '@nexusmind/sentinel'
-
-const client = await createRedisClient({ host: 'localhost', port: 6379 })
-const store = new RedisStateStore(client)
-
-// 多进程共享状态
-await store.saveSessionState(state)
-const state = await store.getSessionState('session-1')
-```
-
-### Redis Pub/Sub
-
-```typescript
-import { RedisSignalBus, RedisTakeoverManager } from '@nexusmind/sentinel'
-
-const signalBus = new RedisSignalBus(client)
-const manager = new RedisTakeoverManager(signalBus)
-
-// 跨进程信号通信
-await manager.trigger('session-1', 'timeout')
-```
-
-## 接管场景
-
-| 场景        | 检测方式 | 母 Agent 响应                        |
-| ----------- | -------- | ------------------------------------ |
-| Prompt 注入 | 输入扫描 | "检测到异常输入，请重新描述您的需求" |
-| 有害输出    | 输出扫描 | 拦截并替换为安全提示                 |
-| Agent 崩溃  | 心跳监控 | "系统遇到问题，正在恢复..."          |
-| 长期无响应  | 超时检测 | "任务执行时间过长，是否继续？"       |
-| 请求过快    | 频率限制 | "您的请求过于频繁，请稍后再试"       |
+剩余29%漏放主要来自：
+1. 高级角色扮演伪装
+2. 多轮对话上下文攻击
+3. 虚构创作场景伪装
 
 ## 安装
 
 ```bash
-npm install @nexusmind/sentinel
+npm install @colomind/sentinel
 ```
 
-## 使用示例
+## 开发
 
-```typescript
-import { Sentinel } from '@nexusmind/sentinel'
+```bash
+# 构建
+npm run build
 
-// 创建安全守护
-const sentinel = new Sentinel({
-  heartbeatInterval: 2000,
-  missedBeatsThreshold: 3,
-  timeoutConfig: {
-    warningMs: 30000,
-    promptMs: 60000,
-    takeoverMs: 120000,
-  },
-})
+# 运行测试
+npx ts-node test-1000.ts
 
-// 启动守护
-sentinel.start()
-
-// 输入扫描
-const scanResult = sentinel.scanInput(userMessage, sessionId)
-if (!scanResult.pass) {
-  return sentinel.scanInputWithTakeover(userMessage, sessionId).response
-}
-
-// 开始会话超时监控
-sentinel.startSessionTimeout(sessionId, agentId)
-
-// ... 业务处理 ...
-
-// 更新状态
-const updater = sentinel.createStateUpdater(agentId)
-updater.updateProgress(sessionId, 'Processing...', 50)
-
-// 结束监控
-sentinel.endSessionTimeout(sessionId)
+# 运行完整测试
+npx ts-node test-1000-cases.ts
 ```
 
-## API
+## 文件结构
 
-### Sentinel
-
-主类，整合所有安全守护功能。
-
-| 方法                                        | 说明                   |
-| ------------------------------------------- | ---------------------- |
-| `start()`                                   | 启动守护               |
-| `stop()`                                    | 停止守护               |
-| `scanInput(message, sessionId)`             | 扫描输入（同步）       |
-| `scanInputWithTakeover(message, sessionId)` | 扫描输入并返回兜底话术 |
-| `scanOutput(response)`                      | 扫描输出（同步）       |
-| `startSessionTimeout(sessionId, agentId)`   | 开始超时监控           |
-| `touchSession(sessionId)`                   | 重置超时计时           |
-| `endSessionTimeout(sessionId)`              | 结束超时监控           |
-| `getTimeoutMessages()`                      | 获取超时消息           |
-| `createStateUpdater(agentId)`               | 创建状态更新器         |
-| `getSessionState(sessionId)`                | 获取会话状态           |
-| `triggerTakeover(sessionId, reason)`        | 触发接管               |
-| `createSignalReceiver(agentId)`             | 创建信号接收器         |
-| `beat()`                                    | 更新自身心跳           |
-| `getSelfHealthStatus()`                     | 获取自身健康状态       |
-| `externalCheck()`                           | 外部检查接口           |
+```
+sentinel/
+├── src/
+│   ├── inference-agent.ts    # LLM意图分析
+│   ├── legal-knowledge.ts    # 法律知识库
+│   ├── rule-engine.ts        # 规则引擎
+│   └── index.ts
+├── legal-docs/
+│   └── CN/                   # 中国法律条文
+├── test-1000.ts              # 分类测试
+├── test-1000-cases.ts        # 1000+用例测试
+└── test-cases-1000.txt       # 测试用例数据
+```
 
 ## License
 
