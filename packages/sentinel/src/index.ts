@@ -124,6 +124,16 @@ export {
   resetLocalModelManager,
 } from './local-model.js'
 
+// Layer 1.5 本地意图分析器
+export {
+  LocalIntentAnalyzer,
+  LocalIntentAnalyzerConfig,
+  LocalIntentResult,
+  IntentCategory,
+  getLocalIntentAnalyzer,
+  resetLocalIntentAnalyzer,
+} from './local-intent-analyzer.js'
+
 // LLM 接管回复
 export {
   LLMTakeoverGenerator,
@@ -183,6 +193,7 @@ import { InferenceAgent, InferenceResult, InferenceContext } from './inference-a
 import { LegalGuidanceGenerator, LegalGuidance } from './legal-guidance.js'
 import { createLogger } from './logger.js'
 import { getLegalKnowledgeBase, type Jurisdiction } from './legal-knowledge.js'
+import { LocalIntentAnalyzer, LocalIntentResult } from './local-intent-analyzer.js'
 import type { LLMProvider } from '@colomind/core'
 
 const logger = createLogger('Sentinel')
@@ -203,6 +214,10 @@ export interface SentinelConfig {
   legalDocsPath?: string
   /** 默认法域 */
   defaultJurisdiction?: Jurisdiction
+  /** 启用 Layer 1.5 本地意图分析 */
+  enableLayer15?: boolean
+  /** Layer 1.5 置信度阈值 */
+  layer15ConfidenceThreshold?: number
 }
 
 export class Sentinel {
@@ -218,6 +233,9 @@ export class Sentinel {
   private inferenceAgent: InferenceAgent
   // 第三层：合法指引生成器
   private legalGuidanceGenerator: LegalGuidanceGenerator
+  // Layer 1.5：本地意图分析器
+  private localIntentAnalyzer: LocalIntentAnalyzer
+  private enableLayer15: boolean
 
   constructor(config?: SentinelConfig) {
     this.ruleEngine = config?.ruleEngine ?? getRuleEngine()
@@ -272,6 +290,12 @@ export class Sentinel {
     this.legalGuidanceGenerator = new LegalGuidanceGenerator({
       llmProvider: config?.llmProvider,
       model: config?.inferenceModel,
+    })
+
+    // Layer 1.5：本地意图分析器
+    this.enableLayer15 = config?.enableLayer15 ?? true
+    this.localIntentAnalyzer = new LocalIntentAnalyzer({
+      confidenceThreshold: config?.layer15ConfidenceThreshold ?? 0.75,
     })
 
     // 初始化法律知识库
@@ -363,6 +387,7 @@ export class Sentinel {
    * 三层防御扫描 - 完整的安全检查流程
    *
    * 第一层：规则引擎（毫秒级，不可绕过）
+   * Layer 1.5：本地意图分析器（快速分类，减少LLM调用）
    * 第二层：推理代理（LLM 语义分析）
    * 第三层：合法指引生成
    */
@@ -376,6 +401,7 @@ export class Sentinel {
     response?: string
     guidance?: LegalGuidance
     inference?: InferenceResult
+    layer15?: LocalIntentResult
   }> {
     const userJurisdiction = jurisdiction || 'CN'
 
@@ -450,6 +476,82 @@ export class Sentinel {
           response: guidance.message,
           guidance,
           inference: inferenceResult,
+        }
+      }
+    }
+
+    // Layer 1.5：本地意图分析（Layer 1 通过后）
+    if (this.enableLayer15) {
+      const layer15Result = this.localIntentAnalyzer.analyze(message, { history: conversationHistory })
+
+      logger.info('Layer 1.5 analysis', {
+        category: layer15Result.category,
+        confidence: layer15Result.confidence,
+        needsLayer2: layer15Result.needsLayer2,
+      })
+
+      // 明确危险 - 直接拦截，不调LLM
+      if (layer15Result.category === 'dangerous') {
+        const guidance = await this.legalGuidanceGenerator.generate({
+          userMessage: message,
+          inferenceResult: {
+            scenario: 'blocked',
+            confidence: layer15Result.confidence,
+            intent: layer15Result.reason,
+            needsTakeover: true,
+            riskLevel: 'high',
+            reasoning: layer15Result.detectedPatterns.join('; '),
+          },
+          sessionId,
+          jurisdiction: userJurisdiction,
+        })
+
+        return {
+          pass: false,
+          response: guidance.message,
+          guidance,
+          layer15: layer15Result,
+        }
+      }
+
+      // 明确安全 - 直接放行，不调LLM
+      if (layer15Result.category === 'safe' && !layer15Result.needsLayer2) {
+        return {
+          pass: true,
+          layer15: layer15Result,
+        }
+      }
+
+      // 可疑或模糊 - 转Layer 2
+      if (layer15Result.needsLayer2) {
+        const inferenceResult = await this.inferenceAgent.infer({
+          message,
+          sessionId,
+          conversationHistory,
+          jurisdiction: userJurisdiction,
+        })
+
+        if (inferenceResult.needsTakeover || inferenceResult.scenario === 'blocked') {
+          const guidance = await this.legalGuidanceGenerator.generate({
+            userMessage: message,
+            inferenceResult,
+            sessionId,
+            jurisdiction: userJurisdiction,
+          })
+
+          return {
+            pass: false,
+            response: guidance.message,
+            guidance,
+            inference: inferenceResult,
+            layer15: layer15Result,
+          }
+        }
+
+        return {
+          pass: true,
+          inference: inferenceResult,
+          layer15: layer15Result,
         }
       }
     }
