@@ -4,3 +4,4 @@
 
 export * from './knowledge.js'
 export * from './user-profile.js'
+export * from './push-notification.js'

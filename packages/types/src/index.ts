@@ -1,5 +1,5 @@
 /**
- * @nexusmind/types - 共享类型定义
+ * @colomind/types - 共享类型定义
  */
 
 // LLM
@@ -49,3 +49,21 @@ export type {
 
 // Tool
 export type { ToolCall, ToolResult, ToolContext, RuntimeTool } from './tool.js'
+
+// Watch
+export type {
+  SentinelHealthStatus,
+  SentinelStatus,
+  AgentHealthStatus,
+  WatchSessionState,
+  QuickCommand,
+  WatchSummary,
+  WatchNotificationType,
+  WatchNotificationPayload,
+  SecurityAlertPayload,
+  SessionTimeoutPayload,
+  AgentDeadPayload,
+  WatchDeviceRegistration,
+  SessionActionRequest,
+  CommandResult,
+} from './watch.js'
