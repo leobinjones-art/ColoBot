@@ -221,7 +221,7 @@ graph TD
 | **Heartbeat Monitoring**  | 2-second interval, 3 missed beats = dead                                          |
 | **State Synchronization** | Real-time parent agent state sync, full context on takeover                       |
 | **Timeout Handling**      | 30s warning → 60s inquiry → 120s takeover                                         |
-| **Three-Layer Defense**   | Layer 1: Rule engine → Layer 1.5: Local intent → Layer 2: LLM inference → Layer 3: Legal guidance |
+| **Three-Layer Defense**   | Layer 1: Rule engine → Layer 1.5: Local intent → Layer 2: LLM inference → Layer 3: Legal channel guidance |
 | **Distributed**           | Redis shared state, Pub/Sub signals                                               |
 
 ```typescript
