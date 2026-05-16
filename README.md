@@ -1,4 +1,4 @@
-# NexusMind
+# ColoMind
 
 <div align="center">
 
@@ -16,7 +16,7 @@ Multi-modal AI × Security Parent Agent × Personal Assistant
 
 ## Introduction
 
-NexusMind is a **TypeScript AI Agent framework with built-in security guardian**.
+ColoMind is a **TypeScript AI Agent framework with built-in security guardian**.
 
 It transforms the "personal assistant" concept into a programmable, extensible modular system, featuring an **industry-first independent security parent agent**.
 
@@ -26,22 +26,22 @@ You can quickly build an intelligent assistant that manages todos, writes papers
 
 ## Rename Notice
 
-**May 2026**: Project renamed from `NexusMind` to `NexusMind`
+**May 2026**: Project renamed from `NexusMind` to `ColoMind`
 
-- GitHub Repository: https://github.com/leobinjones-art/NexusMind
-- npm Packages: `@nexusmind/*` and `nexusmind`
+- GitHub Repository: https://github.com/colomind/colomind
+- npm Packages: `@colomind/*`
 
-Old package names `@colo-bot/*` and `nexusmind` are deprecated. Please use the new package names.
+Old package names `@nexusmind/*` are deprecated. Please use the new package names.
 
 ---
 
 ## Philosophy: Not Imitating People — Sharing Their Role
 
-Most AI projects pursue "making AI more human-like" at the surface level: more human-like tone, expressions, and chitchat ability. NexusMind goes deeper — into the role AI can play in your life:
+Most AI projects pursue "making AI more human-like" at the surface level: more human-like tone, expressions, and chitchat ability. ColoMind goes deeper — into the role AI can play in your life:
 
 ### 1. Perceives Your State, Doesn't Wait for You to Describe It
 
-A human friend doesn't need you to tell them "I've been feeling down lately." They see you sleeping less, going out less, talking less — and they just know. NexusMind's real-time evaluation does exactly this: AI doesn't need you to speak up; it can recognize the shift on its own.
+A human friend doesn't need you to tell them "I've been feeling down lately." They see you sleeping less, going out less, talking less — and they just know. ColoMind's real-time evaluation does exactly this: AI doesn't need you to speak up; it can recognize the shift on its own.
 
 ### 2. Reaches Out When You're Slipping, Not When You Ask for Help
 
@@ -57,21 +57,21 @@ A mature person leaves traces, accepts scrutiny. Sentinel's audit logs, pre-send
 
 ---
 
-**In one sentence**: NexusMind is not about making AI sound more human. It's about making AI more like a friend who cares about you — and always respects you.
+**In one sentence**: ColoMind is not about making AI sound more human. It's about making AI more like a friend who cares about you — and always respects you.
 
 This "human-likeness" isn't achieved through larger models or fancier prompts. It's achieved through **architecture** — real-time evaluation, privacy boundaries, security parent agent, progressive autonomy — growing from the foundation up.
 
-_This is perhaps the deepest difference between NexusMind and all other AI frameworks._
+_This is perhaps the deepest difference between ColoMind and all other AI frameworks._
 
 ---
 
-## Why NexusMind
+## Why ColoMind
 
 Most AI Agent frameworks focus on **how to call tools**, but overlook **how to call them safely** and **how to reuse domain knowledge**.
 
-NexusMind solves three overlooked core problems from first principles:
+ColoMind solves three overlooked core problems from first principles:
 
-| Problem                   | NexusMind's Solution                                                                                                       |
+| Problem                   | ColoMind's Solution                                                                                                       |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Unbypassable Security** | Independent security parent agent guards all incoming/outgoing messages, no need to embed security checks in business code |
 | **Reusable Knowledge**    | SOP encapsulates complex workflows like "academic research" and "code refactoring" into shareable skill modules            |
@@ -93,7 +93,7 @@ NexusMind solves three overlooked core problems from first principles:
 ## Package Structure
 
 ```
-nexusmind/
+colomind/
 ├── packages/
 │   ├── types/           # Type definitions
 │   ├── sentinel/        # Security Guardian Parent Agent
@@ -133,8 +133,8 @@ nexusmind/
 
 ```bash
 # Clone repository
-git clone https://github.com/your-repo/nexusmind.git
-cd nexusmind
+git clone https://github.com/colomind/colomind.git
+cd colomind
 
 # Install dependencies
 npm install
@@ -147,11 +147,11 @@ npm run build:packages
 
 ```bash
 # Interactive configuration
-npx nexusmind init
+npx colomind init
 
 # Or manually create config file
-mkdir -p ~/.nexusmind
-cat > ~/.nexusmind/config.json << 'EOF'
+mkdir -p ~/.colomind
+cat > ~/.colomind/config.json << 'EOF'
 {
   "model": {
     "provider": "openai",
@@ -174,10 +174,10 @@ EOF
 
 ```bash
 # CLI mode
-npx nexusmind
+npx colomind
 
 # TUI mode
-npx nexusmind tui
+npx colomind tui
 ```
 
 ---
@@ -195,7 +195,7 @@ npx nexusmind tui
 | Sub-Agent           | Create, delegate, destroy sub-agents         |
 | Tool Whitelist      | Sub-agent restricted permission control      |
 
-### 🛡️ Security Guardian (@nexusmind/sentinel)
+### 🛡️ Security Guardian (@colomind/sentinel)
 
 Independent security parent agent with parallel chain architecture:
 
@@ -221,11 +221,11 @@ graph TD
 | **Heartbeat Monitoring**  | 2-second interval, 3 missed beats = dead                                          |
 | **State Synchronization** | Real-time parent agent state sync, full context on takeover                       |
 | **Timeout Handling**      | 30s warning → 60s inquiry → 120s takeover                                         |
-| **Three-Layer Defense**   | Rule engine → Local model → LLM takeover                                          |
+| **Three-Layer Defense**   | Layer 1: Rule engine → Layer 1.5: Local intent → Layer 2: LLM inference → Layer 3: Legal guidance |
 | **Distributed**           | Redis shared state, Pub/Sub signals                                               |
 
 ```typescript
-import { Sentinel } from '@nexusmind/sentinel'
+import { Sentinel } from '@colomind/sentinel'
 
 const sentinel = new Sentinel()
 sentinel.start()
@@ -267,11 +267,11 @@ print(arr.sum())
 })
 ```
 
-### 📋 Personal Assistant (@nexusmind/assistant)
+### 📋 Personal Assistant (@colomind/assistant)
 
 > ⚠️ **Privacy Notice**
 >
-> `@nexusmind/assistant` is an **optional package**. When installed, NexusMind automatically includes the following user data as context in each conversation:
+> `@colomind/assistant` is an **optional package**. When installed, ColoMind automatically includes the following user data as context in each conversation:
 >
 > - Psychological state (mood journal, mood trends)
 > - Life habits (habit tracking, sleep, exercise)
@@ -283,7 +283,7 @@ print(arr.sum())
 >
 > All data is **stored locally** (SQLite/PostgreSQL) and never uploaded to any cloud service.
 >
-> If you don't want AI to read this data, **please do not install the `@nexusmind/assistant` package**. The core framework (`@nexusmind/core` + `@nexusmind/sentinel`) does not collect or inject any personal data.
+> If you don't want AI to read this data, **please do not install the `@colomind/assistant` package**. The core framework (`@colomind/core` + `@colomind/sentinel`) does not collect or inject any personal data.
 >
 > Installed users can use the `/context` command to view which context dimensions are included in the current session.
 
@@ -312,10 +312,10 @@ print(arr.sum())
 
 #### 🧠 User Profile Analysis
 
-The `@nexusmind/assistant` package provides comprehensive user profiling:
+The `@colomind/assistant` package provides comprehensive user profiling:
 
 ```typescript
-import { generateUserProfile } from '@nexusmind/assistant'
+import { generateUserProfile } from '@colomind/assistant'
 
 const profile = generateUserProfile(userId, {
   moods,
@@ -349,7 +349,7 @@ const profile = generateUserProfile(userId, {
 - Provide personalized suggestions based on financial and health data
 - Adapt responses to user's current life situation
 
-### 🖥️ Web UI (@nexusmind/frontend)
+### 🖥️ Web UI (@colomind/frontend)
 
 Vue 3 + TypeScript web interface with modern design and creative interactions:
 
@@ -439,7 +439,7 @@ npm run build
 
 # Deploy
 serve -l 5173 dist
-# Connect to real NexusMind Core backend
+# Connect to real ColoMind Core backend
 ```
 
 **Mock API Coverage**: Auth, Agents, Chat (SSE), Todos, Reminders, Events, Notes, Habits, Moods, Finances, Goals, Contacts, Skills, Sentinel, Config, **User Profile**
@@ -468,11 +468,11 @@ delegate_task  - Delegate task
 ### Basic Runtime
 
 ```typescript
-import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@nexusmind/core'
+import { AgentRuntime, OpenAIProvider, SQLiteStore } from '@colomind/core'
 
 const runtime = new AgentRuntime({
   llm: new OpenAIProvider({ apiKey: 'your-key', defaultModel: 'gpt-4o' }),
-  memory: new SQLiteStore({ path: '~/.nexusmind/chat.db' }),
+  memory: new SQLiteStore({ path: '~/.colomind/chat.db' }),
 })
 
 const result = await runtime.run({
@@ -487,7 +487,7 @@ console.log(result.response)
 ### Python Execution
 
 ```typescript
-import { PyodideRuntime } from '@nexusmind/core/tools'
+import { PyodideRuntime } from '@colomind/core/tools'
 
 const runtime = new PyodideRuntime()
 const { output, error } = await runtime.runCode(`
@@ -509,7 +509,7 @@ import {
   parseIntent,
   setLogLevel,
   createLogger,
-} from '@nexusmind/assistant'
+} from '@colomind/assistant'
 
 // Create todo
 const todo = createTodo({
@@ -540,26 +540,26 @@ logger.info('Operation completed', { userId: 'user1', action: 'create' })
 
 ## SOP Open Source Ecosystem
 
-NexusMind supports pluggable SOP (Standard Operating Procedure) flow modules for encapsulating complex multi-step tasks.
+ColoMind supports pluggable SOP (Standard Operating Procedure) flow modules for encapsulating complex multi-step tasks.
 
 ### Architecture
 
 ```
-@nexusmind/sop-base          # Flow engine base class (Official)
-@nexusmind/sop-academic      # Academic research flow (Official example)
-nexusmind-sop-*              # Community contributions (npm publish)
+@colomind/sop-base          # Flow engine base class (Official)
+@colomind/sop-academic      # Academic research flow (Official example)
+colomind-sop-*              # Community contributions (npm publish)
 ```
 
 ### Official SOP Modules
 
 | Module                    | Scenario                              | Status         |
 | ------------------------- | ------------------------------------- | -------------- |
-| `@nexusmind/sop-base`     | Flow engine base class                | ✅ Implemented |
-| `@nexusmind/sop-academic` | Paper writing, literature research    | ✅ Implemented |
-| `@nexusmind/sop-writing`  | Long-form writing, report generation  | 📋 Planned     |
-| `@nexusmind/sop-coding`   | Project development, code refactoring | 📋 Planned     |
+| `@colomind/sop-base`     | Flow engine base class                | ✅ Implemented |
+| `@colomind/sop-academic` | Paper writing, literature research    | ✅ Implemented |
+| `@colomind/sop-writing`  | Long-form writing, report generation  | 📋 Planned     |
+| `@colomind/sop-coding`   | Project development, code refactoring | 📋 Planned     |
 
-### @nexusmind/sop-base Core Concepts
+### @colomind/sop-base Core Concepts
 
 #### Type Definitions
 
@@ -601,7 +601,7 @@ interface SopTask {
 #### SopEngine Base Class
 
 ```typescript
-import { SopEngine } from '@nexusmind/sop-base'
+import { SopEngine } from '@colomind/sop-base'
 
 class MySopEngine extends SopEngine {
   // Must implement: analyze user request, return step list
@@ -656,7 +656,7 @@ const engine = new MySopEngine(
 #### 1. Create Package Structure
 
 ```
-nexusmind-sop-my-domain/
+colomind-sop-my-domain/
 ├── package.json
 ├── tsconfig.json
 └── src/
@@ -677,8 +677,8 @@ nexusmind-sop-my-domain/
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@nexusmind/sop-base": "^0.1.0",
-    "@nexusmind/core": "^0.3.0"
+    "@colomind/sop-base": "^0.1.0",
+    "@colomind/core": "^0.3.0"
   }
 }
 ```
@@ -687,7 +687,7 @@ nexusmind-sop-my-domain/
 
 ```typescript
 // src/engine.ts
-import { SopEngine, type TaskAnalysis } from '@nexusmind/sop-base'
+import { SopEngine, type TaskAnalysis } from '@colomind/sop-base'
 
 export class MyDomainSopEngine extends SopEngine {
   constructor() {
@@ -755,7 +755,7 @@ import {
   STEP_EXECUTION_PROMPT,
   OUTPUT_GENERATION_PROMPT,
   buildPrompt,
-} from '@nexusmind/sop-base'
+} from '@colomind/sop-base'
 
 // Use template
 const prompt = buildPrompt(TASK_ANALYSIS_PROMPT, {
@@ -839,13 +839,14 @@ export function registerMyTool(): void {
 
 | Metric            | Value                    |
 | ----------------- | ------------------------ |
-| Version           | 0.3.1                    |
-| Total Code        | ~28,500 lines TypeScript |
-| Source Files      | 146                      |
+| Version           | 0.4.0                    |
+| Total Code        | ~36,000 lines TypeScript |
+| Source Files      | 177+                     |
 | Packages          | 8                        |
 | Assistant Modules | 18 + Logging System      |
-| Test Cases        | 522                      |
-| Test Coverage     | 56%+                     |
+| Test Cases        | 540                      |
+| Test Pass Rate    | 100%                     |
+| Security Accuracy | 100% (current, more stress testing planned) |
 
 ---
 
@@ -856,9 +857,9 @@ export function registerMyTool(): void {
 | `OPENAI_API_KEY`           | OpenAI API Key                    |
 | `ANTHROPIC_API_KEY`        | Anthropic API Key                 |
 | `MINIMAX_API_KEY`          | MiniMax API Key                   |
-| `NEXUSMIND_LOG_LEVEL`      | Log level (debug/info/warn/error) |
-| `NEXUSMIND_LOG_CONSOLE`    | Output to console (true/false)    |
-| `NEXUSMIND_ENCRYPTION_KEY` | Password encryption key           |
+| `COLOMIND_LOG_LEVEL`      | Log level (debug/info/warn/error) |
+| `COLOMIND_LOG_CONSOLE`    | Output to console (true/false)    |
+| `COLOMIND_ENCRYPTION_KEY` | Password encryption key           |
 
 ---
 
