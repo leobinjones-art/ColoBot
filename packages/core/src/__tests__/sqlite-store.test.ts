@@ -6,7 +6,7 @@ import { join } from 'path'
 
 describe('SQLiteStore', () => {
   let store: SQLiteStore
-  const dbPath = join(tmpdir(), `nexusmind-test-${Date.now()}.db`)
+  const dbPath = join(tmpdir(), `colomind-test-${Date.now()}.db`)
 
   beforeEach(() => {
     store = new SQLiteStore({ path: dbPath })

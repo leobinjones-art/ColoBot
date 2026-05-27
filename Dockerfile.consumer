@@ -12,7 +12,6 @@ COPY packages/types/package*.json ./packages/types/
 COPY packages/charter/package*.json ./packages/charter/
 COPY packages/sentinel/package*.json ./packages/sentinel/
 COPY packages/core/package*.json ./packages/core/
-COPY packages/server/package*.json ./packages/server/
 COPY packages/frontend/package*.json ./packages/frontend/
 
 RUN npm ci
@@ -21,7 +20,6 @@ COPY packages/types ./packages/types
 COPY packages/charter ./packages/charter
 COPY packages/sentinel ./packages/sentinel
 COPY packages/core ./packages/core
-COPY packages/server ./packages/server
 COPY packages/frontend ./packages/frontend
 COPY tsconfig.json ./
 
@@ -30,7 +28,6 @@ RUN npm run build -w packages/types
 RUN npm run build -w packages/charter
 RUN npm run build -w packages/sentinel
 RUN npm run build -w packages/core
-RUN npm run build -w packages/server
 
 # Build frontend
 RUN npm run build -w packages/frontend
@@ -53,21 +50,19 @@ COPY --from=builder /app/packages/sentinel/dist ./packages/sentinel/dist
 COPY --from=builder /app/packages/sentinel/package.json ./packages/sentinel/
 COPY --from=builder /app/packages/core/dist ./packages/core/dist
 COPY --from=builder /app/packages/core/package.json ./packages/core/
-COPY --from=builder /app/packages/server/dist ./packages/server/dist
-COPY --from=builder /app/packages/server/package.json ./packages/server/
 COPY --from=builder /app/packages/frontend/dist ./packages/frontend/dist
 
 # Create data directory and non-root user
 RUN mkdir -p /app/data /app/config && \
-    addgroup -g 1001 -S colobot && \
-    adduser -S -D -H -u 1001 -s /sbin/nologin -G colobot colobot && \
-    chown -R colobot:colobot /app
+    addgroup -g 1001 -S nexusmind && \
+    adduser -S -D -H -u 1001 -s /sbin/nologin -G nexusmind nexusmind && \
+    chown -R nexusmind:nexusmind /app
 
-USER colobot
+USER nexusmind
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV COLOBOT_EDITION=consumer
+ENV NEXUSMIND_EDITION=consumer
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \

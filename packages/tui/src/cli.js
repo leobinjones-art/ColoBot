@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * NexusMind CLI 入口 - 纯 JS 避免 TypeScript 编译问题
+ * ColoMind CLI 入口 - 纯 JS 避免 TypeScript 编译问题
  */
 
 const args = process.argv.slice(2)
@@ -9,7 +9,7 @@ const firstArg = args[0]
 // 快速处理 help/version，不加载任何模块
 if (firstArg === 'help' || firstArg === '-h' || firstArg === '--help') {
   console.log(`
-NexusMind TUI - 终端交互界面
+ColoMind TUI - 终端交互界面
 
 用法:
   nexusmind-tui [命令]
@@ -32,7 +32,7 @@ NexusMind TUI - 终端交互界面
 }
 
 if (firstArg === 'version' || firstArg === '-v' || firstArg === '--version') {
-  console.log(`NexusMind v${process.env.npm_package_version || '0.1.0'}`)
+  console.log(`ColoMind v${process.env.npm_package_version || '0.1.0'}`)
   process.exit(0)
 }
 

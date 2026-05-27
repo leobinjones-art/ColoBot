@@ -1,0 +1,1 @@
+{"main":{"identifier":"main","description":"Main window capabilities","local":true,"windows":["main"],"permissions":["core:default","shell:allow-spawn","shell:allow-execute","notification:default","global-shortcut:default","autostart:default","opener:default"]}}

@@ -1,0 +1,17 @@
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/deps/nexusmind_desktop-779c97602c5fed17.d: src/main.rs /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/4d77b7491a76fc1fdbe60e28e6d97a33599db05ec6d13275c58d542f029b4683 /Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/assets/index-CIEpDuNd.js /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/05ed97c0b05b0c437e2b57b2acb60dd3a18594d457e5bdd4f9dec716a3debadd.js /Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/index.html /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/92cba4137f30cc0e55ce5ed28c17ca2de219c2c64ad08fd7b7b479bcd2f2dd03.html /Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/assets/index-BY4hR0us.css /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/d312355a6d692167f137b514cc175829a6eacebd6ba1e81a3d3b8d2d9dedde84.css
+
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/deps/nexusmind_desktop-779c97602c5fed17: src/main.rs /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/4d77b7491a76fc1fdbe60e28e6d97a33599db05ec6d13275c58d542f029b4683 /Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/assets/index-CIEpDuNd.js /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/05ed97c0b05b0c437e2b57b2acb60dd3a18594d457e5bdd4f9dec716a3debadd.js /Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/index.html /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/92cba4137f30cc0e55ce5ed28c17ca2de219c2c64ad08fd7b7b479bcd2f2dd03.html /Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/assets/index-BY4hR0us.css /Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/d312355a6d692167f137b514cc175829a6eacebd6ba1e81a3d3b8d2d9dedde84.css
+
+src/main.rs:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/4d77b7491a76fc1fdbe60e28e6d97a33599db05ec6d13275c58d542f029b4683:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/assets/index-CIEpDuNd.js:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/05ed97c0b05b0c437e2b57b2acb60dd3a18594d457e5bdd4f9dec716a3debadd.js:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/index.html:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/92cba4137f30cc0e55ce5ed28c17ca2de219c2c64ad08fd7b7b479bcd2f2dd03.html:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/../dist/assets/index-BY4hR0us.css:
+/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/tauri-codegen-assets/d312355a6d692167f137b514cc175829a6eacebd6ba1e81a3d3b8d2d9dedde84.css:
+
+# env-dep:CARGO_PKG_AUTHORS=
+# env-dep:CARGO_PKG_DESCRIPTION=
+# env-dep:CARGO_PKG_NAME=nexusmind-desktop
+# env-dep:OUT_DIR=/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out

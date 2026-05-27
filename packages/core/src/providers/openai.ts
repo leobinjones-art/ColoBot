@@ -2,7 +2,7 @@
  * OpenAI Provider 实现
  */
 
-import type { LLMMessage, LLMOptions, ContentBlock } from '@nexusmind/types'
+import type { LLMMessage, LLMOptions, ContentBlock } from '@colomind/types'
 import type { LLMProvider, LLMResponse, LLMStreamChunk } from '../runtime/types.js'
 
 export interface OpenAIConfig {

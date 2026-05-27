@@ -1,10 +1,48 @@
 /**
- * @nexusmind/assistant 测试
+ * @colomind/assistant 测试
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import Database from 'better-sqlite3'
+import { OpenAIProvider } from '@colomind/core'
+import {
+  getDb,
+  closeDb,
+  generateId,
+  createTodo,
+  getTodo,
+  updateTodo,
+  deleteTodo,
+  listTodos,
+  completeTodo,
+  createReminder,
+  listReminders,
+  parseTime,
+  parseIntent,
+  parseIntentWithLLM,
+  setLLMChat,
+  createNote,
+  searchNotes,
+  createHabit,
+  checkHabit,
+  isTodayChecked,
+  logMood,
+  getMoodEntries,
+  logFinance,
+  getFinanceEntries,
+  createGoal,
+  updateGoalProgress,
+  getGoal,
+  createContact,
+  searchContacts,
+  createProject,
+  updateProject,
+  getProject,
+} from '../index.js'
 
-describe('@nexusmind/assistant', () => {
+const API_KEY = process.env.OPENAI_API_KEY
+const BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+
+describe('@colomind/assistant', () => {
   let db: Database.Database
 
   beforeEach(() => {
@@ -498,6 +536,58 @@ describe('@nexusmind/assistant', () => {
       const intent = parseIntent('列出我的待办')
       expect(intent).toBeDefined()
       expect(intent?.type).toBe('todo.list')
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // 使用真实 LLM 的意图识别测试
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Intent Parser（真实 LLM）', () => {
+    it('应该通过 LLM 识别模糊意图', async () => {
+      if (!API_KEY) return
+
+      const provider = new OpenAIProvider({
+        apiKey: API_KEY,
+        baseUrl: BASE_URL,
+        model: 'gpt-4o-mini',
+      })
+
+      // 注入真实 LLM 到意图解析器
+      setLLMChat(async (messages, options) => {
+        const response = await provider.chat(messages, options)
+        const content = typeof response.content === 'string' ? response.content : ''
+        return { content }
+      })
+
+      const { parseIntentWithLLM } = await import('../intent/parser.js')
+
+      // 模糊表述，规则匹配可能置信度低
+      const intent = await parseIntentWithLLM('我有个重要的事情要记住')
+      expect(intent).toBeDefined()
+      expect(intent.type).not.toBe('unknown')
+    })
+
+    it('应该通过 LLM 识别日程查询意图', async () => {
+      if (!API_KEY) return
+
+      const provider = new OpenAIProvider({
+        apiKey: API_KEY,
+        baseUrl: BASE_URL,
+        model: 'gpt-4o-mini',
+      })
+
+      setLLMChat(async (messages, options) => {
+        const response = await provider.chat(messages, options)
+        const content = typeof response.content === 'string' ? response.content : ''
+        return { content }
+      })
+
+      const { parseIntentWithLLM } = await import('../intent/parser.js')
+
+      const intent = await parseIntentWithLLM('看看最近有什么安排')
+      expect(intent).toBeDefined()
+      expect(intent.type).not.toBe('unknown')
     })
   })
 })

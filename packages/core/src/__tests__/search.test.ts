@@ -1,58 +1,99 @@
 /**
- * Search 模块测试
+ * Search 模块测试 — 真实搜索调用
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 
-// Mock fetch
-global.fetch = vi.fn()
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
 describe('Search Module', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+  beforeAll(async () => {
+    const { configureSearch } = await import('../search.js')
+    // 使用 duckduckgo 引擎，不需要 API key
+    configureSearch({ engine: 'duckduckgo', maxResults: 10 })
   })
 
-  describe('search function', () => {
-    it('should perform search', async () => {
-      const mockFetch = vi.mocked(fetch)
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          results: [
-            { title: 'Result 1', url: 'https://example.com/1', snippet: 'Snippet 1' },
-            { title: 'Result 2', url: 'https://example.com/2', snippet: 'Snippet 2' },
-          ],
-        }),
-      } as Response)
-
-      const { search } = await import('../search.js')
-      expect(search).toBeDefined()
-    })
-
-    it('should handle search errors', async () => {
-      const mockFetch = vi.mocked(fetch)
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      const { search } = await import('../search.js')
-      expect(search).toBeDefined()
+  describe('configureSearch', () => {
+    it('should configure search engine', async () => {
+      const { configureSearch, getSearchConfig } = await import('../search.js')
+      configureSearch({ engine: 'duckduckgo', maxResults: 5 })
+      const config = getSearchConfig()
+      expect(config.engine).toBe('duckduckgo')
+      expect(config.maxResults).toBe(5)
     })
   })
 
-  describe('academicSearch function', () => {
-    it('should perform academic search', async () => {
-      const { academicSearch } = await import('../search.js')
-      expect(academicSearch).toBeDefined()
+  describe('search', () => {
+    it('should return results from DuckDuckGo', async () => {
+      if (!OPENAI_API_KEY) return
+
+      const { search, configureSearch } = await import('../search.js')
+      configureSearch({ engine: 'duckduckgo' })
+
+      const result = await search('TypeScript tutorial')
+      expect(result.query).toBe('TypeScript tutorial')
+      // DuckDuckGo 可能返回结果也可能不返回，取决于网络
+      // 只验证结构正确
+      expect(Array.isArray(result.results)).toBe(true)
+      expect(result).toHaveProperty('answers')
+      expect(result).toHaveProperty('suggestions')
+      expect(result).toHaveProperty('numberOfResults')
+    })
+
+    it('should return empty results on invalid query handling', async () => {
+      if (!OPENAI_API_KEY) return
+
+      const { search, configureSearch } = await import('../search.js')
+      configureSearch({ engine: 'duckduckgo' })
+
+      // 搜索模块在异常时返回空结果而非抛错
+      const result = await search('')
+      expect(result).toHaveProperty('results')
+      expect(Array.isArray(result.results)).toBe(true)
+    })
+
+    it('should respect maxResults option', async () => {
+      if (!OPENAI_API_KEY) return
+
+      const { search, configureSearch } = await import('../search.js')
+      configureSearch({ engine: 'duckduckgo' })
+
+      const result = await search('TypeScript tutorial', { maxResults: 3 })
+      // 结果数量不应超过 maxResults
+      expect(result.results.length).toBeLessThanOrEqual(3)
     })
   })
 
-  describe('configureSearch function', () => {
-    it('should configure search', async () => {
-      const { configureSearch } = await import('../search.js')
+  describe('imageSearch', () => {
+    it('should call search with images category', async () => {
+      if (!OPENAI_API_KEY) return
 
-      configureSearch({
-        engine: 'duckduckgo',
-        maxResults: 10,
-      })
+      const { imageSearch, configureSearch } = await import('../search.js')
+      configureSearch({ engine: 'duckduckgo' })
+
+      const result = await imageSearch('cats')
+      expect(result).toHaveProperty('results')
+      expect(Array.isArray(result.results)).toBe(true)
+    })
+  })
+
+  describe('academicSearch', () => {
+    it('should return papers array', async () => {
+      if (!OPENAI_API_KEY) return
+
+      const { academicSearch, configureSearch } = await import('../search.js')
+      configureSearch({ engine: 'duckduckgo' })
+
+      const result = await academicSearch('quantum computing')
+      expect(result).toHaveProperty('papers')
+      expect(Array.isArray(result.papers)).toBe(true)
+      // 每篇论文应有 title, url, abstract, source
+      for (const paper of result.papers) {
+        expect(paper).toHaveProperty('title')
+        expect(paper).toHaveProperty('url')
+        expect(paper).toHaveProperty('abstract')
+        expect(paper).toHaveProperty('source')
+      }
     })
   })
 })

@@ -2,7 +2,7 @@
  * 工具执行器 - 解析、执行工具调用
  */
 
-import type { ToolContext } from '@nexusmind/types'
+import type { ToolContext } from '@colomind/types'
 import { toolRegistry } from './registry.js'
 
 export interface ToolCall {

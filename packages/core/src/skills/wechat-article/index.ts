@@ -214,7 +214,7 @@ function extractContentWithImages(
 
 async function downloadImage(url: string): Promise<string | undefined> {
   try {
-    const tmpDir = join(tmpdir(), 'nexusmind-wechat')
+    const tmpDir = join(tmpdir(), 'colomind-wechat')
     if (!existsSync(tmpDir)) {
       mkdirSync(tmpDir, { recursive: true })
     }

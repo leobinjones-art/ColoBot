@@ -1,7 +1,7 @@
 /**
- * 配置管理测试
+ * 配置管理测试 — 无 mock
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   ConfigManager,
   DEFAULT_CONFIG,
@@ -9,18 +9,7 @@ import {
   applyCLIOptions,
   getModelCapabilities,
   type CoreConfig,
-  type ModelConfig,
-  type SearchConfig,
-  type SubAgentConfig,
 } from '../config/index.js'
-
-// Mock fs
-vi.mock('fs', () => ({
-  existsSync: vi.fn(() => false),
-  readFileSync: vi.fn(() => '{}'),
-  writeFileSync: vi.fn(),
-  mkdirSync: vi.fn(),
-}))
 
 describe('ConfigManager', () => {
   describe('DEFAULT_CONFIG', () => {
@@ -184,7 +173,7 @@ describe('ConfigManager', () => {
       const chunking = manager.getRecommendedChunking()
 
       expect(chunking.chunkSize).toBe(150000)
-      expect(chunking.overlap).toBe(1500) // 1%
+      expect(chunking.overlap).toBe(1500)
       expect(chunking.maxParallel).toBe(3)
     })
   })
@@ -245,12 +234,9 @@ describe('parseCLIArgs', () => {
 
   it('should parse multiple options', () => {
     const options = parseCLIArgs([
-      '-p',
-      'anthropic',
-      '-m',
-      'claude-sonnet-4-20250514',
-      '--max-concurrent',
-      '3',
+      '-p', 'anthropic',
+      '-m', 'claude-sonnet-4-20250514',
+      '--max-concurrent', '3',
     ])
 
     expect(options.provider).toBe('anthropic')

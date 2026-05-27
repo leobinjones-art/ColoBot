@@ -16,7 +16,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
 
   describe('basic runtime', () => {
     it('should create runtime with MockProvider', async () => {
-      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@nexusmind/core')
+      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@colomind/core')
 
       const runtime = new AgentRuntime({
         llm: new MockProvider(),
@@ -33,7 +33,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
     })
 
     it('should run simple conversation', async () => {
-      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@nexusmind/core')
+      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@colomind/core')
 
       const runtime = new AgentRuntime({
         llm: new MockProvider(),
@@ -57,7 +57,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
     })
 
     it('should maintain conversation history', async () => {
-      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@nexusmind/core')
+      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@colomind/core')
 
       const memory = new InMemoryStore()
       const runtime = new AgentRuntime({
@@ -91,7 +91,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
     })
 
     it('should use system prompt', async () => {
-      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@nexusmind/core')
+      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@colomind/core')
 
       const runtime = new AgentRuntime({
         llm: new MockProvider(),
@@ -115,7 +115,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
     })
 
     it('should use soul config', async () => {
-      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@nexusmind/core')
+      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@colomind/core')
 
       const runtime = new AgentRuntime({
         llm: new MockProvider(),
@@ -144,7 +144,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
 
   describe('streaming', () => {
     it('should support streaming output', async () => {
-      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@nexusmind/core')
+      const { AgentRuntime, MockProvider, InMemoryStore } = await import('@colomind/core')
 
       const runtime = new AgentRuntime({
         llm: new MockProvider(),
@@ -175,7 +175,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
   describe('with tools', () => {
     it('should execute tool calls', async () => {
       const { AgentRuntime, MockProvider, InMemoryStore, toolRegistry, registerBuiltinTools } =
-        await import('@nexusmind/core')
+        await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -206,7 +206,7 @@ describe('E2E: AgentRuntime Full Flow', () => {
         }),
       } as Response)
 
-      const { OpenAIProvider } = await import('@nexusmind/core')
+      const { OpenAIProvider } = await import('@colomind/core')
       const runtime = new AgentRuntime({
         llm: new OpenAIProvider({ apiKey: 'test' }),
         memory: new InMemoryStore(),
@@ -242,7 +242,7 @@ describe('E2E: Tool Execution', () => {
 
   describe('builtin tools', () => {
     it('should register all builtin tools', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -268,7 +268,7 @@ describe('E2E: Tool Execution', () => {
     })
 
     it('should execute echo tool', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -285,7 +285,7 @@ describe('E2E: Tool Execution', () => {
     })
 
     it('should execute calculate tool', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -314,7 +314,7 @@ describe('E2E: Tool Execution', () => {
     })
 
     it('should execute json_parse tool', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -333,7 +333,7 @@ describe('E2E: Tool Execution', () => {
     })
 
     it('should execute csv_parse tool', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -355,7 +355,7 @@ describe('E2E: Tool Execution', () => {
 
   describe('tool registry', () => {
     it('should register and unregister tools', async () => {
-      const { toolRegistry } = await import('@nexusmind/core')
+      const { toolRegistry } = await import('@colomind/core')
 
       toolRegistry.clear()
 
@@ -375,7 +375,7 @@ describe('E2E: Tool Execution', () => {
     })
 
     it('should get OpenAI format tools', async () => {
-      const { toolRegistry, registerBuiltinTools } = await import('@nexusmind/core')
+      const { toolRegistry, registerBuiltinTools } = await import('@colomind/core')
 
       toolRegistry.clear()
       registerBuiltinTools()
@@ -396,7 +396,7 @@ describe('E2E: Tool Execution', () => {
 describe('E2E: Memory System', () => {
   describe('InMemoryStore', () => {
     it('should store and retrieve messages', async () => {
-      const { InMemoryStore } = await import('@nexusmind/core')
+      const { InMemoryStore } = await import('@colomind/core')
 
       const store = new InMemoryStore()
 
@@ -412,7 +412,7 @@ describe('E2E: Memory System', () => {
     })
 
     it('should clear history', async () => {
-      const { InMemoryStore } = await import('@nexusmind/core')
+      const { InMemoryStore } = await import('@colomind/core')
 
       const store = new InMemoryStore()
 
@@ -424,7 +424,7 @@ describe('E2E: Memory System', () => {
     })
 
     it('should handle multiple sessions', async () => {
-      const { InMemoryStore } = await import('@nexusmind/core')
+      const { InMemoryStore } = await import('@colomind/core')
 
       const store = new InMemoryStore()
 
@@ -451,7 +451,7 @@ describe('E2E: Search System', () => {
   })
 
   it('should configure search', async () => {
-    const { configureSearch } = await import('@nexusmind/core')
+    const { configureSearch } = await import('@colomind/core')
 
     configureSearch({ engine: 'duckduckgo', maxResults: 5 })
 
@@ -460,7 +460,7 @@ describe('E2E: Search System', () => {
   })
 
   it('should perform search', async () => {
-    const { search, configureSearch } = await import('@nexusmind/core')
+    const { search, configureSearch } = await import('@colomind/core')
 
     // Mock fetch for search
     const mockFetch = vi.mocked(fetch)
@@ -487,17 +487,17 @@ describe('E2E: Search System', () => {
 
 describe('E2E: SubAgent System', () => {
   beforeEach(async () => {
-    const { clearSubAgents } = await import('@nexusmind/core')
+    const { clearSubAgents } = await import('@colomind/core')
     clearSubAgents()
   })
 
   afterEach(async () => {
-    const { clearSubAgents } = await import('@nexusmind/core')
+    const { clearSubAgents } = await import('@colomind/core')
     clearSubAgents()
   })
 
   it('should spawn multiple sub agents', async () => {
-    const { spawnSubAgent, listSubAgents, clearSubAgents } = await import('@nexusmind/core')
+    const { spawnSubAgent, listSubAgents, clearSubAgents } = await import('@colomind/core')
 
     const agent1 = spawnSubAgent({
       name: 'agent-1',
@@ -528,7 +528,7 @@ describe('E2E: SubAgent System', () => {
 
   it('should manage agent lifecycle', async () => {
     const { spawnSubAgent, getSubAgent, destroySubAgent, clearSubAgents } =
-      await import('@nexusmind/core')
+      await import('@colomind/core')
 
     const agent = spawnSubAgent({
       name: 'test-agent',
@@ -547,7 +547,7 @@ describe('E2E: SubAgent System', () => {
 
   it('should enforce tool whitelist', async () => {
     const { spawnSubAgent, isToolAllowed, setGlobalAllowedTools, clearSubAgents } =
-      await import('@nexusmind/core')
+      await import('@colomind/core')
 
     setGlobalAllowedTools(['read_file', 'write_file'])
 
@@ -570,7 +570,7 @@ describe('E2E: SubAgent System', () => {
 
 describe('E2E: Config System', () => {
   it('should initialize config', async () => {
-    const { initConfig, DEFAULT_CONFIG } = await import('@nexusmind/core')
+    const { initConfig, DEFAULT_CONFIG } = await import('@colomind/core')
 
     const config = initConfig()
 
@@ -579,7 +579,7 @@ describe('E2E: Config System', () => {
   })
 
   it('should manage model config', async () => {
-    const { ConfigManager } = await import('@nexusmind/core')
+    const { ConfigManager } = await import('@colomind/core')
 
     const manager = new ConfigManager()
 
@@ -591,7 +591,7 @@ describe('E2E: Config System', () => {
   })
 
   it('should manage search config', async () => {
-    const { ConfigManager } = await import('@nexusmind/core')
+    const { ConfigManager } = await import('@colomind/core')
 
     const manager = new ConfigManager()
 
@@ -603,7 +603,7 @@ describe('E2E: Config System', () => {
   })
 
   it('should manage subAgent config', async () => {
-    const { ConfigManager } = await import('@nexusmind/core')
+    const { ConfigManager } = await import('@colomind/core')
 
     const manager = new ConfigManager()
 
@@ -615,7 +615,7 @@ describe('E2E: Config System', () => {
   })
 
   it('should get model capabilities', async () => {
-    const { ConfigManager } = await import('@nexusmind/core')
+    const { ConfigManager } = await import('@colomind/core')
 
     const manager = new ConfigManager()
 
@@ -634,7 +634,7 @@ describe('E2E: Config System', () => {
 
 describe('E2E: Chunking System', () => {
   it('should chunk by bytes', async () => {
-    const { readChunksByBytes } = await import('@nexusmind/core')
+    const { readChunksByBytes } = await import('@colomind/core')
 
     const content = 'a'.repeat(1000)
     const chunks: any[] = []
@@ -652,7 +652,7 @@ describe('E2E: Chunking System', () => {
   })
 
   it('should merge text results', async () => {
-    const { mergeText } = await import('@nexusmind/core')
+    const { mergeText } = await import('@colomind/core')
 
     const results = [
       { chunkIndex: 0, success: true, result: 'Part 1. ' },
@@ -667,7 +667,7 @@ describe('E2E: Chunking System', () => {
   })
 
   it('should merge array results', async () => {
-    const { mergeArray } = await import('@nexusmind/core')
+    const { mergeArray } = await import('@colomind/core')
 
     const results = [
       { chunkIndex: 0, success: true, result: [1, 2, 3] },
@@ -679,7 +679,7 @@ describe('E2E: Chunking System', () => {
   })
 
   it('should calculate stats', async () => {
-    const { mergeStats } = await import('@nexusmind/core')
+    const { mergeStats } = await import('@colomind/core')
 
     const results = [
       { chunkIndex: 0, success: true, result: 'ok' },
@@ -698,14 +698,14 @@ describe('E2E: Chunking System', () => {
 
 describe('E2E: Task Breakdown', () => {
   it('should have breakdownTask function', async () => {
-    const { breakdownTask } = await import('@nexusmind/core')
+    const { breakdownTask } = await import('@colomind/core')
 
     expect(breakdownTask).toBeDefined()
     expect(typeof breakdownTask).toBe('function')
   })
 
   it('should analyze task structure', async () => {
-    const { breakdownTask, MockProvider } = await import('@nexusmind/core')
+    const { breakdownTask, MockProvider } = await import('@colomind/core')
 
     // breakdownTask 需要 parentId, llm, deps 参数
     const llm = new MockProvider()

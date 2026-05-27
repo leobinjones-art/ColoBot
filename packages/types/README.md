@@ -1,17 +1,17 @@
-# @nexusmind/types
+# @colomind/types
 
-NexusMind 共享类型定义包。
+ColoMind 共享类型定义包。
 
 ## 安装
 
 ```bash
-npm install @nexusmind/types
+npm install @colomind/types
 ```
 
 ## 使用
 
 ```typescript
-import type { LLMMessage, SubAgentConfig, SopStep } from '@nexusmind/types'
+import type { LLMMessage, SubAgentConfig, SopStep } from '@colomind/types'
 
 const message: LLMMessage = {
   role: 'user',

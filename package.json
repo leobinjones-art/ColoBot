@@ -1,7 +1,7 @@
 {
-  "name": "nexusmind-monorepo",
+  "name": "colomind-monorepo",
   "version": "0.4.0",
-  "description": "NexusMind - 自带安全守护的 AI Agent 框架",
+  "description": "ColoMind - 自带安全守护的 AI Agent 框架",
   "license": "AGPL-3.0",
   "type": "module",
   "private": true,
@@ -11,9 +11,9 @@
     "packages/sentinel",
     "packages/core",
     "packages/tui",
-    "packages/nexusmind",
+    "packages/colomind",
     "packages/assistant",
-    "packages/frontend"
+    "packages/desktop"
   ],
   "scripts": {
     "build": "npm run build:packages",
@@ -21,12 +21,16 @@
     "dev:frontend": "npm run dev -w packages/frontend",
     "build:frontend": "npm run build -w packages/frontend",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint packages/*/src --ext .ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^2.0.0",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }

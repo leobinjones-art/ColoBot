@@ -1,5 +1,5 @@
 /**
- * LLM 抽象层 - 支持 OpenAI / Anthropic / MiniMax / Mock
+ * LLM 抽象层 - 支持 OpenAI / Anthropic / Mock
  *
  * Fallback 特性：
  * - 链式 fallback：primary → fallback1 → fallback2 → ...
@@ -7,15 +7,15 @@
  * - 重试 + exponential backoff
  */
 
-import type { LLMMessage, ContentBlock } from '@nexusmind/types'
+import type { LLMMessage, ContentBlock } from '@colomind/types'
 import {
   getMockLLM,
   getLlmProvider,
   getOpenAIApiKey,
   getAnthropicApiKey,
-  getMinimaxApiKey,
   type ProviderType,
 } from '../config/llm-settings.js'
+import { OpenAIProvider, type OpenAIConfig } from '../providers/openai.js'
 
 export interface LLMOptions {
   temperature?: number
@@ -43,13 +43,11 @@ export interface LLMStreamChunk {
 const DEFAULT_MODELS: Record<ProviderType, string> = {
   openai: 'gpt-4o',
   anthropic: 'claude-sonnet-4-20250514',
-  minimax: 'MiniMax-M2.7-highspeed',
 }
 
 const API_ENDPOINTS: Record<ProviderType, string> = {
   openai: 'https://api.openai.com/v1/chat/completions',
   anthropic: 'https://api.anthropic.com/v1/messages',
-  minimax: 'https://api.minimaxi.com/anthropic/v1/messages',
 }
 
 function getDefaultModel(provider: ProviderType): string {
@@ -92,7 +90,7 @@ function parseFallbackChain(
 }
 
 function isProvider(s: string): s is ProviderType {
-  return ['openai', 'anthropic', 'minimax'].includes(s)
+  return ['openai', 'anthropic'].includes(s)
 }
 
 function sleep(ms: number): Promise<void> {
@@ -116,8 +114,6 @@ async function executeChat(
       return chatOpenAI(messages, { ...options, model: modelId })
     case 'anthropic':
       return chatAnthropic(messages, { ...options, model: modelId })
-    case 'minimax':
-      return chatMinimax(messages, { ...options, model: modelId })
   }
 }
 
@@ -133,9 +129,6 @@ async function* executeChatStream(
       break
     case 'anthropic':
       yield* chatStreamAnthropic(messages, { ...options, model: modelId })
-      break
-    case 'minimax':
-      yield* chatStreamMinimax(messages, { ...options, model: modelId })
       break
   }
 }
@@ -264,7 +257,7 @@ function mockChat(messages: LLMMessage[]): LLMResponse {
     content = `[Mock Skill Response] 处理消息: "${text.slice(0, 40)}..." - Skill 执行成功`
   } else if (text.includes('介绍')) {
     content =
-      '我是 NexusMind，一个全模态 AI 助手，支持文本/图片/音频/视频。在 MOCK_LLM 模式下运行。'
+      '我是 ColoMind，一个全模态 AI 助手，支持文本/图片/音频/视频。在 MOCK_LLM 模式下运行。'
   } else if (text.includes('记住')) {
     content = '好的，我已经记住了这个信息。'
   } else {
@@ -501,111 +494,11 @@ async function* chatStreamAnthropic(
   }
 }
 
-// ─── MiniMax ───────────────────────────────────────────────────────
-
-async function chatMinimax(messages: LLMMessage[], options: LLMOptions): Promise<LLMResponse> {
-  const apiKey = getMinimaxApiKey()
-  if (!apiKey) throw new Error('MINIMAX_API_KEY not set')
-
-  const model = options.model || getDefaultModel('minimax')
-  const endpoint = getApiEndpoint('minimax')
-  const systemMsg = messages.find((m) => m.role === 'system')
-  const nonSystem = messages.filter((m) => m.role !== 'system')
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      messages: nonSystem,
-      system: systemMsg?.content,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 4096,
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`MiniMax API error: ${res.status} ${err}`)
-  }
-
-  const data = (await res.json()) as { content: Array<{ type: string; text?: string }> }
-  const textBlock = data.content.find((b) => b.type === 'text')
-  return { content: textBlock?.text ?? '', raw: data }
-}
-
-async function* chatStreamMinimax(
-  messages: LLMMessage[],
-  options: LLMOptions,
-): AsyncGenerator<LLMStreamChunk> {
-  const apiKey = getMinimaxApiKey()
-  if (!apiKey) throw new Error('MINIMAX_API_KEY not set')
-
-  const model = options.model || getDefaultModel('minimax')
-  const endpoint =
-    process.env.MINIMAX_STREAM_ENDPOINT || 'https://api.minimaxi.com/v1/text/chatcompletion_v2'
-  const systemMsg = messages.find((m) => m.role === 'system')
-  const nonSystem = messages.filter((m) => m.role !== 'system')
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: nonSystem,
-      system_instruction: systemMsg?.content,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 4096,
-      stream: true,
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`MiniMax API error: ${res.status} ${err}`)
-  }
-
-  if (!res.body) throw new Error('No response body for streaming')
-
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        if (!line.trim() || line.startsWith('data:')) continue
-        try {
-          const chunk = JSON.parse(line) as { choices?: Array<{ delta?: { text?: string } }> }
-          const text = chunk.choices?.[0]?.delta?.text
-          if (text) yield { content: text, done: false }
-        } catch {
-          /* skip */
-        }
-      }
-    }
-    yield { content: '', done: true }
-  } finally {
-    try {
-      reader.releaseLock()
-    } catch {
-      /* */
-    }
-  }
+/**
+ * 创建 OpenAI Provider（测试和直接使用）
+ */
+export function createOpenAIProvider(config: OpenAIConfig): OpenAIProvider {
+  return new OpenAIProvider(config)
 }
 
 // Re-export provider type

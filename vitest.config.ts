@@ -8,7 +8,18 @@ export default defineConfig({
     testTimeout: 30000,
     exclude: ['**/node_modules/**', '**/_legacy/**', '**/dist/**', '**/coverage/**'],
     coverage: {
-      exclude: ['**/node_modules/**', '**/_legacy/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
+      provider: 'v8',
+      include: [
+        'packages/*/dist/**/*.js',
+      ],
+      exclude: [
+        '**/node_modules/**',
+        '**/_legacy/**',
+        '**/coverage/**',
+        '**/*.d.ts',
+        '**/__tests__/**',
+        '**/*.test.ts',
+      ],
     },
   },
 })

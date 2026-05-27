@@ -2,7 +2,7 @@
  * 网络搜索工具
  */
 
-import type { ToolContext } from '@nexusmind/types'
+import type { ToolContext } from '@colomind/types'
 import { toolRegistry } from './registry.js'
 import { search, imageSearch, videoSearch, academicSearch } from '../search.js'
 

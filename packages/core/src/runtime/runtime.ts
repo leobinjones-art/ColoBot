@@ -1,10 +1,10 @@
 /**
- * NexusMind Runtime 实现
+ * ColoMind Runtime 实现
  */
 
-import type { LLMMessage, ContentBlock } from '@nexusmind/types'
+import type { LLMMessage, ContentBlock } from '@colomind/types'
 import type {
-  NexusMindRuntime,
+  ColoMindRuntime,
   RuntimeDependencies,
   ChatOptions,
   AgentConfig,
@@ -18,7 +18,7 @@ import type {
   Skill,
 } from './interface.js'
 
-export class NexusMindRuntimeImpl implements NexusMindRuntime {
+export class ColoMindRuntimeImpl implements ColoMindRuntime {
   constructor(private deps: RuntimeDependencies) {}
 
   // === 状态管理 ===
@@ -114,9 +114,44 @@ export class NexusMindRuntimeImpl implements NexusMindRuntime {
     metadata?: Record<string, unknown>,
   ): Promise<void> {
     await this.deps.memoryStore.add(agentId, key, content, metadata)
+
+    // 同步写入语义空间记忆
+    if (this.deps.spaceMemory) {
+      try {
+        await this.deps.spaceMemory.ingest(content, {
+          sourceId: key,
+          importance: (metadata?.importance as number) ?? 0.5,
+          tags: metadata?.tags as string[] ?? [],
+        })
+      } catch (err) {
+        // 空间记忆写入失败不影响主流程
+        console.warn('[Runtime] Space memory ingest failed:', err)
+      }
+    }
   }
 
   async searchMemory(agentId: string, query: string, limit?: number): Promise<MemoryResult[]> {
+    // 优先使用语义空间记忆检索
+    if (this.deps.spaceMemory) {
+      try {
+        const spaceResult = await this.deps.spaceMemory.recall({ query, maxResults: limit || 10 })
+        if (spaceResult.results.length > 0) {
+          return spaceResult.results.map(r => ({
+            content: r.node.compressedContent ?? r.node.content,
+            score: r.score,
+            metadata: {
+              roomName: spaceResult.roomName,
+              roomId: r.node.roomId,
+              sourceId: r.node.sourceId,
+              tags: r.node.tags,
+            },
+          }))
+        }
+      } catch (err) {
+        console.warn('[Runtime] Space memory recall failed, falling back to text search:', err)
+      }
+    }
+
     return this.deps.memoryStore.search(agentId, query, limit || 10)
   }
 

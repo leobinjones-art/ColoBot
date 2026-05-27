@@ -5,7 +5,7 @@
  * 注意：不支持向量检索，记忆搜索降级为文本匹配
  */
 
-import type { LLMMessage } from '@nexusmind/types'
+import type { LLMMessage } from '@colomind/types'
 import type { MemoryStore } from '../runtime/types.js'
 import Database from 'better-sqlite3'
 import { existsSync, mkdirSync } from 'fs'
@@ -29,8 +29,8 @@ export class SQLiteStore implements MemoryStore {
   private initialized: boolean = false
 
   constructor(config: SQLiteStoreConfig = {}) {
-    const dbPath = resolve(config.path || './data/nexusmind.db')
-    this.tablePrefix = config.tablePrefix || 'nexusmind'
+    const dbPath = resolve(config.path || './data/colomind.db')
+    this.tablePrefix = config.tablePrefix || 'colomind'
 
     // 确保目录存在
     const dbDir = dirname(dbPath)

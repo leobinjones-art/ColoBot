@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { InspirationRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Inspiration')
@@ -54,7 +55,7 @@ export function getInspiration(
   const database = db || getDb()
   const row = database
     .prepare(`SELECT * FROM assistant_inspirations WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as any
+    .get(id, userId) as InspirationRow
   return row ? rowToInspiration(row) : null
 }
 
@@ -69,7 +70,7 @@ export function listInspirations(
 ): Inspiration[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_inspirations WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (tag) {
     sql += ` AND tags LIKE ?`
@@ -79,7 +80,7 @@ export function listInspirations(
   sql += ` ORDER BY created_at DESC LIMIT ?`
   values.push(limit)
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as InspirationRow[]
   return rows.map(rowToInspiration)
 }
 
@@ -99,7 +100,7 @@ export function searchInspirations(
     ORDER BY created_at DESC
   `,
     )
-    .all(userId, `%${query}%`) as any[]
+    .all(userId, `%${query}%`) as InspirationRow[]
   return rows.map(rowToInspiration)
 }
 
@@ -120,7 +121,7 @@ export function deleteInspiration(id: string, userId: string, db?: Database.Data
   return deleted
 }
 
-function rowToInspiration(row: any): Inspiration {
+function rowToInspiration(row: InspirationRow): Inspiration {
   return {
     id: row.id,
     userId: row.user_id,

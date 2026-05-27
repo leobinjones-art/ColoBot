@@ -1,0 +1,15 @@
+cargo:rerun-if-env-changed=TAURI_CONFIG
+cargo:rustc-check-cfg=cfg(desktop)
+cargo:rustc-cfg=desktop
+cargo:rustc-check-cfg=cfg(mobile)
+cargo:rerun-if-changed=/Users/c1/dev/nexusmind/packages/desktop/src-tauri/tauri.conf.json
+cargo:rustc-env=TAURI_ANDROID_PACKAGE_NAME_APP_NAME=desktop
+cargo:rustc-env=TAURI_ANDROID_PACKAGE_NAME_PREFIX=com_colomind
+cargo:rustc-check-cfg=cfg(dev)
+cargo:PERMISSION_FILES_PATH=/Users/c1/dev/nexusmind/packages/desktop/src-tauri/target/debug/build/nexusmind-desktop-cc487003e558b920/out/app-manifest/__app__-permission-files
+cargo:rerun-if-changed=capabilities
+cargo:rerun-if-env-changed=REMOVE_UNUSED_COMMANDS
+cargo:rustc-env=TAURI_ENV_TARGET_TRIPLE=aarch64-apple-darwin
+cargo:rerun-if-changed=../sidecar-start.js
+cargo:rerun-if-changed=../sidecar/index.ts
+cargo:rustc-env=MACOSX_DEPLOYMENT_TARGET=10.13

@@ -1,23 +1,23 @@
-# @nexusmind/tui
+# @colomind/tui
 
-NexusMind 终端界面包。
+ColoMind 终端界面包。
 
 ## 安装
 
 ```bash
-npm install @nexusmind/tui
+npm install @colomind/tui
 ```
 
 ## CLI 使用
 
 ```bash
-npx nexusmind
+npx colomind
 ```
 
 ## 编程使用
 
 ```typescript
-import { TUI } from '@nexusmind/tui'
+import { TUI } from '@colomind/tui'
 
 const tui = new TUI()
 
@@ -31,7 +31,7 @@ await tui.start('My Bot')
 
 // 运行交互循环
 await tui.run(async (message) => {
-  // 调用 @nexusmind/core 处理消息
+  // 调用 @colomind/core 处理消息
   return `回复: ${message}`
 })
 ```
@@ -41,7 +41,7 @@ await tui.run(async (message) => {
 ### ChatUI - 聊天界面
 
 ```typescript
-import { ChatUI } from '@nexusmind/tui'
+import { ChatUI } from '@colomind/tui'
 
 const chat = new ChatUI()
 chat.addMessage('user', '你好')
@@ -51,7 +51,7 @@ chat.addMessage('assistant', '你好！有什么可以帮助你的？')
 ### CommandPalette - 命令面板
 
 ```typescript
-import { CommandPalette } from '@nexusmind/tui'
+import { CommandPalette } from '@colomind/tui'
 
 const commands = new CommandPalette()
 commands.register('/test', '测试命令', () => console.log('test'))
@@ -62,7 +62,7 @@ commands.showHelp()
 ### StatusBar - 状态栏
 
 ```typescript
-import { StatusBar } from '@nexusmind/tui'
+import { StatusBar } from '@colomind/tui'
 
 const status = new StatusBar()
 status.update('处理中...', '正在生成回复')
@@ -72,7 +72,7 @@ status.clear()
 ### LogPanel - 日志面板
 
 ```typescript
-import { LogPanel } from '@nexusmind/tui'
+import { LogPanel } from '@colomind/tui'
 
 const logs = new LogPanel()
 logs.log('info', '服务启动')
@@ -82,13 +82,13 @@ logs.log('error', '连接失败')
 ## 渲染工具
 
 ```typescript
-import { style, colors, printTitle, printTable, progressBar } from '@nexusmind/tui'
+import { style, colors, printTitle, printTable, progressBar } from '@colomind/tui'
 
 // 样式化文本
 console.log(style('红色加粗', 'red', 'bold'))
 
 // 打印标题
-printTitle('NexusMind')
+printTitle('ColoMind')
 
 // 打印表格
 printTable(
@@ -106,7 +106,7 @@ console.log(progressBar(50, 100))
 ## 输入工具
 
 ```typescript
-import { ask, confirm, select } from '@nexusmind/tui'
+import { ask, confirm, select } from '@colomind/tui'
 
 // 文本输入
 const name = await ask('你的名字: ')

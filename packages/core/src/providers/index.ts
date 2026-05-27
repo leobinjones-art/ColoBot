@@ -4,7 +4,6 @@
 
 export { OpenAIProvider, type OpenAIConfig } from './openai.js'
 export { AnthropicProvider, type AnthropicConfig } from './anthropic.js'
-export { MiniMaxProvider, type MiniMaxConfig } from './minimax.js'
 export { MockProvider, type MockConfig } from './mock.js'
 export {
   chatWithFallback,
@@ -17,16 +16,15 @@ export {
 import type { LLMProvider } from '../runtime/types.js'
 import { OpenAIProvider, type OpenAIConfig } from './openai.js'
 import { AnthropicProvider, type AnthropicConfig } from './anthropic.js'
-import { MiniMaxProvider, type MiniMaxConfig } from './minimax.js'
 import { MockProvider, type MockConfig } from './mock.js'
 
-export type ProviderConfig = OpenAIConfig | AnthropicConfig | MiniMaxConfig | MockConfig
+export type ProviderConfig = OpenAIConfig | AnthropicConfig | MockConfig
 
 /**
  * 创建 LLM Provider
  */
 export function createLLMProvider(
-  provider: 'openai' | 'anthropic' | 'minimax' | 'mock',
+  provider: 'openai' | 'anthropic' | 'mock',
   config: ProviderConfig,
 ): LLMProvider {
   switch (provider) {
@@ -34,8 +32,6 @@ export function createLLMProvider(
       return new OpenAIProvider(config as OpenAIConfig)
     case 'anthropic':
       return new AnthropicProvider(config as AnthropicConfig)
-    case 'minimax':
-      return new MiniMaxProvider(config as MiniMaxConfig)
     case 'mock':
       return new MockProvider(config as MockConfig)
     default:

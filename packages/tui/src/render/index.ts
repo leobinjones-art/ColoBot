@@ -2,7 +2,7 @@
  * 渲染组件
  */
 
-import type { ContentBlock } from '@nexusmind/types'
+import type { ContentBlock } from '@colomind/types'
 
 /**
  * ANSI 颜色代码
@@ -25,8 +25,8 @@ export const colors = {
 /**
  * 样式化文本
  */
-export function style(text: string, ...styles: (keyof typeof colors)[]): string {
-  const codes = styles.map((s) => colors[s]).join('')
+export function style(text: string, ...styles: string[]): string {
+  const codes = styles.map((s) => (colors as Record<string, string>)[s] || '').join('')
   return `${codes}${text}${colors.reset}`
 }
 
@@ -147,3 +147,6 @@ export function progressBar(current: number, total: number, width = 40): string 
 
   return `${colors.cyan}${bar}${colors.reset} ${percentStr}`
 }
+
+// 导出 Markdown 渲染
+export { renderMarkdown, printMarkdown } from './markdown.js'

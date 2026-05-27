@@ -3,7 +3,7 @@
  */
 
 import * as path from 'path'
-import type { ToolContext, LLMMessage, ContentBlock } from '@nexusmind/types'
+import type { ToolContext, LLMMessage, ContentBlock } from '@colomind/types'
 import { toolRegistry } from './registry.js'
 import { parseToolCalls, formatToolResults } from './executor.js'
 import {
@@ -19,9 +19,9 @@ import { Logger } from '../logger.js'
 
 // 子 Agent 日志器 - 写入单独的日志文件
 const logger = new Logger({
-  file: path.join(process.env.HOME || '', '.nexusmind', 'logs', 'subagent.log'),
+  file: path.join(process.env.HOME || '', '.colomind', 'logs', 'subagent.log'),
   prefix: 'subagent',
-  level: (process.env.NEXUSMIND_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
+  level: (process.env.COLOMIND_LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
 })
 
 const ALL_TOOLS = [

@@ -3,7 +3,7 @@
  */
 
 import type { LLMProvider, LLMResponse, LLMStreamChunk } from '../runtime/types.js'
-import type { LLMMessage } from '@nexusmind/types'
+import type { LLMMessage } from '@colomind/types'
 
 export interface MockConfig {
   defaultModel?: string
@@ -30,7 +30,7 @@ export class MockProvider implements LLMProvider {
     if (systemText.includes('Skill')) {
       content = `[Mock Skill Response] 处理消息: "${text.slice(0, 40)}..." - Skill 执行成功`
     } else if (text.includes('介绍')) {
-      content = '我是 NexusMind，一个多模态 AI 助手。当前运行在 Mock 模式。'
+      content = '我是 ColoMind，一个多模态 AI 助手。当前运行在 Mock 模式。'
     } else if (text.includes('记住')) {
       content = '好的，我已经记住了这个信息。'
     } else {

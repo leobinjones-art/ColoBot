@@ -2,12 +2,9 @@
  * Adapters 模块测试
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 
 describe('Adapters Module', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
 
   describe('InMemoryStore', () => {
     it('should store and retrieve data', async () => {

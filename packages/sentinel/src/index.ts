@@ -194,7 +194,7 @@ import { LegalGuidanceGenerator, LegalGuidance } from './legal-guidance.js'
 import { createLogger } from './logger.js'
 import { getLegalKnowledgeBase, type Jurisdiction } from './legal-knowledge.js'
 import { LocalIntentAnalyzer, LocalIntentResult } from './local-intent-analyzer.js'
-import type { LLMProvider } from '@colomind/core'
+import type { LLMProvider } from '@colomind/types'
 
 const logger = createLogger('Sentinel')
 

@@ -13,6 +13,9 @@ export type {
   ToolDefinition,
   ModelConfig,
   LLMConfig,
+  LLMProvider,
+  LLMResponse,
+  LLMStreamChunk,
 } from './llm.js'
 
 // Agent
@@ -67,3 +70,16 @@ export type {
   SessionActionRequest,
   CommandResult,
 } from './watch.js'
+
+// Space Memory
+export type {
+  NodeLifecycle,
+  MemoryNode,
+  Room,
+  Corridor,
+  SpaceMemoryConfig,
+  SpaceQuery,
+  SpaceSearchResult,
+  SpaceRecallResult,
+  IngestOptions,
+} from './space-memory.js'

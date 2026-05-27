@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { GoalRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Goal')
@@ -92,7 +93,7 @@ export function getGoal(id: string, userId: string, db?: Database.Database): Goa
   const database = db || getDb()
   const row = database
     .prepare(`SELECT * FROM assistant_goals WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as any
+    .get(id, userId) as GoalRow
   return row ? rowToGoal(row) : null
 }
 
@@ -102,7 +103,7 @@ export function getGoal(id: string, userId: string, db?: Database.Database): Goa
 export function listGoals(userId: string, status?: GoalStatus, db?: Database.Database): Goal[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_goals WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (status) {
     sql += ` AND status = ?`
@@ -110,7 +111,7 @@ export function listGoals(userId: string, status?: GoalStatus, db?: Database.Dat
   }
 
   sql += ` ORDER BY target_date ASC, created_at DESC`
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as GoalRow[]
   return rows.map(rowToGoal)
 }
 
@@ -131,7 +132,7 @@ export function deleteGoal(id: string, userId: string, db?: Database.Database): 
   return deleted
 }
 
-function rowToGoal(row: any): Goal {
+function rowToGoal(row: GoalRow): Goal {
   return {
     id: row.id,
     userId: row.user_id,

@@ -1,8 +1,9 @@
 /**
- * @nexusmind/assistant 测试
+ * @colomind/assistant 测试
  */
-
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import Database from 'better-sqlite3'
+import { OpenAIProvider } from '@colomind/core'
 import {
   getDb,
   closeDb,
@@ -11,7 +12,12 @@ import {
   createReminder,
   parseTime,
   parseIntent,
+  parseIntentWithLLM,
+  setLLMChat,
 } from '../src/index.js'
+
+const API_KEY = process.env.OPENAI_API_KEY
+const BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
 
 describe('Assistant Package', () => {
   beforeEach(() => {
@@ -125,6 +131,56 @@ describe('Assistant Package', () => {
     it('should return unknown for unrecognized text', () => {
       const intent = parseIntent('随便说点什么')
       expect(intent.type).toBe('unknown')
+    })
+  })
+
+  // ═══════════════════════════════════════════════════════════════
+  // 使用真实 LLM 的意图识别测试
+  // ═══════════════════════════════════════════════════════════════
+
+  describe('Intent Parser（真实 LLM）', () => {
+    it('应该通过 LLM 正确识别模糊意图', async () => {
+      if (!API_KEY) return
+
+      const provider = new OpenAIProvider({
+        apiKey: API_KEY,
+        baseUrl: BASE_URL,
+        model: 'gpt-4o-mini',
+      })
+
+      // 注入真实 LLM 到意图解析器
+      setLLMChat(async (messages, options) => {
+        const response = await provider.chat(messages, options)
+        const content = typeof response.content === 'string' ? response.content : ''
+        return { content }
+      })
+
+      // 模糊表述：规则匹配可能置信度低，LLM 可以判断
+      const intent = await parseIntentWithLLM('我有个重要的事情要记住')
+      expect(intent).toBeDefined()
+      expect(intent.type).not.toBe('unknown')
+      // 应该识别为 todo.add 或 reminder.add
+      expect(['todo.add', 'reminder.add']).toContain(intent.type)
+    })
+
+    it('应该通过 LLM 正确识别日程查询意图', async () => {
+      if (!API_KEY) return
+
+      const provider = new OpenAIProvider({
+        apiKey: API_KEY,
+        baseUrl: BASE_URL,
+        model: 'gpt-4o-mini',
+      })
+
+      setLLMChat(async (messages, options) => {
+        const response = await provider.chat(messages, options)
+        const content = typeof response.content === 'string' ? response.content : ''
+        return { content }
+      })
+
+      const intent = await parseIntentWithLLM('看看最近有什么安排')
+      expect(intent).toBeDefined()
+      expect(intent.type).not.toBe('unknown')
     })
   })
 })

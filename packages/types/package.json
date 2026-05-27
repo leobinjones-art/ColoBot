@@ -1,7 +1,7 @@
 {
-  "name": "@nexusmind/types",
-  "version": "0.1.0",
-  "description": "NexusMind 共享类型定义",
+  "name": "@colomind/types",
+  "version": "0.1.1",
+  "description": "ColoMind shared type definitions",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexusmind/nexusmind.git",
+    "url": "https://github.com/colomind/colomind.git",
     "directory": "packages/types"
   },
   "scripts": {

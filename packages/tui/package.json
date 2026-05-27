@@ -1,13 +1,13 @@
 {
-  "name": "@nexusmind/tui",
-  "version": "0.1.0",
-  "description": "NexusMind 终端界面",
+  "name": "@colomind/tui",
+  "version": "0.1.1",
+  "description": "ColoMind Terminal UI",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "nexusmind-tui": "./dist/cli.js"
+    "colomind-tui": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -20,7 +20,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexusmind/nexusmind.git",
+    "url": "https://github.com/colomind/colomind.git",
     "directory": "packages/tui"
   },
   "scripts": {
@@ -29,8 +29,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexusmind/core": "*",
-    "@nexusmind/types": "*"
+    "@colomind/core": "*",
+    "@colomind/types": "*",
+    "highlight.js": "^11.11.1",
+    "marked": "^15.0.12"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

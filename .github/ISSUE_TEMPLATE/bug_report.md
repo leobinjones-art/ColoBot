@@ -29,7 +29,7 @@ What actually happened.
 - OS: [e.g. macOS 14, Ubuntu 22.04]
 - Node.js version: [e.g. 22.0.0]
 - Database: [e.g. PostgreSQL 18 + pgvector]
-- NexusMind version: [e.g. v0.1.0]
+- ColoMind version: [e.g. v0.1.0]
 
 ## Logs
 

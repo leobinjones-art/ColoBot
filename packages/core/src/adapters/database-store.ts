@@ -2,7 +2,7 @@
  * 数据库存储适配器 - PostgreSQL 持久化
  */
 
-import type { LLMMessage } from '@nexusmind/types'
+import type { LLMMessage } from '@colomind/types'
 import type { MemoryStore } from '../runtime/types.js'
 import { initDb, query } from '../memory/db.js'
 
@@ -31,7 +31,7 @@ export class DatabaseStore implements MemoryStore {
   private initialized: boolean = false
 
   constructor(config: DatabaseStoreConfig = {}) {
-    this.tablePrefix = config.tablePrefix || 'nexusmind'
+    this.tablePrefix = config.tablePrefix || 'colomind'
 
     // 初始化数据库连接
     initDb({

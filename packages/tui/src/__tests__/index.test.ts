@@ -1,11 +1,69 @@
 /**
- * @nexusmind/tui 测试
+ * @colomind/tui 测试
+ * 使用可写流捕获输出（替代 vi.spyOn）
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { Writable } from 'node:stream'
 
-describe('@nexusmind/tui', () => {
+// 可写流捕获（替代 vi.spyOn(process.stdout, 'write')）
+function createOutputCapture() {
+  const chunks: string[] = []
+  const stream = new Writable({
+    write(chunk: Buffer, _encoding: string, callback: () => void) {
+      chunks.push(chunk.toString())
+      callback()
+    },
+  })
+  return {
+    stream,
+    getOutput: () => chunks.join(''),
+    getChunks: () => [...chunks],
+    clear: () => { chunks.length = 0 },
+  }
+}
+
+// console 输出捕获（替代 vi.spyOn(console, 'log')）
+function createConsoleCapture() {
+  const logs: string[] = []
+  const errors: string[] = []
+  const originalLog = console.log
+  const originalError = console.error
+  const originalClear = console.clear
+
+  const capture = {
+    logs,
+    errors,
+    clearCalled: false,
+    logCount: () => logs.length,
+    errorCount: () => errors.length,
+    wasLogCalled: () => logs.length > 0,
+    wasErrorCalled: () => errors.length > 0,
+    wasClearCalled: () => capture.clearCalled,
+    restore: () => {
+      console.log = originalLog
+      console.error = originalError
+      console.clear = originalClear
+    },
+  }
+
+  console.log = (...args: any[]) => {
+    logs.push(args.map(a => typeof a === 'string' ? a : String(a)).join(' '))
+  }
+  console.error = (...args: any[]) => {
+    errors.push(args.map(a => typeof a === 'string' ? a : String(a)).join(' '))
+  }
+  console.clear = () => {
+    capture.clearCalled = true
+  }
+
+  return capture
+}
+
+describe('@colomind/tui', () => {
+  let consoleCapture: ReturnType<typeof createConsoleCapture>
+
   beforeEach(() => {
-    vi.clearAllMocks()
+    consoleCapture = createConsoleCapture()
   })
 
   describe('style and colors', () => {
@@ -44,74 +102,59 @@ describe('@nexusmind/tui', () => {
     it('should print title', async () => {
       const { printTitle } = await import('../render/index.js')
 
-      // Mock console.log
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       printTitle('Test Title')
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should print divider', async () => {
       const { printDivider } = await import('../render/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       printDivider('-', 40)
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should print message', async () => {
       const { printMessage } = await import('../render/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       printMessage('user', 'Hello')
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should print error', async () => {
       const { printError } = await import('../render/index.js')
 
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       printError('Test error')
-      expect(errorSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasErrorCalled()).toBe(true)
 
-      errorSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should print success', async () => {
       const { printSuccess } = await import('../render/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       printSuccess('Test success')
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should print warning', async () => {
       const { printWarning } = await import('../render/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       printWarning('Test warning')
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should print table', async () => {
       const { printTable } = await import('../render/index.js')
-
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       printTable(
         ['Name', 'Value'],
@@ -120,9 +163,9 @@ describe('@nexusmind/tui', () => {
           ['Item2', '200'],
         ],
       )
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
   })
 
@@ -137,54 +180,55 @@ describe('@nexusmind/tui', () => {
     it('should add messages', async () => {
       const { ChatUI } = await import('../components/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       const chat = new ChatUI('Test Chat')
       chat.addMessage('user', 'Hello')
       chat.addMessage('assistant', 'Hi there')
 
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should show typing indicator', async () => {
       const { ChatUI } = await import('../components/index.js')
 
-      const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+      const output = createOutputCapture()
+      // 临时替换 stdout.write
+      const originalWrite = process.stdout.write
+      process.stdout.write = output.stream.write.bind(output.stream)
 
       const chat = new ChatUI()
       chat.showTyping()
 
-      expect(writeSpy).toHaveBeenCalled()
+      expect(output.getChunks().length).toBeGreaterThan(0)
 
-      writeSpy.mockRestore()
+      process.stdout.write = originalWrite
     })
 
     it('should hide typing indicator', async () => {
       const { ChatUI } = await import('../components/index.js')
 
-      const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+      const output = createOutputCapture()
+      const originalWrite = process.stdout.write
+      process.stdout.write = output.stream.write.bind(output.stream)
 
       const chat = new ChatUI()
       chat.hideTyping()
 
-      expect(writeSpy).toHaveBeenCalled()
+      expect(output.getChunks().length).toBeGreaterThan(0)
 
-      writeSpy.mockRestore()
+      process.stdout.write = originalWrite
     })
 
     it('should clear history', async () => {
       const { ChatUI } = await import('../components/index.js')
 
-      const clearSpy = vi.spyOn(console, 'clear').mockImplementation(() => {})
-
       const chat = new ChatUI()
       chat.clear()
 
-      expect(clearSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasClearCalled()).toBe(true)
 
-      clearSpy.mockRestore()
+      consoleCapture.restore()
     })
   })
 
@@ -201,7 +245,8 @@ describe('@nexusmind/tui', () => {
       const { CommandPalette } = await import('../components/index.js')
 
       const commands = new CommandPalette()
-      const handler = vi.fn()
+      let handlerCalled = false
+      const handler = () => { handlerCalled = true }
 
       commands.register('/test', 'Test command', handler)
       expect(commands.list()).toContain('/test')
@@ -210,14 +255,15 @@ describe('@nexusmind/tui', () => {
     it('should execute command', async () => {
       const { CommandPalette } = await import('../components/index.js')
 
+      let handlerCalled = false
       const commands = new CommandPalette()
-      const handler = vi.fn()
+      const handler = () => { handlerCalled = true }
 
       commands.register('/test', 'Test command', handler)
       const result = commands.execute('/test')
 
       expect(result).toBe(true)
-      expect(handler).toHaveBeenCalled()
+      expect(handlerCalled).toBe(true)
     })
 
     it('should return false for unknown command', async () => {
@@ -232,15 +278,13 @@ describe('@nexusmind/tui', () => {
     it('should show help', async () => {
       const { CommandPalette } = await import('../components/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       const commands = new CommandPalette()
       commands.register('/test', 'Test command', () => {})
       commands.showHelp()
 
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
   })
 
@@ -255,27 +299,31 @@ describe('@nexusmind/tui', () => {
     it('should update status', async () => {
       const { StatusBar } = await import('../components/index.js')
 
-      const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+      const output = createOutputCapture()
+      const originalWrite = process.stdout.write
+      process.stdout.write = output.stream.write.bind(output.stream)
 
       const status = new StatusBar()
       status.update('Processing', 'step 1')
 
-      expect(writeSpy).toHaveBeenCalled()
+      expect(output.getChunks().length).toBeGreaterThan(0)
 
-      writeSpy.mockRestore()
+      process.stdout.write = originalWrite
     })
 
     it('should clear status', async () => {
       const { StatusBar } = await import('../components/index.js')
 
-      const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+      const output = createOutputCapture()
+      const originalWrite = process.stdout.write
+      process.stdout.write = output.stream.write.bind(output.stream)
 
       const status = new StatusBar()
       status.clear()
 
-      expect(writeSpy).toHaveBeenCalled()
+      expect(output.getChunks().length).toBeGreaterThan(0)
 
-      writeSpy.mockRestore()
+      process.stdout.write = originalWrite
     })
   })
 
@@ -290,8 +338,6 @@ describe('@nexusmind/tui', () => {
     it('should add logs', async () => {
       const { LogPanel } = await import('../components/index.js')
 
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       const logs = new LogPanel()
       logs.log('info', 'test message')
 
@@ -300,13 +346,11 @@ describe('@nexusmind/tui', () => {
       expect(allLogs[0].level).toBe('info')
       expect(allLogs[0].message).toBe('test message')
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should limit max logs', async () => {
       const { LogPanel } = await import('../components/index.js')
-
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       const logs = new LogPanel()
 
@@ -317,13 +361,11 @@ describe('@nexusmind/tui', () => {
       const allLogs = logs.getLogs()
       expect(allLogs.length).toBeLessThanOrEqual(100)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
 
     it('should add different log levels', async () => {
       const { LogPanel } = await import('../components/index.js')
-
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       const logs = new LogPanel()
       logs.log('warn', 'warning message')
@@ -333,7 +375,7 @@ describe('@nexusmind/tui', () => {
       const allLogs = logs.getLogs()
       expect(allLogs).toHaveLength(3)
 
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
   })
 
@@ -362,17 +404,13 @@ describe('@nexusmind/tui', () => {
     it('should start TUI', async () => {
       const { TUI } = await import('../index.js')
 
-      const clearSpy = vi.spyOn(console, 'clear').mockImplementation(() => {})
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
       const tui = new TUI()
       await tui.start('Test')
 
-      expect(clearSpy).toHaveBeenCalled()
-      expect(logSpy).toHaveBeenCalled()
+      expect(consoleCapture.wasClearCalled()).toBe(true)
+      expect(consoleCapture.wasLogCalled()).toBe(true)
 
-      clearSpy.mockRestore()
-      logSpy.mockRestore()
+      consoleCapture.restore()
     })
   })
 })

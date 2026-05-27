@@ -1,15 +1,15 @@
 /**
- * @nexusmind/assistant - 核心助理包
+ * @colomind/assistant - Personal Assistant Package
  *
- * 个人信息管理和智能辅助
+ * Personal information management and intelligent assistance
  */
 
-// 数据库
+// Database
 export { getDb, closeDb, generateId, type AssistantDbConfig } from './db/schema.js'
 
-// 任务管理
+// Task Management
 export {
-  // 待办
+  // Todos
   createTodo,
   getTodo,
   updateTodo,
@@ -23,7 +23,7 @@ export {
   type CreateTodoInput,
   type UpdateTodoInput,
   type TodoFilter,
-  // 提醒
+  // Reminders
   createReminder,
   getReminder,
   listReminders,
@@ -39,14 +39,14 @@ export {
   type ReminderRepeat,
   type ReminderStatus,
   type CreateReminderInput,
-  // 时间解析
+  // Time parsing
   parseTime,
   parseTimeRange,
   formatTime,
   type ParsedTime,
 } from './task/index.js'
 
-// 日程管理
+// Schedule Management
 export {
   createEvent,
   getEvent,
@@ -60,9 +60,9 @@ export {
   type CreateEventInput,
 } from './schedule/index.js'
 
-// 知识管理
+// Knowledge Management
 export {
-  // 笔记
+  // Notes
   createNote,
   getNote,
   updateNote,
@@ -73,7 +73,7 @@ export {
   type Note,
   type CreateNoteInput,
   type UpdateNoteInput,
-  // 收藏
+  // Bookmarks
   createBookmark,
   getBookmark,
   deleteBookmark,
@@ -83,9 +83,9 @@ export {
   type CreateBookmarkInput,
 } from './knowledge/index.js'
 
-// 生活管理
+// Life Management
 export {
-  // 习惯
+  // Habits
   createHabit,
   getHabit,
   listHabits,
@@ -97,14 +97,14 @@ export {
   type Habit,
   type HabitLog,
   type HabitFrequency,
-  // 心情
+  // Moods
   logMood,
   getMoodEntries,
   getDayMood,
   getMoodStats,
   type MoodEntry,
   type MoodType,
-  // 财务
+  // Finances
   logFinance,
   getFinanceEntries,
   getFinanceStats,
@@ -113,7 +113,7 @@ export {
   type FinanceEntry,
   type FinanceType,
   type FinanceStats,
-  // 健康
+  // Health
   logHealth,
   logExercise,
   logSleep,
@@ -124,16 +124,16 @@ export {
   type HealthEntry,
 } from './life/index.js'
 
-// 成长管理
+// Growth Management
 export {
-  // 学习
+  // Learning
   createCourse,
   updateProgress,
   getCourse,
   listCourses,
   deleteCourse,
   type Course,
-  // 阅读
+  // Reading
   addReading,
   updateReadingProgress,
   getReading,
@@ -142,7 +142,7 @@ export {
   type Reading,
   type ReadingType,
   type ReadingStatus,
-  // 目标
+  // Goals
   createGoal,
   updateGoalProgress,
   getGoal,
@@ -150,7 +150,7 @@ export {
   deleteGoal,
   type Goal,
   type GoalStatus,
-  // 灵感
+  // Inspiration
   addInspiration,
   getInspiration,
   listInspirations,
@@ -159,7 +159,7 @@ export {
   type Inspiration,
 } from './growth/index.js'
 
-// 社交管理
+// Social Management
 export {
   createContact,
   getContact,
@@ -171,7 +171,7 @@ export {
   type Contact,
 } from './social/index.js'
 
-// 项目管理
+// Project Management
 export {
   createProject,
   getProject,
@@ -182,9 +182,9 @@ export {
   type ProjectStatus,
 } from './project/index.js'
 
-// 工具
+// Tools
 export {
-  // 密码
+  // Password
   setEncryptionKey,
   createPasswordEntry,
   getPasswordEntry,
@@ -194,7 +194,7 @@ export {
   deletePasswordEntry,
   generatePassword,
   type PasswordEntry,
-  // 时间追踪
+  // Time tracking
   startTimeLog,
   endTimeLog,
   getTimeLog,
@@ -205,7 +205,7 @@ export {
   type TimeLog,
 } from './tools/index.js'
 
-// 意图识别
+// Intent Recognition
 export {
   parseIntent,
   parseIntentWithLLM,
@@ -217,7 +217,7 @@ export {
   type IntentAction,
 } from './intent/index.js'
 
-// 日志工具
+// Logger
 export {
   createLogger,
   setLogLevel,
@@ -226,9 +226,10 @@ export {
   type LogLevel,
 } from './utils/logger.js'
 
-// 用户画像
+// User Profile
 export {
   generateUserProfile,
+  getUserContext,
   type UserProfile,
   type PsychologicalProfile,
   type LifestyleProfile,

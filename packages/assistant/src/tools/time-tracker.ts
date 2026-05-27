@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import type { TimeLogRow } from '../db/types.js'
 
 export interface TimeLog {
   id: string
@@ -72,7 +73,7 @@ export function getTimeLog(id: string, userId: string, db?: Database.Database): 
   const database = db || getDb()
   const row = database
     .prepare(`SELECT * FROM assistant_time_logs WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as any
+    .get(id, userId) as TimeLogRow
   return row ? rowToTimeLog(row) : null
 }
 
@@ -85,7 +86,7 @@ export function getActiveTimeLogs(userId: string, db?: Database.Database): TimeL
     .prepare(
       `SELECT * FROM assistant_time_logs WHERE user_id = ? AND ended_at IS NULL ORDER BY started_at DESC`,
     )
-    .all(userId) as any[]
+    .all(userId) as TimeLogRow[]
   return rows.map(rowToTimeLog)
 }
 
@@ -101,7 +102,7 @@ export function getTimeLogs(
 ): TimeLog[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_time_logs WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (startDate) {
     sql += ` AND started_at >= ?`
@@ -115,7 +116,7 @@ export function getTimeLogs(
   sql += ` ORDER BY started_at DESC LIMIT ?`
   values.push(limit)
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as TimeLogRow[]
   return rows.map(rowToTimeLog)
 }
 
@@ -134,7 +135,7 @@ export function getTimeStats(
 } {
   const database = db || getDb()
   let sql = `SELECT activity, category, duration_minutes FROM assistant_time_logs WHERE user_id = ? AND ended_at IS NOT NULL`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (startDate) {
     sql += ` AND started_at >= ?`
@@ -145,7 +146,7 @@ export function getTimeStats(
     values.push(endDate)
   }
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as TimeLogRow[]
 
   let totalMinutes = 0
   const byCategory: Record<string, number> = {}
@@ -175,7 +176,7 @@ export function deleteTimeLog(id: string, userId: string, db?: Database.Database
   )
 }
 
-function rowToTimeLog(row: any): TimeLog {
+function rowToTimeLog(row: TimeLogRow): TimeLog {
   return {
     id: row.id,
     userId: row.user_id,

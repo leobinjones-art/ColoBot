@@ -2,7 +2,7 @@
  * Sentinel 主类集成测试
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Sentinel } from '../index.js'
 
 describe('Sentinel', () => {

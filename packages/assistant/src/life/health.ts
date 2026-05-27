@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { HealthRow } from '../db/types.js'
 
 export interface HealthEntry {
   id: string
@@ -96,7 +97,7 @@ export function getHealthEntries(
 ): HealthEntry[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_health WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (type) {
     sql += ` AND type = ?`
@@ -106,7 +107,7 @@ export function getHealthEntries(
   sql += ` ORDER BY logged_at DESC LIMIT ?`
   values.push(limit)
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as HealthRow[]
   return rows.map(rowToHealth)
 }
 
@@ -131,7 +132,7 @@ export function getHealthStats(
     WHERE user_id = ? AND logged_at >= datetime('now', '-' || ? || ' days')
   `,
     )
-    .all(userId, days) as any[]
+    .all(userId, days) as HealthRow[]
 
   let totalExercise = 0
   let totalSleep = 0
@@ -165,11 +166,11 @@ export function getHealthStats(
   }
 }
 
-function rowToHealth(row: any): HealthEntry {
+function rowToHealth(row: HealthRow): HealthEntry {
   return {
     id: row.id,
     userId: row.user_id,
-    type: row.type,
+    type: row.type as HealthEntry['type'],
     value: row.value,
     unit: row.unit,
     note: row.note || undefined,

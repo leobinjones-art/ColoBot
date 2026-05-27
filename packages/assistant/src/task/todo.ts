@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { TodoRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Todo')
@@ -100,7 +101,7 @@ export function getTodo(id: string, userId: string, db?: Database.Database): Tod
   const stmt = database.prepare(`
     SELECT * FROM assistant_todos WHERE id = ? AND user_id = ?
   `)
-  const row = stmt.get(id, userId) as any
+  const row = stmt.get(id, userId) as TodoRow
   return row ? rowToTodo(row) : null
 }
 
@@ -122,7 +123,7 @@ export function updateTodo(
 
   const now = new Date().toISOString()
   const updates: string[] = []
-  const values: any[] = []
+  const values: (string | number | null)[] = []
 
   if (input.title !== undefined) {
     updates.push('title = ?')
@@ -191,7 +192,7 @@ export function deleteTodo(id: string, userId: string, db?: Database.Database): 
 export function listTodos(userId: string, filter?: TodoFilter, db?: Database.Database): Todo[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_todos WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (filter?.status) {
     sql += ` AND status = ?`
@@ -213,7 +214,7 @@ export function listTodos(userId: string, filter?: TodoFilter, db?: Database.Dat
   sql += ` ORDER BY priority DESC, due_date ASC, created_at DESC`
 
   const stmt = database.prepare(sql)
-  const rows = stmt.all(...values) as any[]
+  const rows = stmt.all(...values) as TodoRow[]
   return rows.map(rowToTodo)
 }
 
@@ -229,7 +230,7 @@ export function getTodayTodos(userId: string, db?: Database.Database): Todo[] {
     AND (due_date IS NULL OR date(due_date) <= date(?))
     ORDER BY priority DESC, due_date ASC
   `)
-  const rows = stmt.all(userId, today) as any[]
+  const rows = stmt.all(userId, today) as TodoRow[]
   return rows.map(rowToTodo)
 }
 
@@ -243,7 +244,7 @@ export function completeTodo(id: string, userId: string, db?: Database.Database)
 /**
  * 行转对象
  */
-function rowToTodo(row: any): Todo {
+function rowToTodo(row: TodoRow): Todo {
   return {
     id: row.id,
     userId: row.user_id,

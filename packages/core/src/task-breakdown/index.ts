@@ -14,7 +14,7 @@
  */
 
 import type { LLMProvider, AuditLogger } from '../runtime/types.js'
-import type { LLMMessage } from '@nexusmind/types'
+import type { LLMMessage } from '@colomind/types'
 import {
   spawnSubAgent,
   getSubAgent,

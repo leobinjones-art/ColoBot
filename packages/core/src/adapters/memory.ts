@@ -2,7 +2,7 @@
  * 内存适配器 - 简单实现（可用于测试或无数据库场景）
  */
 
-import type { LLMMessage } from '@nexusmind/types'
+import type { LLMMessage } from '@colomind/types'
 import type { MemoryStore } from '../runtime/types.js'
 
 export interface InMemoryConfig {

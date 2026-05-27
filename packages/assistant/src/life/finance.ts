@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { FinanceRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Finance')
@@ -67,7 +68,7 @@ export function getFinanceEntries(
 ): FinanceEntry[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_finances WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (type) {
     sql += ` AND type = ?`
@@ -77,7 +78,7 @@ export function getFinanceEntries(
   sql += ` ORDER BY logged_at DESC LIMIT ?`
   values.push(limit)
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as FinanceRow[]
   return rows.map(rowToFinance)
 }
 
@@ -92,7 +93,7 @@ export function getFinanceStats(
 ): FinanceStats {
   const database = db || getDb()
   let sql = `SELECT type, amount, category FROM assistant_finances WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (startDate) {
     sql += ` AND logged_at >= ?`
@@ -103,7 +104,7 @@ export function getFinanceStats(
     values.push(endDate)
   }
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as FinanceRow[]
 
   let totalIncome = 0
   let totalExpense = 0
@@ -150,7 +151,7 @@ export function deleteFinanceEntry(id: string, userId: string, db?: Database.Dat
   )
 }
 
-function rowToFinance(row: any): FinanceEntry {
+function rowToFinance(row: FinanceRow): FinanceEntry {
   return {
     id: row.id,
     userId: row.user_id,

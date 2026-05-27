@@ -1,17 +1,14 @@
 /**
- * 向量嵌入 - OpenAI / MiniMax Embeddings
+ * 向量嵌入 - OpenAI Embeddings
  */
 
-import type { EmbedResult } from '@nexusmind/types'
+import type { EmbedResult } from '@colomind/types'
 
 export interface EmbeddingConfig {
-  provider: 'openai' | 'minimax' | 'mock'
+  provider: 'openai' | 'mock'
   openaiApiKey?: string
-  minimaxApiKey?: string
   openaiModel?: string
-  minimaxModel?: string
   openaiEndpoint?: string
-  minimaxEndpoint?: string
 }
 
 let config: EmbeddingConfig = { provider: 'mock' }
@@ -32,8 +29,6 @@ export async function embed(text: string): Promise<EmbedResult> {
   switch (provider) {
     case 'openai':
       return embedOpenAI(text)
-    case 'minimax':
-      return embedMinimax(text)
     default:
       return mockEmbed(text)
   }
@@ -93,45 +88,5 @@ async function embedOpenAI(text: string): Promise<EmbedResult> {
     embedding: data.data[0]?.embedding ?? [],
     model: data.model,
     tokens: data.usage?.total_tokens || Math.ceil(text.length / 4),
-  }
-}
-
-/**
- * MiniMax 嵌入
- */
-async function embedMinimax(text: string): Promise<EmbedResult> {
-  const apiKey = config.minimaxApiKey || process.env.MINIMAX_API_KEY
-  if (!apiKey) return { embedding: null, model: '', tokens: 0 }
-
-  const model = config.minimaxModel || 'embo-01'
-  const endpoint = config.minimaxEndpoint || 'https://api.minimaxi.com/v1/embeddings'
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      texts: [text.slice(0, 8000)],
-      type: 'db',
-    }),
-  })
-
-  if (!res.ok) {
-    console.error('MiniMax Embed error:', await res.text())
-    return mockEmbed(text)
-  }
-
-  const data = (await res.json()) as { vectors: number[][] }
-  if (!data.vectors || data.vectors.length === 0) {
-    return mockEmbed(text)
-  }
-
-  return {
-    embedding: data.vectors[0],
-    model,
-    tokens: Math.ceil(text.length / 4),
   }
 }

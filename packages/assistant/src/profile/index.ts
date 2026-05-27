@@ -766,3 +766,23 @@ function generateAIContext(profile: {
 
   return parts.join('\n')
 }
+
+// ==================== Core Integration API ====================
+
+/**
+ * Get user context for Core integration
+ *
+ * This is the main API for @colomind/core to call.
+ * Returns a formatted string that can be injected into LLM context.
+ *
+ * @param userId - User identifier
+ * @param data - User data from all modules
+ * @returns Formatted context string for AI
+ */
+export async function getUserContext(
+  userId: string,
+  data: UserProfileInput
+): Promise<string> {
+  const profile = generateUserProfile(userId, data)
+  return profile.aiContext
+}

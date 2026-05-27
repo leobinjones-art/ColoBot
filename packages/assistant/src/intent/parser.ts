@@ -6,7 +6,7 @@
  * 2. LLM 意图识别（低置信度时调用）
  */
 
-import type { LLMMessage } from '@nexusmind/types'
+import type { LLMMessage } from '@colomind/types'
 
 // LLM 函数类型（避免直接依赖 core）
 type LLMChatFunction = (

@@ -4,7 +4,7 @@
  * 上传文档 → LLM 提纯关键词 → 存入规则库
  */
 
-import type { LLMProvider } from '@colomind/core'
+import type { LLMProvider } from '@colomind/types'
 import { createLogger } from './logger.js'
 import { writeFile, readFile, mkdir } from 'fs/promises'
 import { join } from 'path'

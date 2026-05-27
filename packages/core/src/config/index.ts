@@ -192,17 +192,17 @@ export class ConfigManager {
 
   private getDefaultConfigPath(): string {
     // 优先级：环境变量 > 用户目录 > 当前目录
-    if (process.env.NEXUSMIND_CONFIG) {
-      return process.env.NEXUSMIND_CONFIG
+    if (process.env.COLOMIND_CONFIG) {
+      return process.env.COLOMIND_CONFIG
     }
 
     const homeDir = process.env.HOME || process.env.USERPROFILE || ''
-    const userConfig = path.join(homeDir, '.nexusmind', 'config.json')
+    const userConfig = path.join(homeDir, '.colomind', 'config.json')
     if (fs.existsSync(userConfig)) {
       return userConfig
     }
 
-    return path.join(process.cwd(), 'nexusmind.config.json')
+    return path.join(process.cwd(), 'colomind.config.json')
   }
 
   /**
@@ -541,9 +541,9 @@ export function applyCLIOptions(manager: ConfigManager, options: CLIOptions): vo
 // ── 帮助信息 ──────────────────────────────────────────────
 
 export const HELP_TEXT = `
-NexusMind Core CLI
+ColoMind Core CLI
 
-Usage: nexusmind-core [options]
+Usage: colomind-core [options]
 
 Options:
   -c, --config <path>       配置文件路径
@@ -566,12 +566,12 @@ Options:
   SUBAGENT_MAX_CONCURRENT   子Agent最大并发数
 
 配置文件位置 (优先级):
-  1. NEXUSMIND_CONFIG 环境变量
-  2. ~/.nexusmind/config.json
-  3. ./nexusmind.config.json
+  1. COLOMIND_CONFIG 环境变量
+  2. ~/.colomind/config.json
+  3. ./colomind.config.json
 
 示例:
-  nexusmind-core -p anthropic -m claude-sonnet-4-20250514
-  nexusmind-core --provider openai --model gpt-4o --max-concurrent 5
-  nexusmind-core -c /path/to/config.json
+  colomind-core -p anthropic -m claude-sonnet-4-20250514
+  colomind-core --provider openai --model gpt-4o --max-concurrent 5
+  colomind-core -c /path/to/config.json
 `

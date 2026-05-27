@@ -11,7 +11,7 @@ import {
   toAppError,
   getFriendlyMessage,
   ErrorCodes,
-} from '../index.js'
+} from '../errors/index.js'
 
 describe('Errors', () => {
   describe('AppError', () => {

@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { CourseRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Learning')
@@ -91,7 +92,7 @@ export function getCourse(id: string, userId: string, db?: Database.Database): C
   const database = db || getDb()
   const row = database
     .prepare(`SELECT * FROM assistant_courses WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as any
+    .get(id, userId) as CourseRow
   return row ? rowToCourse(row) : null
 }
 
@@ -105,7 +106,7 @@ export function listCourses(
 ): Course[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_courses WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (status) {
     sql += ` AND status = ?`
@@ -113,7 +114,7 @@ export function listCourses(
   }
 
   sql += ` ORDER BY created_at DESC`
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as CourseRow[]
   return rows.map(rowToCourse)
 }
 
@@ -134,14 +135,14 @@ export function deleteCourse(id: string, userId: string, db?: Database.Database)
   return deleted
 }
 
-function rowToCourse(row: any): Course {
+function rowToCourse(row: CourseRow): Course {
   return {
     id: row.id,
     userId: row.user_id,
     name: row.name,
     totalHours: row.total_hours,
     completedHours: row.completed_hours,
-    status: row.status,
+    status: row.status as Course['status'],
     createdAt: row.created_at,
   }
 }

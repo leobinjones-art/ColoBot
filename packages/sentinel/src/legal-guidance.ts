@@ -4,7 +4,7 @@
  * 核心原则：只提供合法合规的解决方案，不引导用户自行操作
  */
 
-import type { LLMProvider } from '@colomind/core'
+import type { LLMProvider } from '@colomind/types'
 import { createLogger } from './logger.js'
 import type { InferenceResult } from './inference-agent.js'
 import { getLegalKnowledgeBase, LegalKnowledgeBase, type LegalProvision, type Jurisdiction } from './legal-knowledge.js'

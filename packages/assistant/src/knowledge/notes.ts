@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { NoteRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Note')
@@ -73,7 +74,7 @@ export function createNote(input: CreateNoteInput, db?: Database.Database): Note
 export function getNote(id: string, userId: string, db?: Database.Database): Note | null {
   const database = db || getDb()
   const stmt = database.prepare(`SELECT * FROM assistant_notes WHERE id = ? AND user_id = ?`)
-  const row = stmt.get(id, userId) as any
+  const row = stmt.get(id, userId) as NoteRow
   return row ? rowToNote(row) : null
 }
 
@@ -92,7 +93,7 @@ export function updateNote(
 
   const now = new Date().toISOString()
   const updates: string[] = []
-  const values: any[] = []
+  const values: (string | number | null)[] = []
 
   if (input.title !== undefined) {
     updates.push('title = ?')
@@ -136,7 +137,7 @@ export function deleteNote(id: string, userId: string, db?: Database.Database): 
 export function listNotes(userId: string, tag?: string, db?: Database.Database): Note[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_notes WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (tag) {
     sql += ` AND tags LIKE ?`
@@ -146,7 +147,7 @@ export function listNotes(userId: string, tag?: string, db?: Database.Database):
   sql += ` ORDER BY updated_at DESC`
 
   const stmt = database.prepare(sql)
-  const rows = stmt.all(...values) as any[]
+  const rows = stmt.all(...values) as NoteRow[]
   return rows.map(rowToNote)
 }
 
@@ -161,7 +162,7 @@ export function searchNotes(userId: string, query: string, db?: Database.Databas
     ORDER BY updated_at DESC
   `)
   const searchPattern = `%${query}%`
-  const rows = stmt.all(userId, searchPattern, searchPattern) as any[]
+  const rows = stmt.all(userId, searchPattern, searchPattern) as NoteRow[]
   return rows.map(rowToNote)
 }
 
@@ -171,7 +172,7 @@ export function searchNotes(userId: string, query: string, db?: Database.Databas
 export function getAllTags(userId: string, db?: Database.Database): string[] {
   const database = db || getDb()
   const stmt = database.prepare(`SELECT tags FROM assistant_notes WHERE user_id = ?`)
-  const rows = stmt.all(userId) as any[]
+  const rows = stmt.all(userId) as NoteRow[]
 
   const tagSet = new Set<string>()
   for (const row of rows) {
@@ -184,7 +185,7 @@ export function getAllTags(userId: string, db?: Database.Database): string[] {
   return Array.from(tagSet)
 }
 
-function rowToNote(row: any): Note {
+function rowToNote(row: NoteRow): Note {
   return {
     id: row.id,
     userId: row.user_id,

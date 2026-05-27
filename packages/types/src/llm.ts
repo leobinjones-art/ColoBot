@@ -51,9 +51,35 @@ export interface ModelConfig {
 export interface LLMConfig {
   openai: ModelConfig
   anthropic: ModelConfig
-  minimax: ModelConfig
   embedding: {
     openai: ModelConfig
-    minimax: ModelConfig
   }
+}
+
+// LLM Provider 接口
+export interface LLMProvider {
+  name: string
+  chat(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResponse>
+  chatStream(messages: LLMMessage[], options?: LLMOptions): AsyncIterable<LLMStreamChunk>
+}
+
+export interface LLMResponse {
+  content: string | ContentBlock[]
+  toolCalls?: ToolCall[]
+  usage?: { inputTokens: number; outputTokens: number }
+}
+
+export interface LLMStreamChunk {
+  type: 'text' | 'tool_call' | 'done'
+  content?: string
+  toolCall?: ToolCall
+}
+
+// 工具调用
+export interface ToolCall {
+  name: string
+  args: Record<string, unknown>
+  id: string
+  type: 'function'
+  function: { name: string; arguments: string }
 }

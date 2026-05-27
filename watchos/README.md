@@ -1,6 +1,6 @@
-# NexusMind Watch
+# ColoMind Watch
 
-Apple Watch 前端应用，用于监控 NexusMind 安全系统状态。
+Apple Watch 前端应用，用于监控 ColoMind 安全系统状态。
 
 ## 功能
 
@@ -12,8 +12,8 @@ Apple Watch 前端应用，用于监控 NexusMind 安全系统状态。
 ## 项目结构
 
 ```
-NexusMindWatch/
-├── NexusMindWatchApp.swift          # App 入口
+ColoMindWatch/
+├── ColoMindWatchApp.swift          # App 入口
 ├── Models/
 │   └── Models.swift                 # 数据模型
 ├── Services/

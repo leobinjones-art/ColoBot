@@ -4,14 +4,13 @@
 
 import { query, queryOne } from '../memory/db.js'
 
-export type ProviderType = 'openai' | 'anthropic' | 'minimax'
+export type ProviderType = 'openai' | 'anthropic'
 
 export const LLM_SETTINGS_KEYS = {
   MOCK_LLM: 'mock_llm',
   LLM_PROVIDER: 'llm_provider',
   OPENAI_API_KEY: 'openai_api_key',
   ANTHROPIC_API_KEY: 'anthropic_api_key',
-  MINIMAX_API_KEY: 'minimax_api_key',
   DEFAULT_MODEL: 'default_model',
 } as const
 
@@ -58,7 +57,7 @@ export function getMockLLM(): boolean {
 
 export function getLlmProvider(): ProviderType {
   const v = getCached(LLM_SETTINGS_KEYS.LLM_PROVIDER, getEnv('LLM_PROVIDER') || 'openai')
-  if (v === 'anthropic' || v === 'minimax' || v === 'openai') return v
+  if (v === 'anthropic' || v === 'openai') return v
   return 'openai'
 }
 
@@ -68,10 +67,6 @@ export function getOpenAIApiKey(): string {
 
 export function getAnthropicApiKey(): string {
   return getCached(LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY, getEnv('ANTHROPIC_API_KEY') || '')
-}
-
-export function getMinimaxApiKey(): string {
-  return getCached(LLM_SETTINGS_KEYS.MINIMAX_API_KEY, getEnv('MINIMAX_API_KEY') || '')
 }
 
 export function getDefaultModel(): string {
@@ -85,7 +80,6 @@ export async function saveLlmSettings(settings: {
   llm_provider?: string
   openai_api_key?: string
   anthropic_api_key?: string
-  minimax_api_key?: string
   default_model?: string
 }): Promise<void> {
   const pairs: [string, string][] = []
@@ -97,8 +91,6 @@ export async function saveLlmSettings(settings: {
     pairs.push([LLM_SETTINGS_KEYS.OPENAI_API_KEY, settings.openai_api_key])
   if (settings.anthropic_api_key)
     pairs.push([LLM_SETTINGS_KEYS.ANTHROPIC_API_KEY, settings.anthropic_api_key])
-  if (settings.minimax_api_key)
-    pairs.push([LLM_SETTINGS_KEYS.MINIMAX_API_KEY, settings.minimax_api_key])
   if (settings.default_model) pairs.push([LLM_SETTINGS_KEYS.DEFAULT_MODEL, settings.default_model])
 
   if (!pairs.length) return
@@ -120,7 +112,6 @@ export async function getLlmSettings() {
     llm_provider: getLlmProvider(),
     openai_api_key: getOpenAIApiKey(),
     anthropic_api_key: getAnthropicApiKey(),
-    minimax_api_key: getMinimaxApiKey(),
     default_model: getDefaultModel(),
   }
 }

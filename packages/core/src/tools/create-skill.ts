@@ -2,7 +2,7 @@
  * 创建 Skill 工具 - Agent 主动创建新 Skill
  */
 
-import type { ToolContext } from '@nexusmind/types'
+import type { ToolContext } from '@colomind/types'
 import { toolRegistry } from './registry.js'
 import { writePendingSkill, approveSkill } from '../skill-evolution/index.js'
 

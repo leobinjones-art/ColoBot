@@ -2,19 +2,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "NexusMindWatch",
+    name: "ColoMindWatch",
     platforms: [
         .watchOS(.v10)
     ],
     products: [
         .library(
-            name: "NexusMindWatch",
-            targets: ["NexusMindWatch"]
+            name: "ColoMindWatch",
+            targets: ["ColoMindWatch"]
         ),
     ],
     targets: [
         .target(
-            name: "NexusMindWatch",
+            name: "ColoMindWatch",
             dependencies: []
         ),
     ]

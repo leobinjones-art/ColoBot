@@ -1,5 +1,5 @@
 /**
- * @nexusmind/types 测试
+ * @colomind/types 测试
  */
 import { describe, it, expect } from 'vitest'
 import type { TextContent, LLMMessage, LLMOptions } from '../llm.js'
@@ -8,7 +8,7 @@ import type { ToolCall, ToolContext } from '../tool.js'
 import type { SopStep } from '../sop.js'
 import type { EmbedResult } from '../memory.js'
 
-describe('@nexusmind/types', () => {
+describe('@colomind/types', () => {
   describe('LLM Types', () => {
     it('should define TextContent', () => {
       const text: TextContent = { type: 'text', text: 'hello' }

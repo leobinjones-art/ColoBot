@@ -2,15 +2,17 @@
  * TUI 组件
  */
 
-import { style, colors, printDivider } from '../render/index.js'
+import { style, colors, printDivider, renderMarkdown } from '../render/index.js'
 
 /**
  * 聊天界面组件
  */
 export class ChatUI {
   private lines: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = []
+  private streamBuffer: string = ''
+  private isStreaming: boolean = false
 
-  constructor(private title: string = 'NexusMind Chat') {}
+  constructor(private title: string = 'ColoMind Chat') {}
 
   /**
    * 添加消息
@@ -25,20 +27,57 @@ export class ChatUI {
    */
   private renderMessage(role: 'user' | 'assistant' | 'system', content: string): void {
     const roleStyles = {
-      user: { label: '你', color: 'green' as const },
-      assistant: { label: 'AI', color: 'cyan' as const },
-      system: { label: '系统', color: 'yellow' as const },
+      user: { label: '👤 你', color: 'green' as const },
+      assistant: { label: '🤖 AI', color: 'cyan' as const },
+      system: { label: '⚙️ 系统', color: 'yellow' as const },
     }
 
     const { label, color } = roleStyles[role]
-    console.log(`\n${style(label, 'bold', color)}: ${content}`)
+
+    // 用户消息直接显示
+    if (role === 'user') {
+      console.log(`\n${style(label, 'bold', color)}: ${content}`)
+      return
+    }
+
+    // AI 消息渲染 Markdown
+    console.log(`\n${style(label, 'bold', color)}:`)
+    renderMarkdown(content)
+  }
+
+  /**
+   * 开始流式输出
+   */
+  startStream(): void {
+    this.streamBuffer = ''
+    this.isStreaming = true
+    console.log() // 换行
+  }
+
+  /**
+   * 追加流式内容
+   */
+  appendStream(chunk: string): void {
+    this.streamBuffer += chunk
+    process.stdout.write(chunk)
+  }
+
+  /**
+   * 结束流式输出
+   */
+  endStream(): string {
+    this.isStreaming = false
+    const content = this.streamBuffer
+    this.lines.push({ role: 'assistant', content })
+    console.log() // 换行
+    return content
   }
 
   /**
    * 显示正在输入
    */
   showTyping(): void {
-    process.stdout.write(`\r${colors.dim}AI 正在输入...${colors.reset}`)
+    process.stdout.write(`\r${colors.dim}🤖 AI 正在思考...${colors.reset}`)
   }
 
   /**
@@ -54,6 +93,13 @@ export class ChatUI {
   clear(): void {
     this.lines = []
     console.clear()
+  }
+
+  /**
+   * 获取历史
+   */
+  getHistory(): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+    return [...this.lines]
   }
 }
 

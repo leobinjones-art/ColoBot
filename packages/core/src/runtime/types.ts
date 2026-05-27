@@ -9,29 +9,14 @@ import type {
   ToolCall,
   ToolResult,
   ToolContext,
-} from '@nexusmind/types'
-import type { Sentinel } from '@nexusmind/sentinel'
+  LLMProvider,
+  LLMResponse,
+  LLMStreamChunk,
+} from '@colomind/types'
+import type { Sentinel } from '@colomind/sentinel'
 
-/**
- * LLM 提供者接口
- */
-export interface LLMProvider {
-  name: string
-  chat(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResponse>
-  chatStream(messages: LLMMessage[], options?: LLMOptions): AsyncIterable<LLMStreamChunk>
-}
-
-export interface LLMResponse {
-  content: string | ContentBlock[]
-  toolCalls?: ToolCall[]
-  usage?: { inputTokens: number; outputTokens: number }
-}
-
-export interface LLMStreamChunk {
-  type: 'text' | 'tool_call' | 'done'
-  content?: string
-  toolCall?: ToolCall
-}
+// Re-export LLM types from @colomind/types for backward compatibility
+export type { LLMProvider, LLMResponse, LLMStreamChunk }
 
 /**
  * 记忆存储接口

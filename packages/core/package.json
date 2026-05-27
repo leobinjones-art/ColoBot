@@ -1,13 +1,13 @@
 {
-  "name": "@nexusmind/core",
-  "version": "0.2.1",
-  "description": "NexusMind Agent 运行时核心 — 多模态 AI × 安全守护 × 许可证系统",
+  "name": "@colomind/core",
+  "version": "0.2.2",
+  "description": "ColoMind Agent Runtime Core - Multi-modal AI × Security Guardian × Charter System",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "nexusmind": "./dist/cli.js"
+    "colomind": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -44,7 +44,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexusmind/nexusmind.git",
+    "url": "https://github.com/colomind/colomind.git",
     "directory": "packages/core"
   },
   "scripts": {
@@ -54,10 +54,12 @@
     "cli": "tsx src/cli.ts"
   },
   "dependencies": {
-    "@nexusmind/types": "*",
-    "@nexusmind/sentinel": "*",
+    "@colomind/sentinel": "*",
+    "@colomind/types": "*",
+    "@hono/node-server": "^2.0.2",
     "@xenova/transformers": "^2.17.0",
     "better-sqlite3": "^11.10.0",
+    "hono": "^4.12.18",
     "llm-guard": "^0.1.8",
     "pg": "^8.13.0",
     "pyodide": "^0.26.2",

@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { EventRow } from '../db/types.js'
 import { parseTime, parseTimeRange } from '../task/time-parser.js'
 import { createLogger } from '../utils/logger.js'
 
@@ -88,7 +89,7 @@ export function createEvent(input: CreateEventInput, db?: Database.Database): Ev
 export function getEvent(id: string, userId: string, db?: Database.Database): Event | null {
   const database = db || getDb()
   const stmt = database.prepare(`SELECT * FROM assistant_events WHERE id = ? AND user_id = ?`)
-  const row = stmt.get(id, userId) as any
+  const row = stmt.get(id, userId) as EventRow
   return row ? rowToEvent(row) : null
 }
 
@@ -106,7 +107,7 @@ export function updateEvent(
   if (!event) return null
 
   const updates: string[] = []
-  const values: any[] = []
+  const values: (string | number | null)[] = []
 
   if (input.title !== undefined) {
     updates.push('title = ?')
@@ -177,7 +178,7 @@ export function getDayEvents(userId: string, date: Date | string, db?: Database.
     WHERE user_id = ? AND date(start_at) = date(?)
     ORDER BY start_at ASC
   `)
-  const rows = stmt.all(userId, dateStr) as any[]
+  const rows = stmt.all(userId, dateStr) as EventRow[]
   return rows.map(rowToEvent)
 }
 
@@ -204,7 +205,7 @@ export function getWeekEvents(
     WHERE user_id = ? AND start_at >= ? AND start_at <= ?
     ORDER BY start_at ASC
   `)
-  const rows = stmt.all(userId, startOfWeek.toISOString(), endOfWeek.toISOString()) as any[]
+  const rows = stmt.all(userId, startOfWeek.toISOString(), endOfWeek.toISOString()) as EventRow[]
   return rows.map(rowToEvent)
 }
 
@@ -226,7 +227,7 @@ export function getMonthEvents(
     WHERE user_id = ? AND start_at >= ? AND start_at <= ?
     ORDER BY start_at ASC
   `)
-  const rows = stmt.all(userId, startOfMonth.toISOString(), endOfMonth.toISOString()) as any[]
+  const rows = stmt.all(userId, startOfMonth.toISOString(), endOfMonth.toISOString()) as EventRow[]
   return rows.map(rowToEvent)
 }
 
@@ -261,11 +262,11 @@ export function checkConflict(
     startAtObj.toISOString(),
     startAtObj.toISOString(),
     endAtObj.toISOString(),
-  ) as any[]
+  ) as EventRow[]
   return rows.map(rowToEvent)
 }
 
-function rowToEvent(row: any): Event {
+function rowToEvent(row: EventRow): Event {
   return {
     id: row.id,
     userId: row.user_id,

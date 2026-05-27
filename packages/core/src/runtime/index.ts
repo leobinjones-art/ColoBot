@@ -2,16 +2,16 @@
  * Agent 运行时核心逻辑
  */
 
-import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@nexusmind/types'
+import type { LLMMessage, ContentBlock, ToolCall, ToolContext } from '@colomind/types'
 import type { RuntimeDeps, LLMResponse } from './types.js'
-import type { StateUpdater, OutputScanner, OutputScanConfig } from '@nexusmind/sentinel'
-import { Sentinel, OutputScanner as OutputScannerClass } from '@nexusmind/sentinel'
+import type { StateUpdater, OutputScanner, OutputScanConfig } from '@colomind/sentinel'
+import { Sentinel, OutputScanner as OutputScannerClass } from '@colomind/sentinel'
 import { compressMessages, estimateMessagesTokens } from '../compression.js'
 
 // 导出接口和实现
 export * from './interface.js'
-export { NexusMindRuntimeImpl } from './runtime.js'
-export type { NexusMindRuntime, RuntimeDependencies } from './interface.js'
+export { ColoMindRuntimeImpl } from './runtime.js'
+export type { ColoMindRuntime, RuntimeDependencies } from './interface.js'
 
 export interface RunOptions {
   agentId: string
@@ -28,6 +28,8 @@ export interface RunOptions {
   contextWindowSize?: number
   /** Fallback 模型 ID */
   fallbackModelId?: string
+  /** 用户上下文（来自 Assistant） */
+  userContext?: string
 }
 
 export interface RunResult {
@@ -91,6 +93,7 @@ export class AgentRuntime {
       maxTokens,
       soul,
       contextWindowSize = DEFAULT_CONTEXT_WINDOW,
+      userContext,
     } = opts
 
     const sentinel = this.deps.sentinel
@@ -129,6 +132,14 @@ export class AgentRuntime {
 
     // 构建消息
     let messages: LLMMessage[] = [...history, { role: 'user', content: userMessage }]
+
+    // 注入用户上下文（来自 Assistant）
+    if (userContext) {
+      messages.unshift({
+        role: 'system',
+        content: userContext,
+      })
+    }
 
     // 追加用户消息
     await this.deps.memory.append(agentId, sessionKey, 'user', userMessage)
@@ -276,7 +287,26 @@ export class AgentRuntime {
     const toolCtx: ToolContext = { agentId, sessionKey, ipAddress: opts.ipAddress }
 
     for (let round = 0; round < maxRounds; round++) {
-      const fullMessages = this.buildMessagesWithSystem(messages, soul, systemPrompt)
+      // Build system prompt with tool descriptions for XML-format tool calls
+      const toolDescs = this.deps.tools.getTools?.() || []
+      let toolPrompt = systemPrompt || ''
+      if (toolDescs.length > 0) {
+        const descText = toolDescs.map((t: any) => {
+          const fn = t.function
+          return `- ${fn.name}: ${fn.description}${fn.parameters?.properties ? ' Args: ' + JSON.stringify(fn.parameters.properties) : ''}`
+        }).join('\n')
+        const toolInstructions = [
+          '你可以使用以下工具。当需要调用工具时，在回复中使用 XML 格式：',
+          '<' + 'tool_call>',
+          '{"name": "工具名", "arguments": {参数}}',
+          '</' + 'tool_call>',
+          '',
+          '可用工具：',
+          descText,
+        ].join('\n')
+        toolPrompt = (toolPrompt ? toolPrompt + '\n\n' : '') + toolInstructions
+      }
+      const fullMessages = this.buildMessagesWithSystem(messages, soul, toolPrompt || undefined)
 
       // 流式输出
       let accumulated = ''

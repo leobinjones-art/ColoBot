@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { MoodRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Mood')
@@ -70,7 +71,7 @@ export function getMoodEntries(userId: string, limit = 30, db?: Database.Databas
     SELECT * FROM assistant_moods WHERE user_id = ? ORDER BY logged_at DESC LIMIT ?
   `,
     )
-    .all(userId, limit) as any[]
+    .all(userId, limit) as MoodRow[]
   return rows.map(rowToMood)
 }
 
@@ -90,7 +91,7 @@ export function getDayMood(
     SELECT * FROM assistant_moods WHERE user_id = ? AND date(logged_at) = date(?) ORDER BY logged_at DESC LIMIT 1
   `,
     )
-    .get(userId, dateStr) as any
+    .get(userId, dateStr) as MoodRow | undefined
   return row ? rowToMood(row) : null
 }
 
@@ -114,7 +115,7 @@ export function getMoodStats(
     WHERE user_id = ? AND logged_at >= datetime('now', '-' || ? || ' days')
   `,
     )
-    .all(userId, days) as any[]
+    .all(userId, days) as MoodRow[]
 
   const moodCounts: Record<MoodType, number> = {
     happy: 0,
@@ -129,7 +130,7 @@ export function getMoodStats(
   let totalScore = 0
   for (const row of rows) {
     moodCounts[row.mood as MoodType]++
-    totalScore += row.score
+    totalScore += row.score ?? 0
   }
 
   // 计算趋势（最近7天 vs 之前7天）
@@ -140,7 +141,7 @@ export function getMoodStats(
     WHERE user_id = ? AND logged_at >= datetime('now', '-7 days')
   `,
     )
-    .get(userId) as any
+    .get(userId) as { avg: number | null } | undefined
 
   const previousRows = database
     .prepare(
@@ -149,7 +150,7 @@ export function getMoodStats(
     WHERE user_id = ? AND logged_at >= datetime('now', '-14 days') AND logged_at < datetime('now', '-7 days')
   `,
     )
-    .get(userId) as any
+    .get(userId) as { avg: number | null } | undefined
 
   const recentAvg = recentRows?.avg || 0
   const previousAvg = previousRows?.avg || 0
@@ -165,12 +166,12 @@ export function getMoodStats(
   }
 }
 
-function rowToMood(row: any): MoodEntry {
+function rowToMood(row: MoodRow): MoodEntry {
   return {
     id: row.id,
     userId: row.user_id,
     mood: row.mood as MoodType,
-    score: row.score,
+    score: row.score ?? 0,
     note: row.note || undefined,
     loggedAt: row.logged_at,
   }

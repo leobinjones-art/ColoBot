@@ -1,0 +1,5 @@
+export { SpaceStore } from './store.js'
+export { SpaceEngine } from './engine.js'
+export { SpaceMemoryService, createSpaceMemoryService } from './service.js'
+export { cosineSimilarity, cosineDistance, findNearestRoom, updateCentroid, kMeansSplit } from './cluster.js'
+export { memoryStrength, rankByStrength, shouldArchive, nextReviewTime } from './decay.js'

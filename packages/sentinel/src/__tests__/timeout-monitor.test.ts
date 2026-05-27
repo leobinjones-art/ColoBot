@@ -2,7 +2,7 @@
  * 会话超时监控测试
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   SessionTimeoutMonitor,
   SessionTimeoutConfig,

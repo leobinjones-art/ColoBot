@@ -1,10 +1,11 @@
 /**
- * NexusMind Runtime 接口定义
+ * ColoMind Runtime 接口定义
  *
  * 所有插件通过此接口使用 core 能力，不直接访问底层实现
  */
 
-import type { LLMMessage, ContentBlock, ToolCall } from '@nexusmind/types'
+import type { LLMMessage, ContentBlock, ToolCall } from '@colomind/types'
+import type { SpaceMemoryService } from '../memory/space/service.js'
 
 // ═══════════════════════════════════════════════════════════════
 // 类型定义
@@ -88,7 +89,7 @@ export interface AuditLog {
 // 核心接口
 // ═══════════════════════════════════════════════════════════════
 
-export interface NexusMindRuntime {
+export interface ColoMindRuntime {
   // === 状态管理 ===
   saveState(namespace: string, key: string, state: unknown): Promise<void>
   loadState(namespace: string, key: string): Promise<unknown | null>
@@ -205,6 +206,9 @@ export interface RuntimeDependencies {
     write(entry: Omit<AuditLog, 'id' | 'createdAt'>): Promise<void>
     list(filter?: AuditFilter): Promise<AuditLog[]>
   }
+
+  // 语义空间记忆（可选）
+  spaceMemory?: SpaceMemoryService
 
   // 子 Agent 管理
   subAgentManager: {

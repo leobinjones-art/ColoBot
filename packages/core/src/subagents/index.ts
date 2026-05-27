@@ -4,7 +4,7 @@
  * 子 Agent 负责执行层（受限权限、TTL、工具白名单）
  */
 
-import type { LLMMessage, ContentBlock, ToolContext } from '@nexusmind/types'
+import type { LLMMessage, ContentBlock, ToolContext } from '@colomind/types'
 import type { LLMProvider, AuditLogger } from '../runtime/types.js'
 
 /** 简化的工具调用（子 Agent 内部使用） */
@@ -346,7 +346,7 @@ export async function runSubAgentTask(
             result: exec ? 'success' : 'failure',
             errorMessage: exec?.error,
           })
-          .catch(() => {})
+          .catch((e) => console.error('[SubAgent] audit write failed:', e))
       }
 
       // 审计：工具拦截
@@ -363,7 +363,7 @@ export async function runSubAgentTask(
             result: 'blocked',
             errorMessage: 'Tool not allowed',
           })
-          .catch(() => {})
+          .catch((e) => console.error('[SubAgent] audit write failed:', e))
       }
 
       const blockedText =
@@ -387,7 +387,7 @@ export async function runSubAgentTask(
         detail: { rounds: maxRounds },
         result: 'success',
       })
-      .catch(() => {})
+      .catch((e) => console.error('[SubAgent] audit write failed:', e))
 
     return finalContent || '(无回复)'
   } catch (e) {
@@ -405,7 +405,7 @@ export async function runSubAgentTask(
         result: 'failure',
         errorMessage: String(e),
       })
-      .catch(() => {})
+      .catch((e) => console.error('[SubAgent] audit write failed:', e))
     throw e
   }
 }

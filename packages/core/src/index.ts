@@ -1,5 +1,5 @@
 /**
- * @nexusmind/core - Agent 运行时核心
+ * @colomind/core - Agent 运行时核心
  *
  * 设计原则：
  * - 只导出接口定义和高层 API
@@ -14,7 +14,7 @@
 // 运行时接口
 export {
   AgentRuntime,
-  NexusMindRuntimeImpl,
+  ColoMindRuntimeImpl,
   type RunOptions,
   type RunResult,
   type RuntimeDeps,
@@ -27,7 +27,7 @@ export {
   type ResultPusher,
   type AuditEntry,
   // 新接口
-  type NexusMindRuntime,
+  type ColoMindRuntime,
   type RuntimeDependencies,
   type ChatOptions,
   type AgentConfig,
@@ -48,7 +48,7 @@ export type {
   ToolCall,
   ToolResult,
   ToolContext,
-} from '@nexusmind/types'
+} from '@colomind/types'
 
 // ═══════════════════════════════════════════════════════════════
 // Provider 实现（按需使用）
@@ -56,7 +56,6 @@ export type {
 
 export { OpenAIProvider, type OpenAIConfig } from './providers/openai.js'
 export { AnthropicProvider, type AnthropicConfig } from './providers/anthropic.js'
-export { MiniMaxProvider, type MiniMaxConfig } from './providers/minimax.js'
 export { MockProvider, type MockConfig } from './providers/mock.js'
 
 // ═══════════════════════════════════════════════════════════════
@@ -194,6 +193,15 @@ export {
 } from './logger.js'
 
 // ═══════════════════════════════════════════════════════════════
+// Assistant 集成（可选）
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  loadUserContext,
+  buildMessagesWithContext,
+} from './assistant-integration.js'
+
+// ═══════════════════════════════════════════════════════════════
 // 视觉系统
 // ═══════════════════════════════════════════════════════════════
 
@@ -247,7 +255,7 @@ export {
   getDbPath,
   resetConfig,
   exportConfig,
-  type NexusMindConfig,
+  type ColoMindConfig,
 } from './config-store/index.js'
 
 // ═══════════════════════════════════════════════════════════════
@@ -280,3 +288,165 @@ export {
   setupSimpleShutdown,
   type ShutdownOptions,
 } from './shutdown/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 数据操作（统一入口）
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  // Todo
+  listTodos,
+  getTodayTodos,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+  completeTodo,
+  // Reminder
+  listReminders,
+  createReminder,
+  deleteReminder,
+  completeReminder,
+  // Event
+  getDayEvents,
+  getWeekEvents,
+  getMonthEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  // Note
+  listNotes,
+  searchNotes,
+  createNote,
+  updateNote,
+  deleteNote,
+  // Habit
+  listHabits,
+  createHabit,
+  deleteHabit,
+  checkHabit,
+  getHabitLogs,
+  // Mood
+  getMoodEntries,
+  logMood,
+  getMoodStats,
+  // Finance
+  getFinanceEntries,
+  logFinance,
+  getFinanceStats,
+  getMonthlyStats,
+  // Goal
+  listGoals,
+  createGoal,
+  deleteGoal,
+  updateGoalProgress,
+  // Contact
+  listContacts,
+  searchContacts,
+  createContact,
+  updateContact,
+  deleteContact,
+  // Intent
+  parseIntent,
+  // User Profile
+  generateUserProfile,
+} from './data/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// LLM 抽象层
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  chat,
+  agentChat,
+  chatStream,
+  agentChatStream,
+  type ProviderType,
+} from './llm/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// Memory 系统
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  // DB
+  initDb,
+  query,
+  queryOne,
+  closeDb,
+  getPool,
+  type DbConfig,
+  // Embeddings
+  embed,
+  configureEmbedding,
+  type EmbeddingConfig,
+  // Vector Memory
+  addMemory,
+  searchMemory,
+  searchMemoryText,
+  listMemory,
+  hybridSearch,
+  // Layered Memory
+  initLayeredMemoryTables,
+  addLongTermMemory,
+  searchLongTermMemory,
+  getUserProfile as getMemoryUserProfile,
+  addEpisodicMemory,
+  searchEpisodicMemory,
+  applyDecay,
+  addWorkingMemory,
+  getWorkingMemory,
+  clearWorkingMemory,
+  searchAllMemory,
+  getMemoryContext,
+  type MemoryLayer,
+  type LongTermType,
+  type LongTermMemory,
+  type EpisodicMemory,
+  type WorkingMemory,
+  type MemorySearchResult,
+} from './memory/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 语义空间记忆系统
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  SpaceMemoryService,
+  createSpaceMemoryService,
+  SpaceStore,
+  SpaceEngine,
+  cosineSimilarity,
+  cosineDistance,
+  findNearestRoom,
+  updateCentroid,
+  kMeansSplit,
+  memoryStrength,
+  rankByStrength,
+  shouldArchive,
+  nextReviewTime,
+} from './memory/space/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// Services
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  // Knowledge
+  addKnowledge,
+  getKnowledge,
+  listKnowledge,
+  searchKnowledge,
+  deleteKnowledge,
+  type KnowledgeCategory,
+  type KnowledgeEntry,
+  // User Profile
+  getUserProfile,
+  upsertUserProfile,
+  deleteUserProfile,
+  buildProfilePrompt,
+  getProfileSummary,
+  type UserRole,
+  type ExpertiseLevel,
+  type UserProfile,
+  type ProfileUpdate,
+} from './services/index.js'

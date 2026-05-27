@@ -5,6 +5,7 @@
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
 import { createLogger } from '../utils/logger.js'
+import type { ContactRow } from '../db/types.js'
 
 const logger = createLogger('Contact')
 
@@ -68,7 +69,7 @@ export function getContact(id: string, userId: string, db?: Database.Database): 
   const database = db || getDb()
   const row = database
     .prepare(`SELECT * FROM assistant_contacts WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as any
+    .get(id, userId) as ContactRow
   return row ? rowToContact(row) : null
 }
 
@@ -98,7 +99,7 @@ export function updateContact(
   }
 
   const fields: string[] = []
-  const values: any[] = []
+  const values: (string | number | null)[] = []
 
   for (const [key, value] of Object.entries(updates)) {
     if (key === 'tags') {
@@ -107,7 +108,7 @@ export function updateContact(
     } else if (key !== 'id' && key !== 'userId' && key !== 'createdAt') {
       const column = keyToColumn[key] || key
       fields.push(`${column} = ?`)
-      values.push(value)
+      values.push(value as string | number | null)
     }
   }
 
@@ -129,7 +130,7 @@ export function updateContact(
 export function listContacts(userId: string, tag?: string, db?: Database.Database): Contact[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_contacts WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (tag) {
     sql += ` AND tags LIKE ?`
@@ -137,7 +138,7 @@ export function listContacts(userId: string, tag?: string, db?: Database.Databas
   }
 
   sql += ` ORDER BY name ASC`
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as ContactRow[]
   return rows.map(rowToContact)
 }
 
@@ -153,7 +154,7 @@ export function searchContacts(userId: string, query: string, db?: Database.Data
     ORDER BY name ASC
   `,
     )
-    .all(userId, `%${query}%`, `%${query}%`, `%${query}%`) as any[]
+    .all(userId, `%${query}%`, `%${query}%`, `%${query}%`) as ContactRow[]
   return rows.map(rowToContact)
 }
 
@@ -186,7 +187,7 @@ export function recordInteraction(
   return updateContact(id, userId, { lastContact: new Date().toISOString() }, db)
 }
 
-function rowToContact(row: any): Contact {
+function rowToContact(row: ContactRow): Contact {
   return {
     id: row.id,
     userId: row.user_id,

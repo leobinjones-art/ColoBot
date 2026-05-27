@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { ReminderRow } from '../db/types.js'
 import { parseTime, formatTime } from './time-parser.js'
 import { createLogger } from '../utils/logger.js'
 
@@ -83,7 +84,7 @@ export function createReminder(input: CreateReminderInput, db?: Database.Databas
 export function getReminder(id: string, userId: string, db?: Database.Database): Reminder | null {
   const database = db || getDb()
   const stmt = database.prepare(`SELECT * FROM assistant_reminders WHERE id = ? AND user_id = ?`)
-  const row = stmt.get(id, userId) as any
+  const row = stmt.get(id, userId) as ReminderRow
   return row ? rowToReminder(row) : null
 }
 
@@ -97,7 +98,7 @@ export function listReminders(
 ): Reminder[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_reminders WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (status) {
     sql += ` AND status = ?`
@@ -107,7 +108,7 @@ export function listReminders(
   sql += ` ORDER BY remind_at ASC`
 
   const stmt = database.prepare(sql)
-  const rows = stmt.all(...values) as any[]
+  const rows = stmt.all(...values) as ReminderRow[]
   return rows.map(rowToReminder)
 }
 
@@ -122,7 +123,7 @@ export function getPendingReminders(db?: Database.Database): Reminder[] {
     WHERE status = 'pending' AND remind_at <= ?
     ORDER BY remind_at ASC
   `)
-  const rows = stmt.all(now) as any[]
+  const rows = stmt.all(now) as ReminderRow[]
   return rows.map(rowToReminder)
 }
 
@@ -280,7 +281,7 @@ function calculateNextTime(current: Date, repeat: ReminderRepeat): Date {
   return next
 }
 
-function rowToReminder(row: any): Reminder {
+function rowToReminder(row: ReminderRow): Reminder {
   return {
     id: row.id,
     userId: row.user_id,

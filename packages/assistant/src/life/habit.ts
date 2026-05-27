@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { HabitRow, HabitLogRow } from '../db/types.js'
 import { createLogger } from '../utils/logger.js'
 
 const logger = createLogger('Habit')
@@ -59,7 +60,7 @@ export function getHabit(id: string, userId: string, db?: Database.Database): Ha
   const database = db || getDb()
   const row = database
     .prepare(`SELECT * FROM assistant_habits WHERE id = ? AND user_id = ?`)
-    .get(id, userId) as any
+    .get(id, userId) as HabitRow
   return row ? rowToHabit(row) : null
 }
 
@@ -70,7 +71,7 @@ export function listHabits(userId: string, db?: Database.Database): Habit[] {
   const database = db || getDb()
   const rows = database
     .prepare(`SELECT * FROM assistant_habits WHERE user_id = ? ORDER BY created_at ASC`)
-    .all(userId) as any[]
+    .all(userId) as HabitRow[]
   return rows.map(rowToHabit)
 }
 
@@ -119,7 +120,7 @@ export function getHabitLogs(habitId: string, limit = 30, db?: Database.Database
     SELECT * FROM assistant_habit_logs WHERE habit_id = ? ORDER BY logged_at DESC LIMIT ?
   `,
     )
-    .all(habitId, limit) as any[]
+    .all(habitId, limit) as HabitLogRow[]
   return rows.map(rowToHabitLog)
 }
 
@@ -135,7 +136,7 @@ export function getStreak(habitId: string, db?: Database.Database): number {
     WHERE habit_id = ? GROUP BY date(logged_at) ORDER BY log_date DESC
   `,
     )
-    .all(habitId) as any[]
+    .all(habitId) as HabitLogRow[]
 
   if (logs.length === 0) return 0
 
@@ -143,7 +144,7 @@ export function getStreak(habitId: string, db?: Database.Database): number {
   let lastDate = new Date()
 
   for (const log of logs) {
-    const logDate = new Date(log.log_date)
+    const logDate = new Date(log.logged_at)
     const diffDays = Math.floor((lastDate.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24))
 
     if (diffDays <= 1) {
@@ -174,7 +175,7 @@ export function isTodayChecked(habitId: string, db?: Database.Database): boolean
   return row.count > 0
 }
 
-function rowToHabit(row: any): Habit {
+function rowToHabit(row: HabitRow): Habit {
   return {
     id: row.id,
     userId: row.user_id,
@@ -184,7 +185,7 @@ function rowToHabit(row: any): Habit {
   }
 }
 
-function rowToHabitLog(row: any): HabitLog {
+function rowToHabitLog(row: HabitLogRow): HabitLog {
   return {
     id: row.id,
     habitId: row.habit_id,

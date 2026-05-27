@@ -1,11 +1,11 @@
-# @nexusmind/core
+# @colomind/core
 
-NexusMind Agent 运行时核心库。
+ColoMind Agent 运行时核心库。
 
 ## 安装
 
 ```bash
-npm install @nexusmind/core
+npm install @colomind/core
 ```
 
 ## 功能模块
@@ -30,13 +30,13 @@ export LLM_PROVIDER=anthropic
 export ANTHROPIC_API_KEY=your-api-key
 
 # 运行 CLI
-npx nexusmind-core
+npx colomind-core
 
 # 指定模型
-nexusmind-core -p anthropic -m claude-sonnet-4-20250514
+colomind-core -p anthropic -m claude-sonnet-4-20250514
 
 # 指定配置文件
-nexusmind-core -c /path/to/config.json
+colomind-core -c /path/to/config.json
 ```
 
 ### CLI 命令
@@ -74,7 +74,7 @@ SUBAGENT_MAX_CONCURRENT=10
 
 ### 配置文件
 
-`~/.nexusmind/config.json` 或 `./nexusmind.config.json`
+`~/.colomind/config.json` 或 `./colomind.config.json`
 
 ```json
 {
@@ -137,7 +137,7 @@ import {
   initConfig,
   setGlobalAllowedTools,
   OpenAIProvider,
-} from '@nexusmind/core'
+} from '@colomind/core'
 
 // 初始化配置
 const config = initConfig()
@@ -169,7 +169,7 @@ const result = await runtime.run({
 ### 任务拆解
 
 ```typescript
-import { analyzeRequest, executeDynamicTask } from '@nexusmind/core'
+import { analyzeRequest, executeDynamicTask } from '@colomind/core'
 
 // 分析请求
 const analysis = await analyzeRequest('分析销售数据', llm, deps)
@@ -181,7 +181,7 @@ const result = await executeDynamicTask('分析销售数据', 'parent-1', llm, d
 ### 子Agent管理
 
 ```typescript
-import { spawnSubAgent, runSubAgentTask } from '@nexusmind/core'
+import { spawnSubAgent, runSubAgentTask } from '@colomind/core'
 
 // 创建子Agent
 const agent = spawnSubAgent({
@@ -198,7 +198,7 @@ const result = await runSubAgentTask(agent, '分析数据', 'parent-1', deps)
 ### 大文件处理
 
 ```typescript
-import { processChunksParallel, mergeText } from '@nexusmind/core'
+import { processChunksParallel, mergeText } from '@colomind/core'
 
 // 分块并行处理
 const results = await processChunksParallel(
@@ -217,7 +217,7 @@ const final = mergeText(results)
 ### 模型能力
 
 ```typescript
-import { getModelCapabilities } from '@nexusmind/core'
+import { getModelCapabilities } from '@colomind/core'
 
 // 获取模型能力（自动计算分块参数）
 const caps = getModelCapabilities('gpt-4o')
@@ -230,7 +230,7 @@ const caps2 = getModelCapabilities('claude-sonnet-4-20250514')
 ### 向量搜索
 
 ```typescript
-import { initDb, addMemory, searchMemory, hybridSearch } from '@nexusmind/core'
+import { initDb, addMemory, searchMemory, hybridSearch } from '@colomind/core'
 
 initDb()
 
@@ -247,7 +247,7 @@ const hybrid = await hybridSearch('agent-1', '记忆')
 ### 内容安全
 
 ```typescript
-import { ContentScanner, detectThreat, validateContent } from '@nexusmind/core'
+import { ContentScanner, detectThreat, validateContent } from '@colomind/core'
 
 const scanner = new ContentScanner()
 
@@ -272,7 +272,7 @@ console.log(threat.isThreat) // true
 | ✅ 搜索集成        | 4引擎支持                      |
 | ✅ 内置工具        | 12个工具                       |
 | ✅ PostgreSQL 存储 | pgvector 向量支持              |
-| ✅ 向量嵌入        | OpenAI / MiniMax Embeddings    |
+| ✅ 向量嵌入        | OpenAI Embeddings              |
 | ✅ 语义搜索        | 向量 + 文本混合搜索            |
 | ✅ 内容安全        | 越狱/注入检测                  |
 | ✅ 威胁检测        | 卸载/删除威胁识别              |

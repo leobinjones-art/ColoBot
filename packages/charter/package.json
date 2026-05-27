@@ -1,7 +1,7 @@
 {
-  "name": "@nexusmind/charter",
-  "version": "0.1.0",
-  "description": "NexusMind 许可证系统 — 定义 AI 能力边界，绑定文档库",
+  "name": "@colomind/charter",
+  "version": "0.1.1",
+  "description": "ColoMind Charter System - Define AI capability boundaries with document bindings",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexusmind/nexusmind.git",
+    "url": "https://github.com/colomind/colomind.git",
     "directory": "packages/charter"
   },
   "scripts": {
@@ -25,7 +25,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexusmind/types": "*"
+    "@colomind/types": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

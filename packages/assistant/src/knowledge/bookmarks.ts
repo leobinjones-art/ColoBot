@@ -4,6 +4,7 @@
 
 import Database from 'better-sqlite3'
 import { getDb, generateId } from '../db/schema.js'
+import { BookmarkRow } from '../db/types.js'
 
 export interface Bookmark {
   id: string
@@ -55,7 +56,7 @@ export function createBookmark(input: CreateBookmarkInput, db?: Database.Databas
 export function getBookmark(id: string, userId: string, db?: Database.Database): Bookmark | null {
   const database = db || getDb()
   const stmt = database.prepare(`SELECT * FROM assistant_bookmarks WHERE id = ? AND user_id = ?`)
-  const row = stmt.get(id, userId) as any
+  const row = stmt.get(id, userId) as BookmarkRow
   return row ? rowToBookmark(row) : null
 }
 
@@ -74,7 +75,7 @@ export function deleteBookmark(id: string, userId: string, db?: Database.Databas
 export function listBookmarks(userId: string, tag?: string, db?: Database.Database): Bookmark[] {
   const database = db || getDb()
   let sql = `SELECT * FROM assistant_bookmarks WHERE user_id = ?`
-  const values: any[] = [userId]
+  const values: (string | number | null)[] = [userId]
 
   if (tag) {
     sql += ` AND tags LIKE ?`
@@ -83,7 +84,7 @@ export function listBookmarks(userId: string, tag?: string, db?: Database.Databa
 
   sql += ` ORDER BY created_at DESC`
 
-  const rows = database.prepare(sql).all(...values) as any[]
+  const rows = database.prepare(sql).all(...values) as BookmarkRow[]
   return rows.map(rowToBookmark)
 }
 
@@ -98,11 +99,11 @@ export function searchBookmarks(userId: string, query: string, db?: Database.Dat
     ORDER BY created_at DESC
   `)
   const pattern = `%${query}%`
-  const rows = stmt.all(userId, pattern, pattern, pattern) as any[]
+  const rows = stmt.all(userId, pattern, pattern, pattern) as BookmarkRow[]
   return rows.map(rowToBookmark)
 }
 
-function rowToBookmark(row: any): Bookmark {
+function rowToBookmark(row: BookmarkRow): Bookmark {
   return {
     id: row.id,
     userId: row.user_id,

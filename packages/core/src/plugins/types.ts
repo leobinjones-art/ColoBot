@@ -1,11 +1,11 @@
 /**
- * @nexusmind/core - 插件系统
+ * @colomind/core - 插件系统
  */
 
-import type { RuntimeTool, ToolContext, ToolResult } from '@nexusmind/types'
+import type { RuntimeTool, ToolContext, ToolResult } from '@colomind/types'
 
 // 重新导出
-export type { RuntimeTool, ToolContext, ToolResult } from '@nexusmind/types'
+export type { RuntimeTool, ToolContext, ToolResult } from '@colomind/types'
 
 /**
  * 插件定义
