@@ -23,7 +23,7 @@
     "svelte": "^5",
     "svelte-spa-router": "^4",
     "highlight.js": "^11",
-    "marked": "^15",
+    "marked": "^18",
     "hono": "^4",
     "@hono/node-server": "^1"
   },
