@@ -21,7 +21,7 @@
     "@tauri-apps/plugin-autostart": "^2",
     "@tauri-apps/plugin-shell": "^2",
     "svelte": "^5",
-    "svelte-spa-router": "^4",
+    "svelte-spa-router": "^5",
     "highlight.js": "^11",
     "marked": "^15",
     "hono": "^4",
