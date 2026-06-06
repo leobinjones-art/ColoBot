@@ -1,6 +1,6 @@
 {
   "name": "@colomind/sentinel",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "description": "ColoMind Security Guardian - Input/output scanning, process monitoring, exception takeover",
   "license": "AGPL-3.0",
   "type": "module",

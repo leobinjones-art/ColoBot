@@ -23,6 +23,15 @@ export interface ToolResult {
 }
 
 // 工具执行上下文
+export interface LLMConfig {
+  provider: 'openai' | 'anthropic'
+  apiKey: string
+  endpoint: string
+  model: string
+  maxTokens?: number
+  temperature?: number
+}
+
 export interface ToolContext {
   agentId: string
   sessionKey: string
@@ -32,6 +41,7 @@ export interface ToolContext {
   timeout?: number
   ipAddress?: string
   userRole?: 'admin' | 'developer' | 'readonly'
+  llmConfig?: LLMConfig
 }
 
 // 工具定义（运行时）

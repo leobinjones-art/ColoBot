@@ -21,15 +21,10 @@ import {
   type ToolContext,
 } from './tools/executor.js'
 import { hybridSearch } from '../memory/vector.js'
-import { writeAudit } from '../services/audit.js'
 import { approvalFlow, ApprovalActionType, type ApprovalRequest } from './approval.js'
 import { checkDangerousLevel, recordToolHit } from './approval-rules.js'
 import { query } from '../memory/db.js'
 import { pushWsResult, pushWsChunk, pushWsDone } from '../ws-push.js'
-import { scanInput, scanOutput } from '../content-policy/guard.js'
-import { detectThreat, buildUninstallConfirmPrompt } from '../content-policy/threat.js'
-import { handleSopFlow, shouldTriggerSop } from './sop-handler.js'
-import { getSopState as getSopStateV2 } from './sop-v2.js'
 import { parseCommand, executeCommand } from './chat-commands.js'
 
 /**
@@ -273,16 +268,6 @@ export async function runAgent(opts: RunOptions): Promise<RunResult | PendingRes
     await sessionManager.appendMessage(agentId, sessionKey, 'assistant', blockResponse)
     pushWsResult(agentId, sessionKey, blockResponse)
     return { response: blockResponse, toolCalls: [], finished: true }
-  }
-
-  // ── AI 驱动的 SOP 流程 ──
-  const sopResult = await handleSopFlow(messageTextStr, agentId, sessionKey)
-
-  if (sopResult.action !== 'none' && sopResult.response) {
-    // SOP 响应直接返回，跳过内容安全检测（用户主动发起的研究任务）
-    await sessionManager.appendMessage(agentId, sessionKey, 'assistant', sopResult.response)
-    pushWsResult(agentId, sessionKey, sopResult.response)
-    return { response: sopResult.response, toolCalls: [], finished: true }
   }
 
   // 获取历史消息
@@ -656,16 +641,6 @@ export async function runAgentStream(opts: RunStreamOptions): Promise<void> {
     const messages = getMessages(detectLocale(messageText))
     const blockResponse = messages.errors.messageBlocked
     pushWsResult(agentId, sessionKey, blockResponse)
-    pushWsDone(agentId, sessionKey)
-    return
-  }
-
-  // ── AI 驱动的 SOP 流程（WebSocket 模式）─
-  const sopResult = await handleSopFlow(messageText, agentId, sessionKey)
-
-  if (sopResult.action !== 'none' && sopResult.response) {
-    // SOP 响应直接返回，跳过内容安全检测（用户主动发起的研究任务）
-    pushWsResult(agentId, sessionKey, sopResult.response)
     pushWsDone(agentId, sessionKey)
     return
   }

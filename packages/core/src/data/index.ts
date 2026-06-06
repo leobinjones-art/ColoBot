@@ -10,7 +10,6 @@ let _assistant: any = null
 async function getAssistant() {
   if (_assistant === null) {
     try {
-      // @ts-expect-error — optional dependency, may not be installed at build time
       _assistant = await import('@colomind/assistant')
     } catch {
       _assistant = undefined

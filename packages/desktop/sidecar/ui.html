@@ -2,1197 +2,693 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ColoMind</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-:root { --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460; --text: #e0e0e0; --text2: #a0a0a0; --accent: #4e9af1; --accent2: #3a7bd5; --danger: #e74c3c; --success: #2ecc71; --warn: #f39c12; --border: #2a2a4a; --code-bg: #2d2d4a; --purple: #9b59b6; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+:root {
+  --bg0: #171717; --bg1: #212121; --bg2: #2f2f2f; --bg3: #3a3a3a;
+  --text: #ececec; --text2: #9a9a9a; --text3: #6e6e6e;
+  --accent: #7c6aef; --accent2: #9d8df0; --accent3: #5a4cc7;
+  --red: #e74c3c; --green: #2ecc71; --orange: #f39c12; --blue: #3498db;
+  --border: #3a3a3a; --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg0); color:var(--text); height:100vh; overflow:hidden; }
+::selection { background:var(--accent3); }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--bg3); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+input,textarea,select,button { font-family:inherit; }
 
-/* Sidebar */
-.sidebar { width: 220px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
-.sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.sidebar-header h2 { font-size: 16px; font-weight: 600; }
-.sidebar-header .greeting { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.sidebar-header .status { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; margin-top: 4px; }
-.sidebar-header .status .dot { width: 6px; height: 6px; border-radius: 50%; }
-.sidebar-header .status.ok .dot { background: var(--success); }
-.sidebar-header .status.err .dot { background: var(--danger); }
+/* ── Layout ── */
+.app { display:flex; height:100vh; }
 
-.nav-group { padding: 8px 0; }
-.nav-group-label { font-size: 10px; font-weight: 600; color: var(--text2); padding: 4px 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-.nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 16px; border: none; background: none; color: var(--text2); font-size: 13px; cursor: pointer; text-align: left; }
-.nav-item:hover { background: var(--bg3); color: var(--text); }
-.nav-item.active { background: var(--bg3); color: var(--accent); border-left: 3px solid var(--accent); }
-.nav-item .icon { font-size: 14px; width: 20px; text-align: center; }
+/* ── Sidebar ── */
+.sidebar {
+  width:260px; min-width:260px; background:var(--bg1); display:flex; flex-direction:column;
+  border-right:1px solid var(--border); transition:width .2s;
+}
+.sidebar.collapsed { width:0; min-width:0; overflow:hidden; border:none; }
+.sidebar-header { padding:12px; }
+.new-chat-btn {
+  width:100%; padding:10px 14px; background:transparent; border:1px solid var(--border);
+  color:var(--text); border-radius:var(--radius); cursor:pointer; font-size:13px;
+  display:flex; align-items:center; gap:8px; transition:background .15s;
+}
+.new-chat-btn:hover { background:var(--bg2); }
+.session-list { flex:1; overflow-y:auto; padding:4px 8px; }
+.session-item {
+  padding:10px 12px; border-radius:8px; cursor:pointer; font-size:13px;
+  color:var(--text2); transition:background .15s; display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:2px; white-space:nowrap; overflow:hidden;
+}
+.session-item:hover { background:var(--bg2); color:var(--text); }
+.session-item.active { background:var(--bg3); color:var(--text); }
+.session-item .title { overflow:hidden; text-overflow:ellipsis; flex:1; }
+.session-item .del {
+  opacity:0; background:none; border:none; color:var(--text3); cursor:pointer;
+  font-size:14px; padding:2px 4px; border-radius:4px;
+}
+.session-item:hover .del { opacity:1; }
+.session-item .del:hover { color:var(--red); }
+.sidebar-footer { padding:12px; border-top:1px solid var(--border); }
 
-/* Session list (in chat view) */
-.sessions { flex: 1; overflow-y: auto; padding: 4px 8px; }
-.session-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; color: var(--text2); }
-.session-item:hover { background: var(--bg3); color: var(--text); }
-.session-item.active { background: var(--bg3); color: var(--text); border-left: 3px solid var(--accent); }
-.session-item .del { color: var(--danger); cursor: pointer; opacity: 0; font-size: 11px; }
-.session-item:hover .del { opacity: 1; }
+/* ── Main ── */
+.main { flex:1; display:flex; flex-direction:column; min-width:0; }
 
-/* Main content */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.topbar { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.topbar h1 { font-size: 15px; flex: 1; }
-.topbar .badge { font-size: 11px; color: var(--text2); background: var(--bg2); padding: 3px 8px; border-radius: 4px; }
-.topbar button { background: none; border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-.topbar button:hover { border-color: var(--accent); color: var(--accent); }
+/* ── Top Bar ── */
+.topbar {
+  padding:10px 20px; display:flex; align-items:center; gap:12px;
+  border-bottom:1px solid var(--border); background:var(--bg1); min-height:52px;
+}
+.topbar .menu-btn {
+  background:none; border:none; color:var(--text2); cursor:pointer; font-size:18px;
+  padding:4px 8px; border-radius:6px;
+}
+.topbar .menu-btn:hover { background:var(--bg2); color:var(--text); }
+.topbar .logo { font-size:16px; font-weight:700; color:var(--text); letter-spacing:-.3px; }
+.topbar .logo span { color:var(--accent); }
+.model-select {
+  background:var(--bg2); border:1px solid var(--border); color:var(--text);
+  padding:6px 28px 6px 10px; border-radius:8px; font-size:13px; cursor:pointer;
+  outline:none; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239a9a9a'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+}
+.model-select:hover { border-color:var(--accent); }
+.topbar .spacer { flex:1; }
+.topbar .icon-btn {
+  background:none; border:none; color:var(--text2); cursor:pointer; font-size:16px;
+  padding:6px 10px; border-radius:6px; transition:background .15s;
+}
+.topbar .icon-btn:hover { background:var(--bg2); color:var(--text); }
 
-/* Page container */
-.page { flex: 1; overflow-y: auto; padding: 20px; display: none; }
-.page.active { display: block; }
+/* ── Chat Area ── */
+.chat-area { flex:1; overflow-y:auto; padding:20px 0; }
+.chat-container { max-width:720px; margin:0 auto; padding:0 24px; }
 
-/* Chat */
-.messages { flex: 1; overflow-y: auto; padding: 20px; }
-.msg { margin-bottom: 16px; max-width: 80%; }
-.msg.user { margin-left: auto; }
-.msg .role { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
-.msg .content { padding: 10px 14px; border-radius: 10px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-.msg.user .content { background: var(--bg3); border-bottom-right-radius: 2px; }
-.msg.assistant .content { background: var(--bg2); border-bottom-left-radius: 2px; }
-.msg.assistant .content code { background: var(--code-bg); padding: 2px 5px; border-radius: 3px; font-size: 13px; }
-.msg.assistant .content pre { background: var(--code-bg); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0; }
-.msg.assistant .content pre code { background: none; padding: 0; }
-.msg .thinking { background: rgba(78,154,241,0.08); border: 1px solid rgba(78,154,241,0.2); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: 12px; color: var(--text2); line-height: 1.5; cursor: pointer; }
-.msg .thinking::before { content: '💭 思考中...'; display: block; color: var(--accent); font-size: 11px; margin-bottom: 4px; font-weight: 600; }
-.msg .thinking.done::before { content: '💭 思考过程'; }
-.msg .thinking.collapsed { max-height: 24px; overflow: hidden; }
-.msg .thinking.collapsed::before { content: '💭 思考过程 (点击展开)'; }
-.input-area { padding: 12px 20px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
-.input-row { display: flex; gap: 10px; }
-.input-row textarea { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 14px; resize: none; outline: none; font-family: inherit; min-height: 44px; max-height: 150px; }
-.input-row textarea:focus { border-color: var(--accent); }
-.input-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0 20px; cursor: pointer; font-size: 14px; }
-.input-row button:hover { background: var(--accent2); }
-.input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+.welcome {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; text-align:center; padding:40px;
+}
+.welcome h2 { font-size:24px; font-weight:600; margin-bottom:8px; }
+.welcome p { color:var(--text2); font-size:14px; max-width:400px; line-height:1.6; }
+.welcome .chips { display:flex; gap:8px; margin-top:20px; flex-wrap:wrap; justify-content:center; }
+.welcome .chip {
+  padding:8px 16px; background:var(--bg2); border:1px solid var(--border);
+  border-radius:20px; font-size:13px; color:var(--text2); cursor:pointer; transition:all .15s;
+}
+.welcome .chip:hover { border-color:var(--accent); color:var(--text); }
 
-/* Tool call */
-.tool-call { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; margin: 6px 0; font-size: 12px; color: var(--text2); cursor: pointer; }
-.tool-call .tool-name { color: var(--accent); font-weight: 600; }
-.tool-call .tool-result { margin-top: 6px; color: var(--text); font-size: 13px; display: none; }
-.tool-call.expanded .tool-result { display: block; }
+.msg { padding:16px 0; animation:fadeIn .2s; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.msg.user { display:flex; justify-content:flex-end; }
+.msg .bubble {
+  max-width:85%; padding:12px 16px; border-radius:16px; font-size:14px;
+  line-height:1.7; word-break:break-word; white-space:pre-wrap;
+}
+.msg.user .bubble { background:var(--accent3); color:#fff; border-bottom-right-radius:4px; }
+.msg.assistant .bubble { background:var(--bg2); border-bottom-left-radius:4px; }
+.msg.assistant .bubble code {
+  background:var(--bg0); padding:2px 6px; border-radius:4px; font-size:13px;
+  font-family:'SF Mono',Menlo,Consolas,monospace;
+}
+.msg.assistant .bubble pre {
+  background:var(--bg0); padding:12px 16px; border-radius:8px; overflow-x:auto;
+  margin:8px 0; font-size:13px; font-family:'SF Mono',Menlo,Consolas,monospace;
+}
+.msg.assistant .bubble pre code { background:none; padding:0; }
+.msg .meta { font-size:11px; color:var(--text3); margin-top:4px; padding:0 4px; }
+.typing-indicator { display:flex; gap:4px; padding:12px 16px; }
+.typing-indicator span {
+  width:8px; height:8px; background:var(--text3); border-radius:50%;
+  animation:bounce 1.4s infinite both;
+}
+.typing-indicator span:nth-child(2) { animation-delay:.2s; }
+.typing-indicator span:nth-child(3) { animation-delay:.4s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
 
-/* Cards */
-.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
-.card h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+/* ── Input Area ── */
+.input-area { padding:12px 24px 20px; }
+.input-wrapper {
+  max-width:720px; margin:0 auto; background:var(--bg2); border:1px solid var(--border);
+  border-radius:16px; display:flex; align-items:flex-end; padding:8px 12px;
+  transition:border-color .15s;
+}
+.input-wrapper:focus-within { border-color:var(--accent); }
+.input-wrapper textarea {
+  flex:1; background:none; border:none; color:var(--text); font-size:14px;
+  resize:none; outline:none; min-height:24px; max-height:150px; line-height:1.5;
+  padding:4px 8px;
+}
+.input-wrapper textarea::placeholder { color:var(--text3); }
+.send-btn {
+  width:36px; height:36px; border-radius:8px; background:var(--accent); border:none;
+  color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:16px; transition:background .15s; flex-shrink:0;
+}
+.send-btn:hover { background:var(--accent2); }
+.send-btn:disabled { opacity:.4; cursor:not-allowed; }
+.input-hint { text-align:center; font-size:11px; color:var(--text3); margin-top:8px; }
 
-/* Tags */
-.tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-right: 4px; margin-bottom: 4px; }
-.tag-accent { background: rgba(78,154,241,0.15); color: var(--accent); }
-.tag-success { background: rgba(46,204,113,0.15); color: var(--success); }
-.tag-danger { background: rgba(231,76,60,0.15); color: var(--danger); }
-.tag-warn { background: rgba(243,156,18,0.15); color: var(--warn); }
-.tag-purple { background: rgba(155,89,182,0.15); color: var(--purple); }
+/* ── Modals / Drawers ── */
+.drawer-overlay {
+  position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.5);
+  z-index:100; display:none; animation:fadeIn .15s;
+}
+.drawer-overlay.open { display:flex; justify-content:flex-end; }
+.drawer {
+  width:480px; max-width:90vw; background:var(--bg1); height:100vh;
+  display:flex; flex-direction:column; animation:slideIn .2s;
+}
+@keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:none;opacity:1} }
+.drawer-header {
+  padding:16px 20px; display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.drawer-header h3 { font-size:15px; font-weight:600; }
+.drawer-header .close-btn {
+  background:none; border:none; color:var(--text2); cursor:pointer; font-size:18px;
+  padding:4px; border-radius:6px;
+}
+.drawer-header .close-btn:hover { background:var(--bg2); color:var(--text); }
+.drawer-body { flex:1; overflow-y:auto; padding:20px; }
 
-/* Sentinel */
-.sentinel-layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-.sentinel-layer { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
-.sentinel-layer h4 { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-.sentinel-layer .status-icon { font-size: 24px; margin-bottom: 4px; }
-.sentinel-layer .status-text { font-size: 13px; font-weight: 600; }
-.sentinel-scan { display: flex; gap: 8px; margin-bottom: 16px; }
-.sentinel-scan input { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; }
-.sentinel-scan input:focus { border-color: var(--accent); }
-.sentinel-scan button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-size: 13px; }
-.sentinel-result { padding: 14px; border-radius: 10px; margin-bottom: 16px; }
-.sentinel-result.safe { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); }
-.sentinel-result.blocked { background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3); }
+/* ── Settings Form ── */
+.section-title { font-size:12px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin:20px 0 10px; }
+.section-title:first-child { margin-top:0; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+.form-group input, .form-group select {
+  width:100%; padding:8px 12px; background:var(--bg2); border:1px solid var(--border);
+  color:var(--text); border-radius:8px; font-size:13px; outline:none;
+}
+.form-group input:focus, .form-group select:focus { border-color:var(--accent); }
+.form-group .hint { font-size:11px; color:var(--text3); margin-top:4px; }
+.save-btn {
+  width:100%; padding:10px; background:var(--accent); color:#fff; border:none;
+  border-radius:8px; font-size:13px; cursor:pointer; margin-top:8px;
+}
+.save-btn:hover { background:var(--accent2); }
 
-/* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; width: 560px; max-height: 80vh; overflow-y: auto; }
-.modal h2 { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 16px; }
-.modal-body { padding: 20px; }
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-.form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 13px; outline: none; font-family: inherit; }
-.form-group textarea { resize: vertical; min-height: 80px; }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
-.form-group .hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
-.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
-.form-actions button { padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; border: none; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-secondary { background: var(--border); color: var(--text); }
-.btn-danger { background: var(--danger); color: #fff; }
-.section-title { font-size: 13px; font-weight: 600; color: var(--accent); margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+/* ── Pool Table ── */
+.pool-table { width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
+.pool-table th {
+  text-align:left; padding:10px 12px; color:var(--text3); font-size:11px;
+  font-weight:600; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border);
+}
+.pool-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.pool-table tr:hover td { background:var(--bg2); }
+.tag {
+  display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px;
+  margin-right:4px; background:var(--bg3); color:var(--text2);
+}
+.tag.default { background:var(--accent3); color:#fff; }
+.tag.fast { background:#1a6b3c; color:#fff; }
+.tag.cheap { background:#1a5276; color:#fff; }
+.tag.powerful { background:#7d3c98; color:#fff; }
+.tag.expensive { background:#922b21; color:#fff; }
+.btn-sm {
+  padding:4px 10px; border:none; border-radius:6px; font-size:11px;
+  cursor:pointer; margin-right:4px; transition:opacity .15s;
+}
+.btn-sm:hover { opacity:.85; }
+.btn-sm.primary { background:var(--accent); color:#fff; }
+.btn-sm.danger { background:var(--red); color:#fff; }
+.pool-actions { display:flex; justify-content:flex-end; margin-bottom:16px; }
+.add-btn {
+  padding:8px 16px; background:var(--accent); color:#fff; border:none;
+  border-radius:8px; cursor:pointer; font-size:12px;
+}
+.add-btn:hover { background:var(--accent2); }
 
-/* Config prompt */
-.config-prompt { text-align: center; padding-top: 30vh; }
-.config-prompt p { color: var(--text2); font-size: 14px; margin-bottom: 16px; }
-.config-prompt button { background: var(--accent); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+/* ── Status badges ── */
+.status-row { display:flex; gap:16px; flex-wrap:wrap; margin:10px 0; }
+.status-badge {
+  display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2);
+  padding:6px 12px; background:var(--bg2); border-radius:8px;
+}
+.status-dot { width:8px; height:8px; border-radius:50%; }
+.status-dot.green { background:var(--green); }
+.status-dot.red { background:var(--red); }
+.status-dot.orange { background:var(--orange); }
 
-/* Log panel */
-.log-entry { padding: 6px 8px; border-bottom: 1px solid var(--border); line-height: 1.5; }
-.log-entry:hover { background: var(--bg3); }
-.log-entry .log-time { color: var(--text2); font-size: 11px; }
-.log-entry .log-level { font-weight: 600; font-size: 11px; padding: 1px 4px; border-radius: 3px; }
-.log-entry .log-level.error { color: var(--danger); background: rgba(231,76,60,0.15); }
-.log-entry .log-level.warn { color: var(--warn); background: rgba(243,156,18,0.15); }
-.log-entry .log-level.info { color: var(--accent); background: rgba(78,154,241,0.15); }
-.log-entry .log-level.debug { color: var(--text2); background: rgba(160,160,160,0.1); }
-.log-entry .log-cat { color: var(--text2); font-size: 11px; }
-.log-entry .log-msg { color: var(--text); margin-top: 2px; }
-.log-entry .log-detail { color: var(--text2); font-size: 11px; margin-top: 2px; word-break: break-all; }
-.log-entry .log-dur { color: var(--purple); font-size: 11px; }
-
-/* Tabs */
-.tabs { display: flex; gap: 2px; padding: 4px; background: var(--bg2); border-radius: 8px; margin-bottom: 16px; }
-.tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; border-radius: 6px; cursor: pointer; border: none; background: none; color: var(--text2); font-weight: 500; }
-.tab.active { background: var(--accent); color: #fff; }
-.tab:hover:not(.active) { background: var(--bg3); }
-
-/* Table */
-.table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; padding: 10px 14px; background: var(--bg2); color: var(--text2); font-weight: 500; font-size: 12px; }
-td { padding: 8px 14px; border-top: 1px solid var(--border); }
-tr:hover td { background: var(--bg2); }
-
-/* Empty state */
-.empty { text-align: center; padding: 48px 20px; color: var(--text2); }
-.empty .icon { font-size: 32px; margin-bottom: 8px; }
-
-/* Light theme */
-[data-theme="light"] { --bg: #f5f5f5; --bg2: #ffffff; --bg3: #e8e8e8; --text: #1a1a1a; --text2: #666666; --accent: #2563eb; --accent2: #1d4ed8; --border: #d4d4d4; --code-bg: #f0f0f0; --danger: #dc2626; --success: #16a34a; --warn: #d97706; --purple: #7c3aed; }
-[data-theme="light"] .msg.user .content { background: #e0e7ff; }
-[data-theme="light"] .msg.assistant .content { background: #f9fafb; }
-[data-theme="light"] .tool-call { background: #f0f0f0; }
-[data-theme="light"] .msg .thinking { background: rgba(37,99,235,0.06); border-color: rgba(37,99,235,0.2); }
+/* ── Responsive ── */
+@media(max-width:768px) {
+  .sidebar { position:fixed; z-index:50; height:100vh; }
+  .sidebar.collapsed { width:0; }
+  .drawer { width:100vw; }
+}
 </style>
 </head>
 <body>
-
-<!-- Sidebar -->
-<div class="sidebar">
-  <div class="sidebar-header">
-    <h2>ColoMind</h2>
-    <div class="greeting" id="userGreeting"></div>
-    <div class="status" id="connStatus"><span class="dot"></span> <span>Connecting...</span></div>
-  </div>
-
-  <div class="nav-group">
-    <div class="nav-group-label">智能</div>
-    <button class="nav-item active" data-page="chat" onclick="switchPage('chat')"><span class="icon">💬</span> 对话</button>
-    <button class="nav-item" data-page="agents" onclick="switchPage('agents')"><span class="icon">🤖</span> Agent</button>
-  </div>
-  <div class="nav-group">
-    <div class="nav-group-label">安全</div>
-    <button class="nav-item" data-page="sentinel" onclick="switchPage('sentinel')"><span class="icon">🛡️</span> Sentinel</button>
-  </div>
-  <div class="nav-group">
-    <div class="nav-group-label">系统</div>
-    <button class="nav-item" data-page="logs" onclick="switchPage('logs')"><span class="icon">📋</span> 日志</button>
-    <button class="nav-item" data-page="charter" onclick="switchPage('charter')"><span class="icon">📜</span> 许可证</button>
-    <button class="nav-item" data-page="skills" onclick="switchPage('skills')"><span class="icon">⚡</span> 技能</button>
-  </div>
-
-  <div style="flex:1"></div>
-
-  <!-- Session list (shown in chat mode) -->
-  <div id="sessionSection" style="border-top:1px solid var(--border);max-height:200px;overflow-y:auto;padding:8px">
-    <div style="font-size:10px;color:var(--text2);padding:4px 8px;font-weight:600">对话历史</div>
-    <div id="sessionList" style="font-size:12px"></div>
-  </div>
-
-  <div class="nav-group" style="border-top:1px solid var(--border);padding-top:8px">
-    <button class="nav-item" data-page="settings" onclick="switchPage('settings')"><span class="icon">⚙️</span> 设置</button>
-  </div>
-</div>
-
-<!-- Main -->
-<div class="main">
-  <!-- Chat Page -->
-  <div id="page-chat" class="page active" style="display:flex;flex-direction:column;padding:0">
-    <div class="topbar">
-      <h1 id="chatTitle">ColoMind</h1>
-      <span class="badge" id="modelBadge"></span>
-      <button onclick="newSession()">+ 新对话</button>
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button class="new-chat-btn" onclick="newSession()">
+        <span>✚</span> 新对话
+      </button>
     </div>
-    <div class="messages" id="msgArea"></div>
-    <div class="input-area">
-      <div id="filePreviewArea" style="display:none;margin-bottom:6px"></div>
-      <div class="input-row">
-        <input type="file" id="fileInput" multiple accept=".txt,.md,.csv,.json,.log,.py,.js,.ts,.tsx,.jsx,.html,.css,.xml,.yaml,.yml,.toml,.ini,.conf,.sh,.bash,.zsh,.sql,.rs,.go,.java,.c,.cpp,.h,.hpp,.rb,.php,.swift,.kt,.gradle,.properties,.env,.gitignore,.dockerfile,.pdf,.png,.jpg,.jpeg,.gif,.webp,.svg" style="display:none">
-        <button onclick="document.getElementById('fileInput').click()" style="background:none;border:1px solid var(--border);color:var(--text2);padding:0 10px;border-radius:8px;cursor:pointer;font-size:16px" title="上传文件">📎</button>
-        <textarea id="msgInput" placeholder="输入消息... (Enter 发送, Shift+Enter 换行)" rows="1"></textarea>
-        <button id="sendBtn" onclick="sendMessage()">发送</button>
+    <div class="session-list" id="sessionList"></div>
+    <div class="sidebar-footer">
+      <div style="font-size:11px;color:var(--text3);text-align:center">ColoMind v1.0</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()" title="切换侧栏">☰</button>
+      <div class="logo">Colo<span>Mind</span></div>
+      <select id="llmSelect" class="model-select" onchange="onModelChange()"><option value="default">加载中...</option></select>
+      <div class="spacer"></div>
+      <button class="icon-btn" onclick="openDrawer('status')" title="状态">🛡️</button>
+      <button class="icon-btn" onclick="openDrawer('settings')" title="设置">⚙️</button>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chatArea">
+      <div class="chat-container" id="chatContainer">
+        <div class="welcome" id="welcome">
+          <h2>你好，我是 ColoMind</h2>
+          <p>内置安全守护的 AI 智能体框架，随时为你服务</p>
+          <div class="chips">
+            <div class="chip" onclick="quickSend('帮我搜索最新的 AI 变现模式')">🔍 搜索 AI 变现</div>
+            <div class="chip" onclick="quickSend('查看 Sentinel 安全状态')">🛡️ 安全状态</div>
+            <div class="chip" onclick="quickSend('列出可用的工具和技能')">🔧 可用工具</div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Agents Page -->
-  <div id="page-agents" class="page">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:16px">🤖 Agent 管理</h1>
-    <div id="agentList"></div>
-  </div>
-
-  <!-- Sentinel Page -->
-  <div id="page-sentinel" class="page">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:16px">🛡️ Sentinel 安全系统</h1>
-    <div id="sentinelContent"></div>
-  </div>
-
-  <!-- Logs Page -->
-  <div id="page-logs" class="page">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:16px">📋 系统日志</h1>
-    <div id="logsContent"></div>
-  </div>
-
-  <!-- Charter Page -->
-  <div id="page-charter" class="page">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:16px">📜 Charter 许可证</h1>
-    <div id="charterContent"></div>
-  </div>
-
-  <!-- Skills Page -->
-  <div id="page-skills" class="page">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:16px">⚡ 技能</h1>
-    <div id="skillsContent"></div>
-  </div>
-
-  <!-- Settings Page -->
-  <div id="page-settings" class="page">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:16px">⚙️ 设置</h1>
-    <div id="settingsContent"></div>
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea id="msgInput" placeholder="输入消息..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+          oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="发送">➤</button>
+      </div>
+      <div class="input-hint">Enter 发送 · Shift+Enter 换行</div>
+    </div>
   </div>
 </div>
 
-<div id="modalContainer" style="display:none"></div>
+<!-- Drawer Overlay -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()">
+  <div class="drawer" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <h3 id="drawerTitle">设置</h3>
+      <button class="close-btn" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </div>
+</div>
 
 <script>
-const API = '';
-let currentPage = 'chat';
-let currentSessionId = null;
-let sessions = [];
-let settings = {};
-let isStreaming = false;
+const API = location.origin
+let settings = {}
+let sessions = []
+let currentSessionId = null
+let isStreaming = false
 
-// ─── Init ────────────────────────────────────────────
+// ── Init ──
 async function init() {
-  try {
-    const r = await fetch(API + '/api/health');
-    if (!r.ok) throw new Error();
-    document.getElementById('connStatus').className = 'status ok';
-    document.getElementById('connStatus').querySelector('span:last-child').textContent = 'Connected';
-  } catch {
-    document.getElementById('connStatus').className = 'status err';
-    document.getElementById('connStatus').querySelector('span:last-child').textContent = 'Disconnected';
-  }
-  settings = await (await fetch(API + '/api/settings')).json().catch(() => ({}));
-  updateModelBadge();
-  updateUserGreeting();
-  applyTheme();
-  checkConfig();
-  await loadSessions();
+  settings = await (await fetch(API + '/api/settings')).json().catch(() => ({}))
+  await loadLLMProviders()
+  await loadSessions()
 }
 
-function updateModelBadge() {
-  const m = settings.anthropicDefaultModel || settings.openaiDefaultModel || settings.defaultModel || '';
-  document.getElementById('modelBadge').textContent = m || '未配置';
-}
-function updateUserGreeting() {
-  const name = settings.username || '';
-  document.getElementById('userGreeting').textContent = name ? `你好, ${name}` : '';
-}
-
-function checkConfig() {
-  const hasKey = settings.anthropicApiKey || settings.openaiApiKey;
-  const hasModel = settings.anthropicDefaultModel || settings.openaiDefaultModel || settings.defaultModel;
-  if (!hasKey || !hasModel) {
-    document.getElementById('msgArea').innerHTML =
-      '<div class="config-prompt"><p>请先配置 API Key 和模型</p><button onclick="switchPage(\'settings\')">打开设置</button></div>';
-    return false;
-  }
-  return true;
-}
-
-// ─── Navigation ──────────────────────────────────────
-function switchPage(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const el = document.getElementById('page-' + page);
-  if (el) el.classList.add('active');
-
-  if (page === 'agents') loadAgents();
-  else if (page === 'sentinel') loadSentinel();
-  else if (page === 'logs') loadLogsPage();
-  else if (page === 'charter') loadCharter();
-  else if (page === 'skills') loadSkills();
-  else if (page === 'settings') loadSettingsPage();
-}
-
-// ─── Sessions ────────────────────────────────────────
+// ── Sessions ──
 async function loadSessions() {
-  sessions = await (await fetch(API + '/api/sessions')).json().catch(() => []);
-  renderSessions();
+  sessions = await (await fetch(API + '/api/sessions')).json().catch(() => [])
+  renderSessions()
 }
-
 function renderSessions() {
-  const el = document.getElementById('sessionList');
-  if (!el) return;
+  const el = document.getElementById('sessionList')
   el.innerHTML = sessions.map(s => `
-    <div class="session-item ${s.id === currentSessionId ? 'active' : ''}" onclick="selectSession('${s.id}')">
-      <span>${escapeHtml(s.title || s.id)}</span>
-      <span class="del" onclick="event.stopPropagation();deleteSession('${s.id}')">✕</span>
+    <div class="session-item${s.id===currentSessionId?' active':''}" onclick="switchSession('${s.id}')">
+      <span class="title">${esc(s.title||s.id)}</span>
+      <button class="del" onclick="event.stopPropagation();deleteSession('${s.id}')" title="删除">✕</button>
     </div>
-  `).join('');
+  `).join('')
 }
-
 async function newSession() {
-  const id = 's-' + Date.now();
-  await fetch(API + '/api/sessions', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, title: '新对话' })
-  });
-  currentSessionId = id;
-  document.getElementById('msgArea').innerHTML = '';
-  document.getElementById('chatTitle').textContent = '新对话';
-  await loadSessions();
+  const s = await (await fetch(API + '/api/sessions', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'新对话'})})).json().catch(()=>({}))
+  if (s.id) { currentSessionId = s.id; await loadSessions(); clearChat(); }
 }
-
-async function selectSession(id) {
-  currentSessionId = id;
-  const s = sessions.find(x => x.id === id);
-  document.getElementById('chatTitle').textContent = s?.title || id;
-  renderSessions();
-  const msgs = await (await fetch(API + '/api/sessions/' + id + '/messages')).json().catch(() => []);
-  const area = document.getElementById('msgArea');
-  area.innerHTML = '';
-  for (const m of msgs) appendMessage(m.role, m.content);
+async function switchSession(id) {
+  currentSessionId = id
+  renderSessions()
+  await loadMessages(id)
 }
-
 async function deleteSession(id) {
-  await fetch(API + '/api/sessions/' + id, { method: 'DELETE' });
-  if (currentSessionId === id) {
-    currentSessionId = null;
-    document.getElementById('msgArea').innerHTML = '';
-    document.getElementById('chatTitle').textContent = 'ColoMind';
-  }
-  await loadSessions();
+  await fetch(API + '/api/sessions/'+id, {method:'DELETE'})
+  if (currentSessionId === id) { currentSessionId = null; clearChat(); }
+  await loadSessions()
+}
+function clearChat() {
+  const c = document.getElementById('chatContainer')
+  c.innerHTML = `<div class="welcome" id="welcome">
+    <h2>你好，我是 ColoMind</h2><p>内置安全守护的 AI 智能体框架</p>
+    <div class="chips">
+      <div class="chip" onclick="quickSend('帮我搜索最新的 AI 变现模式')">🔍 搜索 AI 变现</div>
+      <div class="chip" onclick="quickSend('查看 Sentinel 安全状态')">🛡️ 安全状态</div>
+      <div class="chip" onclick="quickSend('列出可用的工具和技能')">🔧 可用工具</div>
+    </div></div>`
 }
 
-// ─── Chat ────────────────────────────────────────────
-function appendMessage(role, content) {
-  const area = document.getElementById('msgArea');
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  let html = renderMarkdown(content);
-  div.innerHTML = `<div class="role">${role === 'user' ? '你' : 'ColoMind'}</div><div class="content">${html}</div>`;
-  area.appendChild(div);
-  area.scrollTop = area.scrollHeight;
-  return div;
+// ── Messages ──
+async function loadMessages(sessionId) {
+  const msgs = await (await fetch(API + '/api/sessions/'+sessionId+'/messages')).json().catch(()=>[])
+  const c = document.getElementById('chatContainer')
+  c.innerHTML = ''
+  msgs.forEach(m => appendMessage(m.role, m.content, false))
+  if (!msgs.length) clearChat()
 }
-
-function renderMarkdown(text) {
-  let s = escapeHtml(text);
-  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
-  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  s = s.replace(/^### (.+)$/gm, '<h4>$1</h4>');
-  s = s.replace(/^## (.+)$/gm, '<h3>$1</h3>');
-  s = s.replace(/^# (.+)$/gm, '<h2>$1</h2>');
-  s = s.replace(/^- (.+)$/gm, '<li>$1</li>');
-  s = s.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--accent)">$1</a>');
-  return s;
+function appendMessage(role, content, animate=true) {
+  const w = document.getElementById('welcome')
+  if (w) w.remove()
+  const c = document.getElementById('chatContainer')
+  const div = document.createElement('div')
+  div.className = 'msg ' + role
+  if (!animate) div.style.animation = 'none'
+  const bubble = document.createElement('div')
+  bubble.className = 'bubble'
+  bubble.innerHTML = formatContent(content)
+  div.appendChild(bubble)
+  c.appendChild(div)
+  scrollToBottom()
+  return bubble
 }
-
-function escapeHtml(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function formatContent(text) {
+  if (typeof text !== 'string') return esc(String(text))
+  let html = esc(text)
+  // code blocks
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+  // bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  // links
+  html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--accent2)">$1</a>')
+  return html
 }
-
-// ─── File Upload ─────────────────────────────────────
-let pendingFiles = [];
-
-document.getElementById('fileInput').addEventListener('change', async (e) => {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
-  for (const f of files) {
-    if (pendingFiles.length >= 10) { alert('最多同时上传 10 个文件'); break; }
-    pendingFiles.push(f);
-  }
-  e.target.value = '';
-  renderFilePreview();
-});
-
-function renderFilePreview() {
-  const area = document.getElementById('filePreviewArea');
-  if (!pendingFiles.length) { area.style.display = 'none'; area.innerHTML = ''; return; }
-  area.style.display = '';
-  area.innerHTML = pendingFiles.map((f, i) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;font-size:12px;margin-right:4px">${escapeHtml(f.name)} <button onclick="removePendingFile(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:11px">✕</button></span>`).join('');
+function scrollToBottom() {
+  const area = document.getElementById('chatArea')
+  area.scrollTop = area.scrollHeight
 }
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-function removePendingFile(i) {
-  pendingFiles.splice(i, 1);
-  renderFilePreview();
-}
-
-async function readFileAsText(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => resolve('');
-    reader.readAsText(file);
-  });
-}
-
-async function readFileAsDataURL(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => resolve('');
-    reader.readAsDataURL(file);
-  });
-}
-
-async function buildFileContext() {
-  if (!pendingFiles.length) return '';
-  const SMALL_LIMIT = 30000;
-  // Upload large files to server first so AI can use read_file_chunks
-  const largeFiles = pendingFiles.filter(f => f.size > SMALL_LIMIT && !['png','jpg','jpeg','gif','webp','svg'].includes(f.name.split('.').pop().toLowerCase()));
-  if (largeFiles.length) {
-    const fd = new FormData();
-    for (const f of largeFiles) fd.append('files', f);
-    const uploadRes = await (await fetch(API + '/api/upload', { method: 'POST', body: fd })).json().catch(() => ({ files: [] }));
-    for (const f of largeFiles) {
-      const serverFile = uploadRes.files?.find(uf => uf.name === f.name);
-      if (serverFile) {
-        f._serverPath = serverFile.path;
-      }
-    }
-  }
-  let ctx = '\n\n--- 用户上传的文件 ---\n';
-  for (const f of pendingFiles) {
-    const ext = f.name.split('.').pop().toLowerCase();
-    const isImage = ['png','jpg','jpeg','gif','webp','svg'].includes(ext);
-    if (isImage) {
-      const b64 = await readFileAsDataURL(f);
-      ctx += `[文件: ${f.name} (图片)]\n![${f.name}](${b64})\n\n`;
-    } else if (f._serverPath) {
-      // 大文件已上传到服务器，告诉 AI 用工具读取
-      ctx += `[文件: ${f.name} (${(f.size/1024).toFixed(0)}KB) — 已上传至 ${f._serverPath}，请使用 read_file_chunks 工具逐块读取]\n\n`;
-    } else {
-      const text = await readFileAsText(f);
-      ctx += `[文件: ${f.name}]\n\`\`\`${ext}\n${text}\n\`\`\`\n\n`;
-    }
-  }
-  return ctx;
-}
-
+// ── Send ──
 async function sendMessage() {
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  if ((!text && !pendingFiles.length) || isStreaming) return;
-  if (!checkConfig()) return;
-  if (!currentSessionId) await newSession();
+  const input = document.getElementById('msgInput')
+  const text = input.value.trim()
+  if (!text || isStreaming) return
+  input.value = ''
+  autoResize(input)
 
-  input.value = '';
-  input.style.height = 'auto';
+  if (!currentSessionId) {
+    const s = await (await fetch(API + '/api/sessions', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:text.slice(0,40)})})).json().catch(()=>({}))
+    if (s.id) { currentSessionId = s.id; await loadSessions(); }
+    else return
+  }
 
-  const fileCtx = await buildFileContext();
-  const userContent = text + fileCtx;
-  const displayText = pendingFiles.length ? text + ' [' + pendingFiles.map(f => f.name).join(', ') + ']' : text;
-  pendingFiles = [];
-  renderFilePreview();
+  appendMessage('user', text)
+  appendMessage('assistant', '')
+  const bubbles = document.querySelectorAll('.msg.assistant .bubble')
+  const bubble = bubbles[bubbles.length - 1]
+  bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>'
 
-  appendMessage('user', displayText);
-
-  isStreaming = true;
-  document.getElementById('sendBtn').disabled = true;
-
-  const msgDiv = appendMessage('assistant', '');
-  const contentEl = msgDiv.querySelector('.content');
-  let fullText = '';
-  let thinkingEl = null;
-  let thinkingText = '';
+  isStreaming = true
+  document.getElementById('sendBtn').disabled = true
 
   try {
+    const providerId = document.getElementById('llmSelect').value
     const res = await fetch(API + '/api/chat/stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: currentSessionId, messages: [{ role: 'user', content: userContent }] })
-    });
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId:currentSessionId, messages:[{role:'user',content:text}], providerId })
+    })
 
     if (!res.ok) {
-      contentEl.textContent = 'Error: ' + await res.text();
-      isStreaming = false;
-      document.getElementById('sendBtn').disabled = false;
-      return;
+      bubble.innerHTML = formatContent('请求失败: ' + res.status)
+      isStreaming = false; document.getElementById('sendBtn').disabled = false
+      return
     }
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let sseBuffer = '';
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let full = ''
+    let inThinking = false
 
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      sseBuffer += chunk;
-      const lines = sseBuffer.split('\n');
-      sseBuffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
+      const {done, value} = await reader.read()
+      if (done) break
+      const chunk = decoder.decode(value, {stream:true})
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6)
+        if (data === '[DONE]') break
         try {
-          const parsed = JSON.parse(data);
-          if (parsed.error) { contentEl.textContent = parsed.error; continue; }
-
-          // Thinking
-          if (parsed.type === 'thinking' && parsed.thinking) {
-            if (!thinkingEl) {
-              thinkingEl = document.createElement('div');
-              thinkingEl.className = 'thinking';
-              thinkingEl.onclick = () => thinkingEl.classList.toggle('collapsed');
-              msgDiv.insertBefore(thinkingEl, contentEl);
-            }
-            thinkingText += parsed.thinking;
-            thinkingEl.textContent = thinkingText;
-            document.getElementById('msgArea').scrollTop = document.getElementById('msgArea').scrollHeight;
-            continue;
-          }
-
-          // Tool call
-          if (parsed.type === 'tool_call') {
-            const tc = document.createElement('div');
-            tc.className = 'tool-call';
-            tc.innerHTML = `<span class="tool-name">🔧 ${escapeHtml(parsed.tool_name || parsed.name || 'tool')}</span><div class="tool-result">${escapeHtml(parsed.result || JSON.stringify(parsed, null, 2))}</div>`;
-            tc.onclick = () => tc.classList.toggle('expanded');
-            msgDiv.insertBefore(tc, contentEl);
-            continue;
-          }
-
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) {
-            fullText += delta;
-            contentEl.innerHTML = renderMarkdown(fullText);
-            document.getElementById('msgArea').scrollTop = document.getElementById('msgArea').scrollHeight;
+          const obj = JSON.parse(data)
+          // OpenAI-compatible streaming format
+          if (obj.choices?.[0]?.delta?.content) {
+            full += obj.choices[0].delta.content
+            bubble.innerHTML = formatContent(full)
+            scrollToBottom()
+          } else if (obj.type === 'text_delta') {
+            full += obj.text
+            bubble.innerHTML = formatContent(full)
+            scrollToBottom()
+          } else if (obj.type === 'thinking' || obj.type === 'thinking_delta') {
+            if (!inThinking) { inThinking = true; full += '\n💭 思考中...\n' }
+          } else if (obj.type === 'tool_use') {
+            full += `\n🔧 调用工具: ${obj.name}\n`
+            bubble.innerHTML = formatContent(full)
+          } else if (obj.type === 'tool_result') {
+            full += `📦 ${obj.content?.slice(0,200) || '完成'}\n`
+            bubble.innerHTML = formatContent(full)
+          } else if (obj.error) {
+            full += `\n❌ ${obj.error}\n`
+            bubble.innerHTML = formatContent(full)
           }
         } catch {}
       }
     }
+    if (!full) bubble.innerHTML = formatContent('(空响应)')
   } catch (e) {
-    contentEl.textContent = 'Connection error: ' + e.message;
+    bubble.innerHTML = formatContent('连接错误: ' + e.message)
   }
 
-  if (thinkingEl) { thinkingEl.classList.add('done'); thinkingEl.classList.add('collapsed'); }
-  isStreaming = false;
-  document.getElementById('sendBtn').disabled = false;
+  isStreaming = false
+  document.getElementById('sendBtn').disabled = false
+  // Update session title
+  await loadSessions()
 }
 
-// ─── Input handling ──────────────────────────────────
-const msgInput = document.getElementById('msgInput');
-let isComposing = false;
-msgInput.addEventListener('compositionstart', () => { isComposing = true; });
-msgInput.addEventListener('compositionend', () => { isComposing = false; });
-msgInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && !isComposing) { e.preventDefault(); sendMessage(); }
-});
-msgInput.addEventListener('input', () => {
-  msgInput.style.height = 'auto';
-  msgInput.style.height = Math.min(msgInput.scrollHeight, 150) + 'px';
-});
+function quickSend(text) {
+  document.getElementById('msgInput').value = text
+  sendMessage()
+}
 
-// ─── Agents Page ─────────────────────────────────────
-async function loadAgents() {
-  const agents = await (await fetch(API + '/api/agents')).json().catch(() => []);
-  const el = document.getElementById('agentList');
-  if (!agents.length) {
-    el.innerHTML = '<div class="empty"><div class="icon">🤖</div>暂无 Agent</div>';
-    return;
+function autoResize(el) {
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px'
+}
+
+// ── Sidebar ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed')
+}
+
+// ── Model Selector ──
+async function loadLLMProviders() {
+  try {
+    const providers = await (await fetch(API + '/api/llm/providers')).json()
+    const sel = document.getElementById('llmSelect')
+    sel.innerHTML = providers.map(p => {
+      const icon = p.isDefault ? '★' : p.tags?.includes('fast') ? '⚡' : p.tags?.includes('powerful') ? '🧠' : '●'
+      return `<option value="${p.id}">${icon} ${p.model}</option>`
+    }).join('')
+  } catch {}
+}
+async function onModelChange() {
+  const id = document.getElementById('llmSelect').value
+  if (id) await fetch(API + '/api/llm/default', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})
+  await loadLLMProviders()
+}
+
+// ── Drawers ──
+function openDrawer(type) {
+  const overlay = document.getElementById('drawerOverlay')
+  const title = document.getElementById('drawerTitle')
+  const body = document.getElementById('drawerBody')
+  overlay.classList.add('open')
+  if (type === 'settings') {
+    title.textContent = '设置'
+    renderSettingsDrawer(body)
+  } else if (type === 'status') {
+    title.textContent = '安全 & 状态'
+    renderStatusDrawer(body)
   }
-  el.innerHTML = agents.map(a => {
-    let soul = {};
-    try { soul = typeof a.soul_content === 'string' ? JSON.parse(a.soul_content || '{}') : (a.soul_content || {}); } catch {}
-    const status = a.status || 'idle';
-    const statusColor = status === 'running' ? 'tag-success' : 'tag-accent';
-    return `<div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:start">
-        <div>
-          <h3>${escapeHtml(a.name || a.id)}</h3>
-          <div style="margin-top:4px">
-            <span class="tag ${statusColor}">${status}</span>
-            ${soul.role ? `<span class="tag tag-purple">${escapeHtml(soul.role)}</span>` : ''}
-            ${a.primary_model_id ? `<span class="tag tag-accent">${escapeHtml(a.primary_model_id)}</span>` : ''}
-          </div>
-          ${soul.personality ? `<div style="font-size:12px;color:var(--text2);margin-top:6px">${escapeHtml(soul.personality)}</div>` : ''}
-        </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="editAgent('${a.id}')" style="background:var(--accent);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">编辑</button>
-          <button onclick="deleteAgent('${a.id}')" style="background:var(--danger);color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">删除</button>
-        </div>
-      </div>
-      ${soul.rules?.length ? `<div style="margin-top:8px;font-size:11px;color:var(--text2)">规则: ${soul.rules.map(r => escapeHtml(r)).join(', ')}</div>` : ''}
-      ${soul.skills?.length ? `<div style="margin-top:4px;font-size:11px;color:var(--text2)">技能: ${soul.skills.map(s => escapeHtml(s)).join(', ')}</div>` : ''}
-    </div>`;
-  }).join('');
+}
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open')
 }
 
-async function startAgent(id) {
-  await fetch(API + '/api/agents/' + id + '/start', { method: 'POST' });
-  loadAgents();
-}
-async function stopAgent(id) {
-  await fetch(API + '/api/agents/' + id + '/stop', { method: 'POST' });
-  loadAgents();
-}
-async function deleteAgent(id) {
-  if (!confirm('确认删除 Agent ' + id + '？')) return;
-  await fetch(API + '/api/agents/' + id, { method: 'DELETE' });
-  loadAgents();
-}
-async function editAgent(id) {
-  const agent = await (await fetch(API + '/api/agents/' + id)).json().catch(() => null);
-  if (!agent) return;
-  const wsData = await (await fetch(API + '/api/agents/' + id + '/workspace')).json().catch(() => ({}));
-  const identity = wsData['identity.json'] || {};
-  const soul = wsData['soul.json'] || {};
-  const user = wsData['user.json'] || {};
-  const tools = wsData['tools.json'] || {};
-  let availableTools = [];
-  try { availableTools = await (await fetch(API + '/api/tools')).json().catch(() => []); } catch {}
-  showModal('编辑 Agent: ' + (agent.name || agent.id), `
-    <div class="form-group"><label>名称</label><input id="ea_name" value="${escapeHtml(agent.name || '')}"></div>
-    <div class="form-group"><label>模型</label><input id="ea_model" value="${escapeHtml(agent.primary_model_id || '')}"></div>
-    <div class="form-group"><label>温度</label><input id="ea_temp" type="number" step="0.1" value="${agent.temperature || 0.7}"></div>
-    <div class="section-title">Identity</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-group"><label>名字</label><input id="ea_i_name" value="${escapeHtml(identity.name || '')}"></div>
-      <div class="form-group"><label>角色</label><input id="ea_i_role" value="${escapeHtml(identity.role || '')}"></div>
-    </div>
-    <div class="form-group"><label>描述</label><input id="ea_i_desc" value="${escapeHtml(identity.description || '')}"></div>
-    <div class="section-title">Soul</div>
-    <div class="form-group"><label>性格</label><input id="ea_s_personality" value="${escapeHtml(soul.personality || '')}"></div>
-    <div class="form-group"><label>语气</label><input id="ea_s_tone" value="${escapeHtml(soul.tone || '')}"></div>
-    <div class="section-title">User</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-group"><label>名字</label><input id="ea_u_name" value="${escapeHtml(user.name || '')}"></div>
-      <div class="form-group"><label>角色</label><input id="ea_u_role" value="${escapeHtml(user.role || '')}"></div>
-    </div>
-    <div class="section-title">Tools</div>
-    <div class="form-group"><label>技能</label>
-      <div id="ea_skill_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px">
-        ${availableTools.map(t => `<label style="display:flex;align-items:center;gap:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:12px">
-          <input type="checkbox" class="ea-skill-cb" value="${escapeHtml(t.name)}" ${(tools.skills || []).includes(t.name) ? 'checked' : ''} style="accent-color:var(--accent)">
-          <span style="color:var(--accent);font-weight:500">${escapeHtml(t.name)}</span>
-        </label>`).join('')}
-      </div>
-    </div>
-  `, async () => {
-    await fetch(API + '/api/agents/' + id, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: document.getElementById('ea_name').value, primary_model_id: document.getElementById('ea_model').value, temperature: parseFloat(document.getElementById('ea_temp').value) })
-    });
-    await fetch(API + '/api/agents/' + id + '/workspace/identity.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: { name: document.getElementById('ea_i_name').value, role: document.getElementById('ea_i_role').value, description: document.getElementById('ea_i_desc').value } }) });
-    await fetch(API + '/api/agents/' + id + '/workspace/soul.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: { personality: document.getElementById('ea_s_personality').value, tone: document.getElementById('ea_s_tone').value, rules: (soul.rules || []), boundaries: (soul.boundaries || []) } }) });
-    await fetch(API + '/api/agents/' + id + '/workspace/user.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: { name: document.getElementById('ea_u_name').value, role: document.getElementById('ea_u_role').value, preferences: user.preferences || '', notes: user.notes || '' } }) });
-    await fetch(API + '/api/agents/' + id + '/workspace/tools.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: { skills: Array.from(document.querySelectorAll('.ea-skill-cb:checked')).map(el => el.value), guidelines: tools.guidelines || [] } }) });
-    closeModal();
-    loadAgents();
-  });
-}
-
-// ─── Sentinel Page ───────────────────────────────────
-let sentinelAutoRefresh = null;
-async function loadSentinel() {
-  const status = await (await fetch(API + '/api/sentinel/status')).json().catch(() => ({}));
-  const logs = await (await fetch(API + '/api/sentinel/logs')).json().catch(() => []);
-  const el = document.getElementById('sentinelContent');
+// ── Settings Drawer ──
+async function renderSettingsDrawer(el) {
+  const s = await (await fetch(API + '/api/settings')).json().catch(()=>({}))
+  const hasKey = !!(s.anthropicApiKey || s.openaiApiKey)
+  const providers = await (await fetch(API + '/api/llm/providers')).json().catch(()=>[])
 
   el.innerHTML = `
-    <div class="sentinel-layers">
-      <div class="sentinel-layer">
-        <div class="status-icon">🔍</div>
-        <h4>Layer 1: 词汇</h4>
-        <div class="status-text" style="color:var(--success)">活跃</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">${escapeHtml(status.layers?.vocabulary?.description || '')}</div>
-      </div>
-      <div class="sentinel-layer">
-        <div class="status-icon">🧠</div>
-        <h4>Layer 2: 意图</h4>
-        <div class="status-text" style="color:${status.layers?.intent?.active ? 'var(--success)' : 'var(--text2)'}">${status.layers?.intent?.active ? '活跃' : '未启用'}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">LLM 意图分析</div>
-      </div>
-      <div class="sentinel-layer">
-        <div class="status-icon">⚖️</div>
-        <h4>Layer 3: 法律</h4>
-        <div class="status-text" style="color:${status.layers?.legal?.active ? 'var(--success)' : 'var(--text2)'}">${status.layers?.legal?.active ? '活跃' : '未启用'}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">法律知识库</div>
-      </div>
+    <div class="section-title">API 配置</div>
+    <div class="form-group"><label>LLM 提供商</label>
+      <select id="d_provider"><option value="anthropic" ${s.llmProvider!=='openai'?'selected':''}>Anthropic 兼容</option><option value="openai" ${s.llmProvider==='openai'?'selected':''}>OpenAI 兼容</option></select>
     </div>
-
-    <div class="sentinel-scan">
-      <input id="sentinelInput" placeholder="输入内容进行安全扫描..." onkeydown="if(event.key==='Enter')scanSentinel()">
-      <button onclick="scanSentinel()">扫描</button>
+    <div class="form-group"><label>API Key</label>
+      <input id="d_apikey" type="password" placeholder="${hasKey?'已配置，留空保持不变':'输入 API Key...'}">
+      <div class="hint">API Key 仅存储在本地</div>
     </div>
-
-    <div id="sentinelResult"></div>
-
-    <h3 style="font-size:14px;font-weight:600;margin:16px 0 8px">扫描历史</h3>
-    <div id="sentinelHistory" style="max-height:300px;overflow-y:auto">
-      ${logs.length ? logs.slice(0, 20).map(l => `
-        <div class="log-entry">
-          <span class="log-time">${l.timestamp?.slice(11, 19) || ''}</span>
-          <span class="log-level ${l.message?.includes('BLOCKED') ? 'error' : 'info'}">${l.message?.includes('BLOCKED') ? 'BLOCKED' : 'SAFE'}</span>
-          <span class="log-msg">${escapeHtml(l.message || '')}</span>
-        </div>
-      `).join('') : '<div class="empty" style="padding:20px"><div class="icon">🛡️</div>暂无扫描记录</div>'}
+    <div class="form-group"><label>API Endpoint</label>
+      <input id="d_endpoint" value="${esc(s.anthropicApiEndpoint||s.openaiApiEndpoint||'')}" placeholder="留空使用默认值">
     </div>
-  `;
+    <div class="form-group"><label>搜索引擎</label>
+      <select id="d_searchengine"><option value="none" ${!s.searchEngine||s.searchEngine==='none'?'selected':''}>不启用</option><option value="searxng" ${s.searchEngine==='searxng'?'selected':''}>SearXNG</option></select>
+    </div>
+    <div class="form-group" id="d_searxng_group" style="display:${s.searchEngine==='searxng'?'':'none'}"><label>SearXNG 地址</label>
+      <input id="d_searxng_url" value="${esc(s.searxngUrl||'')}" placeholder="http://localhost:8080">
+    </div>
+    <button class="save-btn" onclick="saveSettings()">保存配置</button>
 
-  if (sentinelAutoRefresh) clearInterval(sentinelAutoRefresh);
-  sentinelAutoRefresh = setInterval(() => { if (currentPage === 'sentinel') loadSentinel(); }, 5000);
-}
-
-async function scanSentinel() {
-  const input = document.getElementById('sentinelInput');
-  const text = input.value.trim();
-  if (!text) return;
-  const result = await (await fetch(API + '/api/sentinel/scan', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text })
-  })).json().catch(() => ({ error: true }));
-  const el = document.getElementById('sentinelResult');
-  if (result.error) {
-    el.innerHTML = '<div class="sentinel-result blocked">扫描失败</div>';
-  } else if (result.pass) {
-    el.innerHTML = `<div class="sentinel-result safe">
-      <strong style="color:var(--success)">✓ 安全</strong>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">风险评分: ${result.layer15?.riskScore || 0}</div>
-      ${result.layer15?.reason ? `<div style="font-size:12px;color:var(--text2);margin-top:2px">${escapeHtml(result.layer15.reason)}</div>` : ''}
-    </div>`;
-  } else {
-    el.innerHTML = `<div class="sentinel-result blocked">
-      <strong style="color:var(--danger)">✗ 已拦截</strong>
-      ${result.inference?.riskLevel ? `<span class="tag tag-warn" style="margin-left:8px">${escapeHtml(result.inference.riskLevel)}</span>` : ''}
-      ${result.response ? `<div style="font-size:13px;color:var(--text);margin-top:8px">${escapeHtml(result.response)}</div>` : ''}
-      ${result.inference?.reasoning ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">${escapeHtml(result.inference.reasoning)}</div>` : ''}
-      ${result.layer15?.detectedPatterns?.length ? `<div style="margin-top:4px">${result.layer15.detectedPatterns.map(p => `<span class="tag tag-danger">${escapeHtml(p)}</span>`).join('')}</div>` : ''}
-    </div>`;
+    <div class="section-title" style="margin-top:28px">模型池</div>
+    <div class="pool-actions">
+      <button class="add-btn" onclick="showAddProviderModal()">+ 添加模型</button>
+    </div>
+    <div id="poolTableInDrawer"></div>
+  `
+  document.getElementById('d_searchengine').onchange = function() {
+    document.getElementById('d_searxng_group').style.display = this.value==='searxng'?'':'none'
   }
-  input.value = '';
-  setTimeout(() => loadSentinel(), 500);
+  renderPoolTable(providers)
 }
 
-// ─── Logs Page ───────────────────────────────────────
-let logsAutoRefresh = null;
-async function loadLogsPage() {
-  const el = document.getElementById('logsContent');
-  el.innerHTML = `
-    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
-      <select id="logLevelFilter" onchange="fetchLogs()" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px">
-        <option value="">全部级别</option><option value="error">错误</option><option value="warn">警告</option><option value="info">信息</option><option value="debug">调试</option>
+function renderPoolTable(providers) {
+  const el = document.getElementById('poolTableInDrawer')
+  if (!el) return
+  const defaultId = providers.find(p=>p.isDefault)?.id || 'default'
+  el.innerHTML = `<table class="pool-table"><thead><tr>
+    <th>模型</th><th>Tags</th><th>操作</th>
+  </tr></thead><tbody>` +
+  providers.map(p => `<tr>
+    <td><div style="font-weight:500">${esc(p.id)}</div><div style="font-size:11px;color:var(--text3);font-family:monospace">${p.provider}/${esc(p.model)}</div></td>
+    <td>${(p.tags||[]).map(t=>`<span class="tag ${t}">${t}</span>`).join('')}${p.isDefault?'<span class="tag default">default</span>':''}</td>
+    <td>${!p.isDefault?`<button class="btn-sm primary" onclick="setDefaultProvider('${p.id}')">设为默认</button><button class="btn-sm danger" onclick="deleteProvider('${p.id}')">删除</button>`:'<span style="color:var(--text3);font-size:12px">当前默认</span>'}</td>
+  </tr>`).join('') + '</tbody></table>'
+}
+
+async function saveSettings() {
+  const body = {
+    llmProvider: document.getElementById('d_provider').value,
+    searchEngine: document.getElementById('d_searchengine').value,
+    searxngUrl: document.getElementById('d_searxng_url')?.value || '',
+  }
+  const ak = document.getElementById('d_apikey').value
+  const ep = document.getElementById('d_endpoint').value
+  if (ak) body.apiKey = ak
+  if (ep) body.apiEndpoint = ep
+  await fetch(API + '/api/settings', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  alert('配置已保存')
+}
+
+async function setDefaultProvider(id) {
+  await fetch(API + '/api/llm/default', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})
+  await loadLLMProviders()
+  const providers = await (await fetch(API + '/api/llm/providers')).json().catch(()=>[])
+  renderPoolTable(providers)
+}
+
+async function deleteProvider(id) {
+  if (!confirm('确认删除模型 "' + id + '"?')) return
+  await fetch(API + '/api/llm/providers/' + id, {method:'DELETE'})
+  await loadLLMProviders()
+  const providers = await (await fetch(API + '/api/llm/providers')).json().catch(()=>[])
+  renderPoolTable(providers)
+}
+
+function showAddProviderModal() {
+  const m = document.createElement('div')
+  m.id = 'addProviderModal'
+  m.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200'
+  m.innerHTML = `<div style="background:var(--bg1);padding:24px;border-radius:16px;width:400px">
+    <h3 style="margin:0 0 16px;font-size:15px">添加 LLM 模型</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="np_id" placeholder="ID (如 fast, cheap)" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;outline:none">
+      <select id="np_provider" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px">
+        <option value="anthropic">Anthropic</option><option value="openai">OpenAI</option>
       </select>
-      <select id="logCatFilter" onchange="fetchLogs()" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px">
-        <option value="">全部类别</option><option value="chat">对话</option><option value="tool">工具</option><option value="sentinel">安全</option><option value="agent">Agent</option><option value="search">搜索</option><option value="settings">设置</option><option value="session">会话</option><option value="assistant">助手</option><option value="system">系统</option>
-      </select>
-      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2)">
-        <input type="checkbox" id="logAutoRefresh" checked onchange="toggleLogAutoRefresh()"> 自动刷新
-      </label>
-      <div style="flex:1"></div>
-      <button onclick="clearLogs()" style="background:var(--danger);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">清空</button>
+      <input id="np_key" placeholder="API Key" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;outline:none">
+      <input id="np_ep" placeholder="Endpoint URL" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;outline:none">
+      <input id="np_model" placeholder="Model ID (如 claude-haiku-4-5-20251001)" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;outline:none">
+      <input id="np_tags" placeholder="Tags (逗号分隔: fast,cheap)" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;outline:none">
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th style="width:80px">时间</th><th style="width:60px">级别</th><th style="width:70px">分类</th><th>消息</th><th style="width:60px;text-align:right">耗时</th></tr></thead>
-        <tbody id="logTableBody"></tbody>
-      </table>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button onclick="document.getElementById('addProviderModal').remove()" style="padding:8px 16px;border:1px solid var(--border);background:none;color:var(--text);border-radius:8px;cursor:pointer">取消</button>
+      <button onclick="addProvider()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer">添加</button>
     </div>
-  `;
-  await fetchLogs();
-  if (logsAutoRefresh) clearInterval(logsAutoRefresh);
-  logsAutoRefresh = setInterval(() => { if (currentPage === 'logs' && document.getElementById('logAutoRefresh')?.checked) fetchLogs(); }, 3000);
+  </div>`
+  document.body.appendChild(m)
 }
 
-async function fetchLogs() {
-  const level = document.getElementById('logLevelFilter')?.value || '';
-  const category = document.getElementById('logCatFilter')?.value || '';
-  const params = new URLSearchParams();
-  if (level) params.set('level', level);
-  if (category) params.set('category', category);
-  params.set('limit', '200');
-  try {
-    const data = await (await fetch(API + '/api/logs?' + params)).json();
-    renderLogsTable(data.logs || []);
-  } catch {}
+async function addProvider() {
+  const id = document.getElementById('np_id').value.trim()
+  const provider = document.getElementById('np_provider').value
+  const apiKey = document.getElementById('np_key').value.trim()
+  const endpoint = document.getElementById('np_ep').value.trim()
+  const model = document.getElementById('np_model').value.trim()
+  const tags = document.getElementById('np_tags').value.split(',').map(t=>t.trim()).filter(Boolean)
+  if (!id||!apiKey||!endpoint||!model) { alert('请填写所有必填字段'); return }
+  const res = await fetch(API + '/api/llm/providers', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,provider,apiKey,endpoint,model,tags})})
+  if (res.ok) {
+    document.getElementById('addProviderModal').remove()
+    await loadLLMProviders()
+    const providers = await (await fetch(API + '/api/llm/providers')).json().catch(()=>[])
+    renderPoolTable(providers)
+  } else { const err = await res.json(); alert(err.error||'添加失败') }
 }
 
-function renderLogsTable(logs) {
-  const tbody = document.getElementById('logTableBody');
-  if (!tbody) return;
-  const levelNames = { error: '错误', warn: '警告', info: '信息', debug: '调试' };
-  const catNames = { chat: '对话', tool: '工具', sentinel: '安全', agent: 'Agent', search: '搜索', settings: '设置', session: '会话', assistant: '助手', system: '系统' };
-  if (!logs.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text2)">暂无日志</td></tr>';
-    return;
-  }
-  tbody.innerHTML = logs.map(l => `<tr onclick="this.nextElementSibling?.style.display === 'none' ? this.nextElementSibling.style.display = '' : this.nextElementSibling.style.display = 'none'" style="cursor:pointer">
-    <td style="font-size:11px;color:var(--text2)">${l.timestamp?.slice(11, 19) || '-'}</td>
-    <td><span class="tag tag-${l.level === 'error' ? 'danger' : l.level === 'warn' ? 'warn' : l.level === 'info' ? 'accent' : 'purple'}">${levelNames[l.level] || l.level}</span></td>
-    <td style="font-size:12px;color:var(--text2)">${catNames[l.category] || l.category}</td>
-    <td style="font-size:12px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(l.message)}</td>
-    <td style="font-size:11px;color:var(--purple);text-align:right">${l.duration ? l.duration + 'ms' : ''}</td>
-  </tr>
-  <tr style="display:none"><td colspan="5" style="padding:8px 14px;background:var(--bg2);border-top:1px solid var(--border)">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12px">
-      ${l.input ? `<div><span style="color:var(--text2)">输入:</span> <span style="color:var(--text)">${escapeHtml(l.input)}</span></div>` : ''}
-      ${l.output ? `<div><span style="color:var(--text2)">输出:</span> <span style="color:var(--text)">${escapeHtml(l.output)}</span></div>` : ''}
-      ${l.model ? `<div><span style="color:var(--text2)">模型:</span> <span style="color:var(--accent)">${escapeHtml(l.model)}</span></div>` : ''}
-      ${l.provider ? `<div><span style="color:var(--text2)">提供商:</span> <span style="color:var(--text)">${escapeHtml(l.provider)}</span></div>` : ''}
-      ${l.toolName ? `<div><span style="color:var(--text2)">工具:</span> <span style="color:var(--accent)">${escapeHtml(l.toolName)}</span></div>` : ''}
-      ${l.toolInput ? `<div style="grid-column:1/-1"><span style="color:var(--text2)">工具输入:</span> <span style="color:var(--text)">${escapeHtml(l.toolInput)}</span></div>` : ''}
-      ${l.toolOutput ? `<div style="grid-column:1/-1"><span style="color:var(--text2)">工具输出:</span> <span style="color:var(--text)">${escapeHtml(l.toolOutput)}</span></div>` : ''}
-      ${l.scanResult ? `<div style="grid-column:1/-1"><span style="color:var(--text2)">扫描结果:</span> <span style="color:var(--text)">${escapeHtml(l.scanResult)}</span></div>` : ''}
-      ${l.detail ? `<div style="grid-column:1/-1"><span style="color:var(--text2)">详情:</span> <span style="color:var(--text)">${escapeHtml(l.detail)}</span></div>` : ''}
-      ${l.sessionId ? `<div><span style="color:var(--text2)">会话:</span> <span style="color:var(--text2)">${l.sessionId}</span></div>` : ''}
-      ${l.agentId ? `<div><span style="color:var(--text2)">Agent:</span> <span style="color:var(--text2)">${l.agentId}</span></div>` : ''}
-      ${l.tokensIn ? `<div><span style="color:var(--text2)">输入 token:</span> ${l.tokensIn}</div>` : ''}
-      ${l.tokensOut ? `<div><span style="color:var(--text2)">输出 token:</span> ${l.tokensOut}</div>` : ''}
-    </div>
-  </td></tr>`).join('');
-}
+// ── Status Drawer ──
+async function renderStatusDrawer(el) {
+  const sentinel = await (await fetch(API + '/api/sentinel/status')).json().catch(()=>({}))
+  const charter = await (await fetch(API + '/api/charter/status')).json().catch(()=>({}))
+  const agents = await (await fetch(API + '/api/agents')).json().catch(()=>[])
+  const tools = await (await fetch(API + '/api/tools')).json().catch(()=>[])
 
-async function clearLogs() {
-  if (!confirm('确认清空所有日志？')) return;
-  await fetch(API + '/api/logs', { method: 'DELETE' });
-  fetchLogs();
-}
-
-function toggleLogAutoRefresh() {
-  // Timer handles it via checked state
-}
-
-// ─── Charter Page ────────────────────────────────────
-async function loadCharter() {
-  const charters = await (await fetch(API + '/api/charters')).json().catch(() => []);
-  const libraries = await (await fetch(API + '/api/libraries')).json().catch(() => []);
-  const el = document.getElementById('charterContent');
-  const typeLabels = { academic: '学术', medical: '医疗', legal: '法律', finance: '金融', custom: '自定义' };
+  const sOk = sentinel.layers || sentinel.initialized
+  const cOk = charter.initialized || charter.guard
 
   el.innerHTML = `
-    <div class="tabs">
-      <button class="tab active" onclick="charterTab(this,'charters')">许可证</button>
-      <button class="tab" onclick="charterTab(this,'libraries')">文档库</button>
+    <div class="section-title">安全守护</div>
+    <div class="status-row">
+      <div class="status-badge"><span class="status-dot ${sOk?'green':'red'}"></span> Sentinel ${sOk?'正常运行':'未启动'}</div>
+      <div class="status-badge"><span class="status-dot ${cOk?'green':'red'}"></span> Charter ${cOk?'正常运行':'未启动'}</div>
     </div>
-    <div id="charterTab_charters">
-      ${charters.length ? charters.map(c => `<div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:start">
-          <div>
-            <h3>${escapeHtml(c.name)}</h3>
-            <div style="margin-top:4px">
-              <span class="tag tag-accent">${typeLabels[c.type] || c.type}</span>
-              ${c.description ? `<span style="font-size:12px;color:var(--text2)">${escapeHtml(c.description)}</span>` : ''}
-            </div>
-          </div>
-          ${c.builtin ? '<span class="tag tag-accent">内置</span>' : `<button onclick="deleteCharter('${c.id}')" style="background:none;border:1px solid var(--border);color:var(--danger);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">删除</button>`}
-        </div>
-        ${c.capabilities?.length ? `<div style="margin-top:8px">${c.capabilities.map(cap => `<span class="tag tag-accent">${escapeHtml(cap.name || cap)}</span>`).join('')}</div>` : ''}
-      </div>`).join('') : '<div class="empty"><div class="icon">📜</div>暂无许可证</div>'}
-    </div>
-    <div id="charterTab_libraries" style="display:none">
-      ${libraries.length ? libraries.map(l => `<div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:start">
-          <div>
-            <h3>${escapeHtml(l.name)}</h3>
-            <div style="font-size:12px;color:var(--text2);margin-top:4px">${escapeHtml(l.description || '')}</div>
-          </div>
-          <button onclick="deleteLibrary('${l.id}')" style="background:none;border:1px solid var(--border);color:var(--danger);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">删除</button>
-        </div>
-      </div>`).join('') : '<div class="empty"><div class="icon">📚</div>暂无文档库</div>'}
-    </div>
-  `;
+    ${sentinel.layers?`<div style="font-size:12px;color:var(--text2);margin:8px 0">防御层级: ${Array.isArray(sentinel.layers)?sentinel.layers.join(' → '):sentinel.layers}</div>`:''}
+
+    <div class="section-title">Agent</div>
+    <div style="font-size:13px;color:var(--text2)">${Array.isArray(agents)?agents.map(a=>`<div style="padding:4px 0">● ${esc(a.name||a.id||'default')}</div>`).join(''):'无'}</div>
+
+    <div class="section-title">工具 (${Array.isArray(tools)?tools.length:0})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px">${Array.isArray(tools)?tools.map(t=>`<span class="tag">${esc(t.name)}</span>`).join(''):''}</div>
+  `
 }
 
-function charterTab(btn, tab) {
-  btn.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('charterTab_charters').style.display = tab === 'charters' ? '' : 'none';
-  document.getElementById('charterTab_libraries').style.display = tab === 'libraries' ? '' : 'none';
-}
-
-async function deleteCharter(id) {
-  if (!confirm('确认删除？')) return;
-  await fetch(API + '/api/charters/' + id, { method: 'DELETE' });
-  loadCharter();
-}
-async function deleteLibrary(id) {
-  if (!confirm('确认删除？')) return;
-  await fetch(API + '/api/libraries/' + id, { method: 'DELETE' });
-  loadCharter();
-}
-
-// ─── Skills Page ─────────────────────────────────────
-async function loadSkills() {
-  const tools = await (await fetch(API + '/api/tools')).json().catch(() => []);
-  const el = document.getElementById('skillsContent');
-  if (!tools.length) {
-    el.innerHTML = '<div class="empty"><div class="icon">⚡</div>暂无技能</div>';
-    return;
-  }
-  el.innerHTML = `<div class="card-grid">${tools.map(t => `
-    <div class="card" style="padding:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--accent)">${escapeHtml(t.name)}</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">${escapeHtml(t.desc || t.description || '')}</div>
-    </div>
-  `).join('')}</div>`;
-}
-
-// ─── Settings Page ───────────────────────────────────
-async function loadSettingsPage() {
-  settings = await (await fetch(API + '/api/settings')).json().catch(() => ({}));
-  const hasKey = settings.anthropicApiKey || settings.openaiApiKey;
-  let wsData = { 'identity.json': {}, 'soul.json': {}, 'user.json': {}, 'tools.json': {} };
-  try {
-    wsData = await (await fetch(API + '/api/agents/' + (settings.defaultAgentId || 'default-desktop-agent') + '/workspace')).json();
-  } catch {}
-  const identity = wsData['identity.json'] || {};
-  const soul = wsData['soul.json'] || {};
-  const user = wsData['user.json'] || {};
-  const tools = wsData['tools.json'] || {};
-  let availableTools = [];
-  try {
-    availableTools = await (await fetch(API + '/api/tools')).json().catch(() => []);
-  } catch {}
-
-  const el = document.getElementById('settingsContent');
-  el.innerHTML = `
-    <div class="tabs" id="settingsTabs">
-      <button class="tab active" onclick="settingsTab(this,'general')">通用</button>
-      <button class="tab" onclick="settingsTab(this,'model')">模型</button>
-      <button class="tab" onclick="settingsTab(this,'workspace')">工作区</button>
-      <button class="tab" onclick="settingsTab(this,'about')">关于</button>
-    </div>
-
-    <div id="settingsTab_general" style="max-width:480px">
-      <div class="form-group"><label>语言</label>
-        <select id="s_language"><option value="zh-CN" ${settings.language !== 'en' ? 'selected' : ''}>中文</option><option value="en" ${settings.language === 'en' ? 'selected' : ''}>English</option></select>
-      </div>
-      <div class="form-group"><label>主题</label>
-        <select id="s_theme"><option value="dark" ${!settings.theme || settings.theme === 'dark' ? 'selected' : ''}>深色</option><option value="light" ${settings.theme === 'light' ? 'selected' : ''}>浅色</option><option value="auto" ${settings.theme === 'auto' ? 'selected' : ''}>跟随系统</option></select>
-      </div>
-      <div class="form-group"><label>用户名</label><input id="s_username" value="${escapeHtml(settings.username || '')}"></div>
-      <div class="form-group"><label>角色</label><textarea id="s_userRole" rows="2">${escapeHtml(settings.userRole || '')}</textarea></div>
-    </div>
-
-    <div id="settingsTab_model" style="display:none;max-width:480px">
-      <div class="form-group"><label>LLM 提供商</label>
-        <select id="s_provider"><option value="anthropic" ${settings.llmProvider !== 'openai' ? 'selected' : ''}>Anthropic 兼容</option><option value="openai" ${settings.llmProvider === 'openai' ? 'selected' : ''}>OpenAI 兼容</option></select>
-      </div>
-      <div class="form-group"><label>API Key</label>
-        <input id="s_apikey" type="password" value="" placeholder="${hasKey ? '已配置，留空保持不变' : '输入 API Key...'}">
-        <div class="hint">API Key 存储在本地，不会上传</div>
-      </div>
-      <div class="form-group"><label>API Endpoint</label>
-        <input id="s_endpoint" value="${escapeHtml(settings.anthropicApiEndpoint || settings.openaiApiEndpoint || '')}" placeholder="留空则使用默认值">
-      </div>
-      <div class="form-group"><label>默认模型</label>
-        <input id="s_model" value="${escapeHtml(settings.anthropicDefaultModel || settings.openaiDefaultModel || settings.defaultModel || '')}" placeholder="例如 claude-sonnet-4-6">
-      </div>
-      <div class="form-group"><label>搜索引擎</label>
-        <select id="s_searchengine"><option value="none" ${!settings.searchEngine || settings.searchEngine === 'none' ? 'selected' : ''}>不启用</option><option value="searxng" ${settings.searchEngine === 'searxng' ? 'selected' : ''}>SearXNG</option></select>
-      </div>
-      <div class="form-group" id="searxng_group" style="display:${settings.searchEngine === 'searxng' ? '' : 'none'}"><label>SearXNG 地址</label>
-        <input id="s_searxng_url" value="${escapeHtml(settings.searxngUrl || '')}" placeholder="http://localhost:8080">
-      </div>
-    </div>
-
-    <div id="settingsTab_workspace" style="display:none;max-width:640px">
-      <div style="padding:10px 14px;border-radius:8px;font-size:12px;background:rgba(78,154,241,0.1);color:var(--accent);margin-bottom:16px">📁 工作区文件夹: ~/.colomind/workspaces/default-desktop-agent/ — 修改后保存自动写入 JSON 并同步到数据库</div>
-
-      <div class="section-title">Identity — 身份</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="form-group"><label>名字</label><input id="ws_identity_name" value="${escapeHtml(identity.name || '')}"></div>
-        <div class="form-group"><label>角色</label><input id="ws_identity_role" value="${escapeHtml(identity.role || '')}"></div>
-      </div>
-      <div class="form-group"><label>描述</label><input id="ws_identity_desc" value="${escapeHtml(identity.description || '')}"></div>
-
-      <div class="section-title">Soul — 灵魂</div>
-      <div class="form-group"><label>性格</label><input id="ws_soul_personality" value="${escapeHtml(soul.personality || '')}"></div>
-      <div class="form-group"><label>语气</label><input id="ws_soul_tone" value="${escapeHtml(soul.tone || '')}"></div>
-      <div class="form-group"><label>规则</label>
-        <div id="ws_soul_rules">${(soul.rules || []).map((r) => `<div style="display:flex;gap:6px;margin-bottom:4px"><input class="ws-rule" value="${escapeHtml(r)}" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:4px;font-size:13px"><button onclick="this.parentElement.remove()" style="background:none;border:1px solid var(--border);color:var(--danger);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✕</button></div>`).join('')}</div>
-        <button onclick="addListItem('ws_soul_rules','ws-rule')" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:4px">+ 添加规则</button>
-      </div>
-      <div class="form-group"><label>边界</label>
-        <div id="ws_soul_boundaries">${(soul.boundaries || []).map((b) => `<div style="display:flex;gap:6px;margin-bottom:4px"><input class="ws-boundary" value="${escapeHtml(b)}" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:4px;font-size:13px"><button onclick="this.parentElement.remove()" style="background:none;border:1px solid var(--border);color:var(--danger);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✕</button></div>`).join('')}</div>
-        <button onclick="addListItem('ws_soul_boundaries','ws-boundary')" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:4px">+ 添加边界</button>
-      </div>
-
-      <div class="section-title">User — 用户</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="form-group"><label>名字</label><input id="ws_user_name" value="${escapeHtml(user.name || '')}"></div>
-        <div class="form-group"><label>角色</label><input id="ws_user_role" value="${escapeHtml(user.role || '')}"></div>
-      </div>
-      <div class="form-group"><label>偏好</label><input id="ws_user_prefs" value="${escapeHtml(user.preferences || '')}"></div>
-      <div class="form-group"><label>备注</label><input id="ws_user_notes" value="${escapeHtml(user.notes || '')}"></div>
-
-      <div class="section-title">Tools — 工具</div>
-      <div class="form-group"><label>技能 (勾选启用)</label>
-        <div id="ws_tools_skill_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:6px">
-          ${availableTools.map(t => `<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;transition:border-color 0.2s">
-            <input type="checkbox" class="ws-skill-cb" value="${escapeHtml(t.name)}" ${(tools.skills || []).includes(t.name) ? 'checked' : ''} style="accent-color:var(--accent)">
-            <span style="color:var(--accent);font-weight:500">${escapeHtml(t.name)}</span>
-            <span style="color:var(--text2);font-size:11px;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px">${escapeHtml(t.desc || '')}</span>
-          </label>`).join('')}
-        </div>
-      </div>
-      <div class="form-group"><label>工具指南</label>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <select id="guideline_presets" onchange="addGuidelinePreset()" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:6px;font-size:12px;flex:1">
-            <option value="">选择预设指南...</option>
-            <option value="优先使用工具获取实时信息">优先使用工具获取实时信息</option>
-            <option value="搜索前先确认用户意图">搜索前先确认用户意图</option>
-            <option value="回答要简洁明了">回答要简洁明了</option>
-            <option value="不确定时主动询问用户">不确定时主动询问用户</option>
-            <option value="保护用户隐私，不泄露敏感数据">保护用户隐私，不泄露敏感数据</option>
-          </select>
-        </div>
-        <div id="ws_tools_guidelines">${(tools.guidelines || []).map((g) => `<div style="display:flex;gap:6px;margin-bottom:4px"><input class="ws-guideline" value="${escapeHtml(g)}" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:4px;font-size:13px"><button onclick="this.parentElement.remove()" style="background:none;border:1px solid var(--border);color:var(--danger);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✕</button></div>`).join('')}</div>
-        <button onclick="addListItem('ws_tools_guidelines','ws-guideline')" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:4px">+ 自定义指南</button>
-      </div>
-    </div>
-
-    <div id="settingsTab_about" style="display:none;max-width:480px">
-      <div class="card" style="text-align:center;padding:32px">
-        <div style="font-size:48px;margin-bottom:8px">🧠</div>
-        <div style="font-size:20px;font-weight:600">ColoMind</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:4px">本地优先 AI 桌面助手</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:8px">Sidecar + @colomind/core</div>
-      </div>
-    </div>
-
-    <div style="margin-top:20px;max-width:480px">
-      <button onclick="saveSettingsPage()" style="background:var(--accent);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">保存</button>
-      <span id="settingsSaved" style="display:none;font-size:13px;color:var(--success);margin-left:8px">✓ 已保存</span>
-    </div>
-  `;
-
-  document.getElementById('s_searchengine')?.addEventListener('change', (e) => {
-    document.getElementById('searxng_group').style.display = e.target.value === 'searxng' ? '' : 'none';
-  });
-}
-
-function settingsTab(btn, tab) {
-  btn.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  ['general', 'model', 'workspace', 'about'].forEach(t => {
-    const el = document.getElementById('settingsTab_' + t);
-    if (el) el.style.display = t === tab ? '' : 'none';
-  });
-}
-
-function addListItem(containerId, inputClass) {
-  const el = document.getElementById(containerId);
-  const div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:6px;margin-bottom:4px';
-  div.innerHTML = `<input class="${inputClass}" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:4px;font-size:13px"><button onclick="this.parentElement.remove()" style="background:none;border:1px solid var(--border);color:var(--danger);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px">✕</button>`;
-  el.appendChild(div);
-}
-
-function addGuidelinePreset() {
-  const sel = document.getElementById('guideline_presets');
-  if (!sel || !sel.value) return;
-  addListItem('ws_tools_guidelines', 'ws-guideline');
-  const inputs = document.querySelectorAll('.ws-guideline');
-  const last = inputs[inputs.length - 1];
-  if (last) last.value = sel.value;
-  sel.value = '';
-}
-
-async function saveSettingsPage() {
-  const provider = document.getElementById('s_provider')?.value || 'anthropic';
-  const apiKey = document.getElementById('s_apikey')?.value || '';
-  const endpoint = document.getElementById('s_endpoint')?.value || '';
-  const model = document.getElementById('s_model')?.value || '';
-  const searchEngine = document.getElementById('s_searchengine')?.value || 'none';
-  const searxngUrl = document.getElementById('s_searxng_url')?.value || '';
-  const theme = document.getElementById('s_theme')?.value || 'dark';
-  const language = document.getElementById('s_language')?.value || 'zh-CN';
-  const username = document.getElementById('s_username')?.value || '';
-  const userRole = document.getElementById('s_userRole')?.value || '';
-
-  const body = { llmProvider: provider, searchEngine, searxngUrl, defaultModel: model, theme, language, username, userRole };
-  if (provider === 'anthropic') {
-    if (apiKey) body.anthropicApiKey = apiKey;
-    body.anthropicApiEndpoint = endpoint;
-    body.anthropicDefaultModel = model;
-  } else {
-    if (apiKey) body.openaiApiKey = apiKey;
-    body.openaiApiEndpoint = endpoint;
-    body.openaiDefaultModel = model;
-  }
-
-  await fetch(API + '/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-
-  // Save workspace JSON files
-  const agentId = settings.defaultAgentId || 'default-desktop-agent';
-  const identity = { name: document.getElementById('ws_identity_name')?.value || '', role: document.getElementById('ws_identity_role')?.value || '', description: document.getElementById('ws_identity_desc')?.value || '' };
-  const soul = {
-    personality: document.getElementById('ws_soul_personality')?.value || '',
-    tone: document.getElementById('ws_soul_tone')?.value || '',
-    rules: Array.from(document.querySelectorAll('.ws-rule')).map(el => el.value).filter(Boolean),
-    boundaries: Array.from(document.querySelectorAll('.ws-boundary')).map(el => el.value).filter(Boolean),
-  };
-  const user = { name: document.getElementById('ws_user_name')?.value || '', role: document.getElementById('ws_user_role')?.value || '', preferences: document.getElementById('ws_user_prefs')?.value || '', notes: document.getElementById('ws_user_notes')?.value || '' };
-  const toolsData = { skills: Array.from(document.querySelectorAll('.ws-skill-cb:checked')).map(el => el.value), guidelines: Array.from(document.querySelectorAll('.ws-guideline')).map(el => el.value).filter(Boolean) };
-  await fetch(API + '/api/agents/' + agentId + '/workspace/identity.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: identity }) });
-  await fetch(API + '/api/agents/' + agentId + '/workspace/soul.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: soul }) });
-  await fetch(API + '/api/agents/' + agentId + '/workspace/user.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: user }) });
-  await fetch(API + '/api/agents/' + agentId + '/workspace/tools.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: toolsData }) });
-
-  settings = await (await fetch(API + '/api/settings')).json().catch(() => body);
-  updateModelBadge();
-  updateUserGreeting();
-  applyTheme();
-
-  const saved = document.getElementById('settingsSaved');
-  if (saved) { saved.style.display = ''; setTimeout(() => saved.style.display = 'none', 2000); }
-}
-
-// ─── Modal ───────────────────────────────────────────
-function showModal(title, bodyHtml, onSave) {
-  const el = document.getElementById('modalContainer');
-  el.style.display = '';
-  el.innerHTML = `
-    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-      <div class="modal">
-        <h2>${title}</h2>
-        <div class="modal-body">
-          ${bodyHtml}
-          <div class="form-actions">
-            <button class="btn-secondary" onclick="closeModal()">取消</button>
-            <button class="btn-primary" id="modalSaveBtn">保存</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  document.getElementById('modalSaveBtn').onclick = onSave;
-}
-function closeModal() {
-  document.getElementById('modalContainer').style.display = 'none';
-}
-
-// ─── Theme ────────────────────────────────────────────
-function applyTheme() {
-  const theme = settings.theme || 'dark';
-  if (theme === 'auto') {
-    document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  } else {
-    document.documentElement.setAttribute('data-theme', theme);
-  }
-}
-
-// ─── Start ───────────────────────────────────────────
-init();
+// ── Boot ──
+init()
 </script>
 </body>
 </html>

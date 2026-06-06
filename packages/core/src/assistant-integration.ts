@@ -42,7 +42,6 @@ export async function loadUserContext(
   data: UserProfileInput
 ): Promise<string | null> {
   try {
-    // @ts-expect-error — optional dependency, may not be installed at build time
     const assistant: any = await import('@colomind/assistant')
 
     if (assistant.getUserContext) {

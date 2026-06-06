@@ -1,6 +1,6 @@
 {
   "name": "@colomind/core",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "description": "ColoMind Agent Runtime Core - Multi-modal AI × Security Guardian × Charter System",
   "license": "AGPL-3.0",
   "type": "module",
@@ -37,6 +37,10 @@
     "./memory": {
       "import": "./dist/memory/index.js",
       "types": "./dist/memory/index.d.ts"
+    },
+    "./gateway": {
+      "import": "./dist/gateway/index.js",
+      "types": "./dist/gateway/index.d.ts"
     }
   },
   "files": [

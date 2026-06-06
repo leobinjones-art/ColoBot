@@ -17,6 +17,15 @@ import {
 } from '../config/llm-settings.js'
 import { OpenAIProvider, type OpenAIConfig } from '../providers/openai.js'
 
+export interface LLMConfig {
+  provider: ProviderType
+  apiKey: string
+  endpoint: string
+  model: string
+  maxTokens?: number
+  temperature?: number
+}
+
 export interface LLMOptions {
   temperature?: number
   maxTokens?: number
@@ -26,10 +35,16 @@ export interface LLMOptions {
   stream?: boolean
   retries?: number
   retryDelayMs?: number
+  tools?: Array<{
+    name: string
+    description: string
+    parameters: Record<string, unknown>
+  }>
 }
 
 export interface LLMResponse {
   content: string | ContentBlock[]
+  toolCalls?: Array<{ id: string; name: string; args: Record<string, unknown> }>
   raw: unknown
 }
 
@@ -101,19 +116,31 @@ function computeBackoff(attempt: number, baseDelayMs: number): number {
   return Math.min(baseDelayMs * Math.pow(2, attempt - 1), 30_000)
 }
 
-// ─── 执行单个 provider 的 chat ───────────────────────────────────
+// ─── 外部配置入口 ───────────────────────────────────────────────────
+
+export async function chatWithConfig(
+  messages: LLMMessage[],
+  config: LLMConfig,
+  options: LLMOptions = {},
+): Promise<LLMResponse> {
+  const modelId = options.model || config.model
+  return executeChat(config.provider, modelId, messages, options, config)
+}
+
+// ─── 内部执行（支持 config 覆盖）──────────────────────────────────────
 
 async function executeChat(
   provider: ProviderType,
   modelId: string,
   messages: LLMMessage[],
   options: LLMOptions,
+  config?: LLMConfig,
 ): Promise<LLMResponse> {
   switch (provider) {
     case 'openai':
-      return chatOpenAI(messages, { ...options, model: modelId })
+      return chatOpenAI(messages, { ...options, model: modelId }, config)
     case 'anthropic':
-      return chatAnthropic(messages, { ...options, model: modelId })
+      return chatAnthropic(messages, { ...options, model: modelId }, config)
   }
 }
 
@@ -279,12 +306,26 @@ async function* mockChatStream(messages: LLMMessage[]): AsyncGenerator<LLMStream
 
 // ─── OpenAI ───────────────────────────────────────────────────────
 
-async function chatOpenAI(messages: LLMMessage[], options: LLMOptions): Promise<LLMResponse> {
-  const apiKey = getOpenAIApiKey()
+async function chatOpenAI(messages: LLMMessage[], options: LLMOptions, config?: LLMConfig): Promise<LLMResponse> {
+  const apiKey = config?.apiKey || getOpenAIApiKey()
   if (!apiKey) throw new Error('OPENAI_API_KEY not set')
 
-  const model = options.model || getDefaultModel('openai')
-  const endpoint = getApiEndpoint('openai')
+  const model = options.model || config?.model || getDefaultModel('openai')
+  const endpoint = config?.endpoint || getApiEndpoint('openai')
+
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    temperature: options.temperature ?? config?.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? config?.maxTokens ?? 4096,
+  }
+
+  if (options.tools && options.tools.length > 0) {
+    body.tools = options.tools.map(t => ({
+      type: 'function',
+      function: { name: t.name, description: t.description, parameters: t.parameters },
+    }))
+  }
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -292,12 +333,7 @@ async function chatOpenAI(messages: LLMMessage[], options: LLMOptions): Promise<
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 4096,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
@@ -306,9 +342,26 @@ async function chatOpenAI(messages: LLMMessage[], options: LLMOptions): Promise<
   }
 
   const data = (await res.json()) as {
-    choices: Array<{ message: { content: string | ContentBlock[] } }>
+    choices: Array<{
+      message: {
+        content: string | ContentBlock[]
+        tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>
+      }
+    }>
   }
-  return { content: data.choices[0]?.message?.content ?? '', raw: data }
+
+  const msg = data.choices[0]?.message
+  const toolCalls = msg?.tool_calls?.map(tc => ({
+    id: tc.id,
+    name: tc.function.name,
+    args: JSON.parse(tc.function.arguments || '{}'),
+  }))
+
+  return {
+    content: msg?.content ?? '',
+    toolCalls: toolCalls?.length ? toolCalls : undefined,
+    raw: data,
+  }
 }
 
 async function* chatStreamOpenAI(
@@ -384,14 +437,30 @@ async function* chatStreamOpenAI(
 
 // ─── Anthropic ─────────────────────────────────────────────────────
 
-async function chatAnthropic(messages: LLMMessage[], options: LLMOptions): Promise<LLMResponse> {
-  const apiKey = getAnthropicApiKey()
+async function chatAnthropic(messages: LLMMessage[], options: LLMOptions, config?: LLMConfig): Promise<LLMResponse> {
+  const apiKey = config?.apiKey || getAnthropicApiKey()
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set')
 
-  const model = options.model || getDefaultModel('anthropic')
-  const endpoint = getApiEndpoint('anthropic')
+  const model = options.model || config?.model || getDefaultModel('anthropic')
+  const endpoint = config?.endpoint || getApiEndpoint('anthropic')
   const systemMsg = messages.find((m) => m.role === 'system')
   const nonSystem = messages.filter((m) => m.role !== 'system')
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: nonSystem,
+    system: systemMsg?.content,
+    temperature: options.temperature ?? config?.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? config?.maxTokens ?? 4096,
+  }
+
+  if (options.tools && options.tools.length > 0) {
+    body.tools = options.tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.parameters,
+    }))
+  }
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -400,13 +469,7 @@ async function chatAnthropic(messages: LLMMessage[], options: LLMOptions): Promi
       'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model,
-      messages: nonSystem,
-      system: systemMsg?.content,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 4096,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
@@ -414,9 +477,24 @@ async function chatAnthropic(messages: LLMMessage[], options: LLMOptions): Promi
     throw new Error(`Anthropic API error: ${res.status} ${err}`)
   }
 
-  const data = (await res.json()) as { content: Array<{ text: string } | { type: string }> }
-  const textBlocks = data.content.filter((b) => 'text' in b) as Array<{ text: string }>
-  return { content: textBlocks[0]?.text ?? '', raw: data }
+  const data = (await res.json()) as { content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> }
+
+  const textParts: string[] = []
+  const toolCalls: Array<{ id: string; name: string; args: Record<string, unknown> }> = []
+
+  for (const block of data.content || []) {
+    if (block.type === 'text' && block.text) {
+      textParts.push(block.text)
+    } else if (block.type === 'tool_use' && block.name) {
+      toolCalls.push({ id: block.id || '', name: block.name, args: block.input || {} })
+    }
+  }
+
+  return {
+    content: textParts.join(''),
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    raw: data,
+  }
 }
 
 async function* chatStreamAnthropic(
@@ -503,3 +581,5 @@ export function createOpenAIProvider(config: OpenAIConfig): OpenAIProvider {
 
 // Re-export provider type
 export { type ProviderType } from '../config/llm-settings.js'
+export { LLMPool, llmPool, type ProviderInstance } from './pool.js'
+export { LLMPoolProvider } from './llm-provider-adapter.js'

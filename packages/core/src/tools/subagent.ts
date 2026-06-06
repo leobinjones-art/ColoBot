@@ -3,18 +3,15 @@
  */
 
 import * as path from 'path'
-import type { ToolContext, LLMMessage, ContentBlock } from '@colomind/types'
+import type { ToolContext, LLMMessage } from '@colomind/types'
 import { toolRegistry } from './registry.js'
-import { parseToolCalls, formatToolResults } from './executor.js'
 import {
   spawnSubAgent,
   getSubAgent,
-  runSubAgentTask,
   destroySubAgent,
   isToolAllowed,
 } from '../subagents/index.js'
-import { chat } from '../llm/index.js'
-import { ConsoleAudit } from '../adapters/audit.js'
+import { chatWithConfig, type LLMConfig } from '../llm/index.js'
 import { Logger } from '../logger.js'
 
 // 子 Agent 日志器 - 写入单独的日志文件
@@ -79,31 +76,34 @@ async function summarizeSubAgentResult(
   subAgentName: string,
   task: string,
   rawResult: string,
+  config?: LLMConfig,
 ): Promise<string> {
   const prompt = `你是父Agent，负责整理汇总子Agent"${subAgentName}"的工作成果。
 
 子Agent执行的任务：
 """
-${task.slice(0, 1000)}
+${task.slice(0, 2000)}
 """
 
 子Agent原始输出：
 """
-${rawResult.slice(0, 4000)}
+${rawResult.slice(0, 16000)}
 """
 
 请整理汇总以上内容，要求：
-1. 提取核心信息，去除冗余和格式噪音
-2. 以专业、简洁的方式呈现
+1. 全面汇总工作成果，不要遗漏关键信息
+2. 如果是搜索结果，保留所有有价值的条目和摘要
 3. 如果是文献列表，整理成规范格式
-4. 如果是分析结果，提炼关键结论
-5. 控制在300-500字以内
+4. 如果是分析结果，保留完整推理链和关键结论
+5. 如果是代码相关，保留核心代码片段和解释
+6. 去除格式噪音，但保留所有实质内容
 
 直接输出整理后的内容，不要添加"以下是整理结果"等前缀。`
 
   try {
-    const response = await chat([{ role: 'user', content: prompt }], {
-      maxTokens: 800,
+    if (!config) return rawResult
+    const response = await chatWithConfig([{ role: 'user', content: prompt }], config, {
+      maxTokens: 8000,
       temperature: 0.3,
     })
     return typeof response.content === 'string' ? response.content : rawResult
@@ -185,69 +185,95 @@ async function delegateTask(args: Record<string, unknown>, ctx: ToolContext): Pr
 
   logger.info('DELEGATE_START', { sub_agent_id, name: agent.name, taskLength: task.length })
 
-  // 创建 LLM provider 适配器
-  const llmProvider = {
-    name: 'subagent-llm',
-    chat: async (messages: LLMMessage[], _options?: unknown) => {
-      const response = await chat(messages, {})
-      return {
-        content: response.content,
-        toolCalls: [],
-        usage: undefined,
-      }
-    },
-    chatStream: async function* (_messages: LLMMessage[], _options?: unknown) {
-      // 子 Agent 不使用流式输出
-      yield { type: 'done' as const }
-    },
+  const llmConfig = ctx.llmConfig
+  if (!llmConfig) {
+    logger.error('DELEGATE_NO_LLM_CONFIG', { sub_agent_id })
+    throw new Error('No LLM config available in context — cannot run subagent')
   }
 
-  // 创建审计日志
-  const audit = new ConsoleAudit()
+  const config: LLMConfig = llmConfig
 
-  // 执行子 Agent 任务
-  const deps = {
-    llm: llmProvider,
-    audit,
-    parseTools: (content: string) => parseToolCalls(content),
-    executeTools: async (calls: ReturnType<typeof parseToolCalls>, toolCtx: ToolContext) => {
-      const results: { name: string; result?: unknown; error?: string }[] = []
-      for (const call of calls) {
-        if (!isToolAllowed(sub_agent_id, call.name)) {
-          logger.warn('TOOL_BLOCKED', { sub_agent_id, tool: call.name })
-          results.push({ name: call.name, error: 'Tool not allowed' })
-          continue
-        }
-        try {
-          const tool = toolRegistry.get(call.name)
-          if (!tool) {
-            results.push({ name: call.name, error: `Tool not found: ${call.name}` })
-            continue
-          }
-          logger.debug('TOOL_EXECUTE', { sub_agent_id, tool: call.name })
-          const result = await tool.execute({ ...call.args, sub_agent_id: sub_agent_id }, toolCtx)
-          results.push({ name: call.name, result })
-        } catch (e) {
-          logger.error('TOOL_ERROR', { sub_agent_id, tool: call.name, error: String(e) })
-          results.push({ name: call.name, error: String(e) })
-        }
-      }
-      return results
-    },
-    formatResults: (results: { name: string; result?: unknown; error?: string }[]) => {
-      return results
-        .map((r) =>
-          r.error
-            ? `[${r.name}] ERROR: ${r.error}`
-            : `[${r.name}] OK: ${JSON.stringify(r.result).slice(0, 500)}`,
-        )
-        .join('\n')
-    },
-  }
+  // Build tool definitions for native tool_use
+  const toolDefs = agent.allowedTools
+    .map(name => toolRegistry.get(name))
+    .filter(Boolean)
+    .map(t => ({
+      name: t!.name,
+      description: t!.description,
+      parameters: t!.parameters as Record<string, unknown>,
+    }))
+
+  // Build system prompt from soul content
+  const soul = JSON.parse(agent.soulContent || '{}')
+  const systemParts: string[] = [`你是 ${soul.role || '助手'}。`]
+  if (soul.personality) systemParts.push(`\n## 性格\n${soul.personality}`)
+  if (soul.rules?.length) systemParts.push(`\n## 规则\n${soul.rules.map((r: string) => `- ${r}`).join('\n')}`)
+  if (soul.skills?.length) systemParts.push(`\n## 技能\n${soul.skills.map((s: string) => `- ${s}`).join('\n')}`)
+  const systemPrompt = systemParts.join('\n')
+
+  const messages: LLMMessage[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: task },
+  ]
+
+  const maxRounds = 5
+  const timeoutMs = agent.taskTimeoutMs ?? 5 * 60 * 1000
+  let finalContent = ''
 
   try {
-    const rawResult = await runSubAgentTask(agent, task, agent.parentId, deps)
-    const summarizedResult = await summarizeSubAgentResult(agent.name, task, rawResult)
+    for (let round = 0; round < maxRounds; round++) {
+      const response = await Promise.race([
+        chatWithConfig(messages, config, { maxTokens: 2048, temperature: 0.7, tools: toolDefs }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('LLM调用超时')), timeoutMs),
+        ),
+      ])
+
+      // Native tool_use: execute tool calls and feed results back
+      if (response.toolCalls && response.toolCalls.length > 0) {
+        messages.push({ role: 'assistant', content: response.content || '' })
+
+        const toolResults: Array<{ name: string; result?: string; error?: string }> = []
+        for (const tc of response.toolCalls) {
+          if (!isToolAllowed(sub_agent_id, tc.name)) {
+            toolResults.push({ name: tc.name, error: 'Tool not allowed' })
+            continue
+          }
+          try {
+            const tool = toolRegistry.get(tc.name)
+            if (!tool) {
+              toolResults.push({ name: tc.name, error: `Tool not found: ${tc.name}` })
+              continue
+            }
+            logger.debug('TOOL_EXECUTE', { sub_agent_id, tool: tc.name })
+            const result = await tool.execute(
+              { ...tc.args, sub_agent_id },
+              { agentId: sub_agent_id, sessionKey: '', llmConfig: config },
+            )
+            toolResults.push({
+              name: tc.name,
+              result: typeof result === 'string' ? result : JSON.stringify(result),
+            })
+          } catch (e) {
+            logger.error('TOOL_ERROR', { sub_agent_id, tool: tc.name, error: String(e) })
+            toolResults.push({ name: tc.name, error: String(e) })
+          }
+        }
+
+        const resultsText = toolResults
+          .map(r => r.error ? `[${r.name}] ERROR: ${r.error}` : `[${r.name}] ${r.result?.slice(0, 2000)}`)
+          .join('\n')
+        messages.push({ role: 'user', content: resultsText })
+        finalContent = typeof response.content === 'string' ? response.content : ''
+        continue
+      }
+
+      // No tool calls — final response
+      finalContent = typeof response.content === 'string' ? response.content : ''
+      break
+    }
+
+    const summarizedResult = await summarizeSubAgentResult(agent.name, task, finalContent, config)
     logger.info('DELEGATE_DONE', {
       sub_agent_id,
       name: agent.name,

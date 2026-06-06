@@ -345,8 +345,8 @@ export class ConfigManager {
   /**
    * 获取模型能力（自动计算分块参数）
    */
-  getModelCapabilities(): ModelCapabilities {
-    return getModelCapabilities(this.config.model.model)
+  getModelCapabilities(modelId?: string): ModelCapabilities {
+    return getModelCapabilities(modelId ?? this.config.model.model)
   }
 
   /**

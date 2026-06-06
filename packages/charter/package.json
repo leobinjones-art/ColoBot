@@ -1,6 +1,6 @@
 {
   "name": "@colomind/charter",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "ColoMind Charter System - Define AI capability boundaries with document bindings",
   "license": "AGPL-3.0",
   "type": "module",

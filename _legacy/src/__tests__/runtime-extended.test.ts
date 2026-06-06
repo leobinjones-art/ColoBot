@@ -84,15 +84,6 @@ vi.mock('../content-policy/threat.js', () => ({
   buildUninstallConfirmPrompt: vi.fn(() => 'Confirm'),
 }))
 
-vi.mock('./sop-handler.js', () => ({
-  handleSopFlow: vi.fn(async () => ({ response: 'SOP Response', state: null, action: 'none' })),
-  shouldTriggerSop: vi.fn(() => false),
-}))
-
-vi.mock('./sop-v2.js', () => ({
-  getSopState: vi.fn(async () => null),
-}))
-
 vi.mock('./chat-commands.js', () => ({
   parseCommand: vi.fn(() => null),
   executeCommand: vi.fn(async () => null),

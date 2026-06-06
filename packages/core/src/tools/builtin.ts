@@ -21,6 +21,7 @@ import { registerExecCodeTool } from './exec-code.js'
 import { registerAgentTools } from './agent-tools.js'
 import { registerCreateSkillTool } from './create-skill.js'
 import { registerPythonTool } from './python-pyodide.js'
+import { registerSystemTools } from './system-tools.js'
 
 // ── 文件工具 ──────────────────────────────────────────────
 
@@ -796,6 +797,7 @@ export { registerWorkspaceTools } from './workspace.js'
 export { registerExecCodeTool } from './exec-code.js'
 export { registerSubagentTools } from './subagent.js'
 export { registerAgentTools } from './agent-tools.js'
+export { registerSystemTools } from './system-tools.js'
 export { registerCreateSkillTool } from './create-skill.js'
 
 /**
@@ -809,4 +811,5 @@ export function registerAllTools(): void {
   registerExecCodeTool()
   registerAgentTools()
   registerCreateSkillTool()
+  registerSystemTools()
 }

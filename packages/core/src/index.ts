@@ -75,6 +75,7 @@ export { ToolRegistry, toolRegistry } from './tools/registry.js'
 // ═══════════════════════════════════════════════════════════════
 
 export { registerBuiltinTools, registerAllTools } from './tools/builtin.js'
+export { registerLLMPoolTools } from './tools/llm-pool-tools.js'
 
 export type { ToolPolicy } from './tools/executor.js'
 
@@ -360,6 +361,11 @@ export {
   agentChat,
   chatStream,
   agentChatStream,
+  chatWithConfig,
+  type LLMConfig,
+  llmPool,
+  LLMPool,
+  type ProviderInstance,
   type ProviderType,
 } from './llm/index.js'
 
@@ -450,3 +456,22 @@ export {
   type UserProfile,
   type ProfileUpdate,
 } from './services/index.js'
+
+// ═══════════════════════════════════════════════════════════════
+// 网关层
+// ═══════════════════════════════════════════════════════════════
+
+export {
+  Gateway,
+  createHonoApp,
+  type GatewayConfig,
+  type DeviceInfo,
+  type DeviceBinding,
+  type GatewayContext,
+  type GatewayRequest,
+  type GatewayResponse,
+  type Middleware,
+  type RateLimitPreset,
+  DEFAULT_GATEWAY_CONFIG,
+  RATE_LIMIT_PRESETS,
+} from './gateway/index.js'

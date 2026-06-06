@@ -7,26 +7,26 @@ import { streamSSE } from 'hono/streaming'
 import { serve } from '@hono/node-server'
 import {
   getDb,
-  createTodo, getTodo, updateTodo, deleteTodo, listTodos, completeTodo,
-  createReminder, getReminder, listReminders, deleteReminder, completeReminder,
-  createEvent, getEvent, updateEvent, deleteEvent, getDayEvents,
-  createNote, getNote, updateNote, deleteNote, listNotes,
-  createBookmark, getBookmark, deleteBookmark, listBookmarks,
-  createHabit, getHabit, listHabits, deleteHabit, checkHabit,
-  logMood, getMoodEntries,
-  logFinance, getFinanceEntries, deleteFinanceEntry,
-  logHealth, getHealthEntries,
+  createTodo, getTodo, updateTodo, deleteTodo, listTodos, completeTodo, getTodayTodos,
+  createReminder, getReminder, listReminders, deleteReminder, completeReminder, cancelReminder,
+  createEvent, getEvent, updateEvent, deleteEvent, getDayEvents, getWeekEvents, getMonthEvents, checkConflict,
+  createNote, getNote, updateNote, deleteNote, listNotes, searchNotes, getAllTags,
+  createBookmark, getBookmark, deleteBookmark, listBookmarks, searchBookmarks,
+  createHabit, getHabit, listHabits, deleteHabit, checkHabit, getHabitLogs, getStreak, isTodayChecked,
+  logMood, getMoodEntries, getMoodStats,
+  logFinance, getFinanceEntries, getFinanceStats, getMonthlyStats, deleteFinanceEntry,
+  logHealth, logExercise, logSleep, logWeight, logWater, getHealthEntries, getHealthStats,
   createCourse, updateProgress, getCourse, listCourses, deleteCourse,
   addReading, updateReadingProgress, getReading, listReadings, deleteReading,
   createGoal, updateGoalProgress, getGoal, listGoals, deleteGoal,
-  addInspiration, getInspiration, listInspirations, deleteInspiration,
-  createContact, getContact, updateContact, listContacts, deleteContact,
+  addInspiration, getInspiration, listInspirations, searchInspirations, deleteInspiration,
+  createContact, getContact, updateContact, listContacts, searchContacts, deleteContact, recordInteraction,
   createProject, getProject, updateProject, listProjects, deleteProject,
   createPasswordEntry, getPasswordEntry, getPassword, listPasswordEntries, updatePasswordEntry, deletePasswordEntry, generatePassword, setEncryptionKey,
-  startTimeLog, endTimeLog, getTimeLog, getActiveTimeLogs, getTimeLogs, deleteTimeLog,
+  startTimeLog, endTimeLog, getTimeLog, getActiveTimeLogs, getTimeLogs, getTimeStats, deleteTimeLog,
 } from '@colomind/assistant'
-import { chat, chatStream, listSkills, configureSearch, search, registerAllTools, ToolExecutorImpl, toolRegistry, type Agent } from '@colomind/core'
-import { getSentinel } from '@colomind/sentinel'
+import { chat, chatStream, chatWithConfig, listSkills, configureSearch, search, registerAllTools, ToolExecutorImpl, toolRegistry, type Agent, Gateway, DEFAULT_GATEWAY_CONFIG, llmPool, registerLLMPoolTools, LLMPoolProvider } from '@colomind/core'
+import { getSentinel, CharterGuard, getCharterGuard, HeartbeatSender, LLMTakeoverGenerator, getTakeoverMessageManager } from '@colomind/sentinel'
 import { charterManager, getBuiltinCharter, listBuiltinCharterTypes, getBuiltinLibrary, listBuiltinLibraries } from '@colomind/charter'
 import { fileURLToPath } from 'url'
 
@@ -55,6 +55,10 @@ function loadSettings() {
     openaiApiKey: process.env.OPENAI_API_KEY ? '***' : '',
     anthropicApiKey: process.env.ANTHROPIC_API_KEY ? '***' : '',
     defaultModel: 'gpt-4o',
+    sentinelLlmProvider: 'same',
+    sentinelApiKey: '',
+    sentinelModel: '',
+    sentinelApiEndpoint: '',
     language: 'zh-CN',
     autoStart: false,
     globalShortcut: 'Cmd+Shift+N',
@@ -72,8 +76,13 @@ const app = new Hono()
 const UID = 'default'
 const PORT = parseInt(process.env.SIDECAR_PORT || '3456')
 
-getDb()
+const assistantDb = getDb()
 setEncryptionKey(process.env.COLOMIND_ENCRYPTION_KEY || 'default-desktop-key')
+
+// ─── Gateway 初始化 ────────────────────────────────────────
+const gatewayConfig = { ...DEFAULT_GATEWAY_CONFIG, port: PORT, apiKeys: process.env.COLOMIND_API_KEYS?.split(',') || [] }
+const gateway = new Gateway(gatewayConfig, assistantDb, getSentinel(), getCharterGuard())
+console.log('[sidecar] Gateway initialized with device auth + rate limit + Sentinel + Charter')
 
 // ─── SQLite Agent Registry ──────────────────────────────
 // Desktop uses SQLite, not PostgreSQL. We need a local agent store.
@@ -154,7 +163,7 @@ function createAgent(input: { name: string; soul_content?: string; primary_model
   const db = getDb()
   const id = `agent-${Date.now()}`
   const now = new Date().toISOString()
-  const workspacePath = path.join(WORKSPACE_DIR, id)
+  const workspacePath = join(WORKSPACE_DIR, id)
   db.prepare(`INSERT INTO ${AGENTS_TABLE} (id, name, soul_content, workspace_path, primary_model_id, temperature, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'idle', ?, ?)`).run(
     id, input.name, input.soul_content || '{}', workspacePath, input.primary_model_id || null, input.temperature ?? 0.7, now, now
   )
@@ -292,6 +301,22 @@ function syncSoulFromWorkspace(agentId: string) {
   updateAgent(agentId, { soul_content: JSON.stringify(soulContent) })
 }
 
+// System capabilities appended to every agent's system prompt
+const SYSTEM_CAPABILITIES = `
+## 系统能力
+
+你是 ColoMind 智能体平台的一部分，运行在以下系统架构上：
+
+- **Sentinel 安全守护**：三层防御系统，实时扫描所有输入和输出。词汇层过滤危险关键词，意图层用 LLM 分析恶意意图，法律层进行合规审查。所有对话都经过 Sentinel 保护。
+- **Charter 宪章守护**：行为准则系统，确保你的行为符合预设规则和边界。
+- **LLM 模型库**：你运行在可切换的 LLM 模型上，用户可以通过模型选择器切换不同模型（如快速模型、强力模型等）。
+- **子智能体**：你可以通过 delegate_task 工具委派子任务给专门的子智能体执行。
+- **工具系统**：你拥有搜索、文件读写、代码执行、任务管理等多种工具。
+- **记忆系统**：支持短期工作记忆、长期知识记忆和情景记忆。
+
+当用户询问关于 Sentinel、Charter 或系统能力时，请如实介绍这些功能。
+`
+
 // Build system prompt from workspace .json files
 function buildWorkspaceSystemPrompt(agentId: string): string {
   const identity = readWorkspaceJson(agentId, 'identity.json')
@@ -328,12 +353,12 @@ function buildWorkspaceSystemPrompt(agentId: string): string {
       if (tools.guidelines?.length) parts.push(`\n## 工具指南\n${tools.guidelines.map((g: string) => `- ${g}`).join('\n')}`)
     }
     const prompt = parts.join('\n\n')
-    if (prompt) return prompt
+    if (prompt) return prompt + '\n\n' + SYSTEM_CAPABILITIES
   }
   // Fallback: build from soul_content JSON in DB
   const agent = getAgent(agentId)
-  if (!agent) return ''
-  if (agent.system_prompt_override) return agent.system_prompt_override
+  if (!agent) return SYSTEM_CAPABILITIES
+  if (agent.system_prompt_override) return agent.system_prompt_override + '\n\n' + SYSTEM_CAPABILITIES
   try {
     const s = JSON.parse(agent.soul_content || '{}')
     const parts: string[] = []
@@ -341,8 +366,9 @@ function buildWorkspaceSystemPrompt(agentId: string): string {
     if (s.personality) parts.push(`\n## 性格\n${s.personality}`)
     if (s.rules?.length) parts.push(`\n## 规则\n${s.rules.map((r: string) => `- ${r}`).join('\n')}`)
     if (s.skills?.length) parts.push(`\n## 技能\n${s.skills.map((sk: string) => `- ${sk}`).join('\n')}`)
-    return parts.join('\n\n')
-  } catch { return '' }
+    const result = parts.join('\n\n')
+    return result ? result + '\n\n' + SYSTEM_CAPABILITIES : SYSTEM_CAPABILITIES
+  } catch { return SYSTEM_CAPABILITIES }
 }
 
 if (!getAgent(DEFAULT_AGENT_ID)) {
@@ -361,6 +387,7 @@ bootstrapWorkspace(DEFAULT_AGENT_ID)
 syncSoulFromWorkspace(DEFAULT_AGENT_ID)
 
 registerAllTools()
+registerLLMPoolTools()
 
 // Override agent tools to use local SQLite instead of core's PostgreSQL agentRegistry
 for (const name of ['list_agents', 'get_agent', 'update_agent', 'delete_agent']) {
@@ -395,7 +422,12 @@ toolRegistry.register({
 const toolExec = new ToolExecutorImpl(toolRegistry)
 
 // ─── LLM helpers ────────────────────────────────────
-function getLLMConfig() {
+function getLLMConfig(providerId?: string) {
+  // If pool has a provider, use it (supports dynamic switching)
+  const poolConfig = llmPool.toConfig(providerId)
+  if (poolConfig) return poolConfig
+
+  // Fallback to settings-based config
   const saved = loadSettings()
   const provider = saved.llmProvider || process.env.LLM_PROVIDER || 'anthropic'
   if (provider === 'openai') {
@@ -405,7 +437,8 @@ function getLLMConfig() {
       provider: 'openai' as const,
       apiKey: saved.openaiApiKey || process.env.OPENAI_API_KEY || '',
       endpoint: ep,
-      model: saved.openaiDefaultModel || process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o',
+      // UI 的 defaultModel 字段映射到 openaiDefaultModel
+      model: saved.openaiDefaultModel || saved.defaultModel || process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o',
     }
   }
   let ep = saved.anthropicApiEndpoint || process.env.ANTHROPIC_API_ENDPOINT || 'https://api.anthropic.com/v1/messages'
@@ -414,9 +447,102 @@ function getLLMConfig() {
     provider: 'anthropic' as const,
     apiKey: saved.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
     endpoint: ep,
-    model: saved.anthropicDefaultModel || process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-sonnet-4-6',
+    // UI 的 defaultModel 字段映射到 anthropicDefaultModel
+    model: saved.anthropicDefaultModel || saved.defaultModel || process.env.ANTHROPIC_DEFAULT_MODEL || 'claude-sonnet-4-6',
   }
 }
+
+// 获取 Sentinel 安全推理模型的 LLM 配置
+// 如果未单独配置，fallback 到主聊天模型
+function getSentinelLLMConfig(): { provider: 'openai' | 'anthropic'; apiKey: string; endpoint: string; model: string } {
+  const saved = loadSettings()
+
+  // 如果 sentinelLlmProvider 为 'same' 或未设置，复用主模型配置
+  const sentinelProvider = saved.sentinelLlmProvider
+  if (!sentinelProvider || sentinelProvider === 'same') {
+    return getLLMConfig()
+  }
+
+  // 使用独立的安全推理模型配置
+  if (sentinelProvider === 'openai') {
+    const mainConfig = getLLMConfig()
+    let ep = saved.sentinelApiEndpoint || saved.openaiApiEndpoint || process.env.OPENAI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions'
+    if (!ep.includes('/v1/')) ep += '/v1/chat/completions'
+    return {
+      provider: 'openai' as const,
+      apiKey: saved.sentinelApiKey || saved.openaiApiKey || process.env.OPENAI_API_KEY || '',
+      endpoint: ep,
+      model: saved.sentinelModel || 'gpt-4o-mini',
+    }
+  }
+
+  // anthropic
+  let ep = saved.sentinelApiEndpoint || saved.anthropicApiEndpoint || process.env.ANTHROPIC_API_ENDPOINT || 'https://api.anthropic.com/v1/messages'
+  if (!ep.includes('/v1/messages')) ep = ep.replace(/\/$/, '') + '/v1/messages'
+  return {
+    provider: 'anthropic' as const,
+    apiKey: saved.sentinelApiKey || saved.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
+    endpoint: ep,
+    model: saved.sentinelModel || 'claude-haiku-4-5-20251001',
+  }
+}
+
+// Initialize LLMPool with default provider from settings
+function initLLMPool() {
+  const config = getLLMConfig()
+  llmPool.register({
+    id: 'default',
+    provider: config.provider,
+    apiKey: config.apiKey,
+    endpoint: config.endpoint,
+    model: config.model,
+    tags: ['default', 'balanced'],
+  })
+
+  // Pre-register common models using same API keys
+  if (config.provider === 'anthropic' && config.apiKey) {
+    const base = config.endpoint.replace(/\/v1\/messages.*$/, '')
+    llmPool.register({ id: 'fast', provider: 'anthropic', apiKey: config.apiKey, endpoint: `${base}/v1/messages`, model: 'claude-haiku-4-5-20251001', tags: ['fast', 'cheap'] })
+    llmPool.register({ id: 'powerful', provider: 'anthropic', apiKey: config.apiKey, endpoint: `${base}/v1/messages`, model: 'claude-opus-4-7', tags: ['powerful', 'expensive'] })
+  }
+  if (config.provider === 'openai' && config.apiKey) {
+    const base = config.endpoint.replace(/\/v1\/chat\/completions.*$/, '')
+    llmPool.register({ id: 'fast', provider: 'openai', apiKey: config.apiKey, endpoint: `${base}/v1/chat/completions`, model: 'gpt-4o-mini', tags: ['fast', 'cheap'] })
+    llmPool.register({ id: 'powerful', provider: 'openai', apiKey: config.apiKey, endpoint: `${base}/v1/chat/completions`, model: 'o3', tags: ['powerful', 'expensive'] })
+  }
+
+  // If user has both API keys, cross-register
+  const saved = loadSettings()
+  if (config.provider === 'anthropic' && (saved.openaiApiKey || process.env.OPENAI_API_KEY)) {
+    const oKey = saved.openaiApiKey || process.env.OPENAI_API_KEY || ''
+    const oEp = saved.openaiApiEndpoint || 'https://api.openai.com/v1/chat/completions'
+    llmPool.register({ id: 'openai-fast', provider: 'openai', apiKey: oKey, endpoint: oEp, model: 'gpt-4o-mini', tags: ['fast', 'cheap'] })
+    llmPool.register({ id: 'openai-default', provider: 'openai', apiKey: oKey, endpoint: oEp, model: 'gpt-4o', tags: ['balanced'] })
+  }
+  if (config.provider === 'openai' && (saved.anthropicApiKey || process.env.ANTHROPIC_API_KEY)) {
+    const aKey = saved.anthropicApiKey || process.env.ANTHROPIC_API_KEY || ''
+    const aEp = saved.anthropicApiEndpoint || 'https://api.anthropic.com/v1/messages'
+    llmPool.register({ id: 'anthropic-fast', provider: 'anthropic', apiKey: aKey, endpoint: aEp, model: 'claude-haiku-4-5-20251001', tags: ['fast', 'cheap'] })
+    llmPool.register({ id: 'anthropic-default', provider: 'anthropic', apiKey: aKey, endpoint: aEp, model: 'claude-sonnet-4-6', tags: ['balanced'] })
+  }
+
+  // Register sentinel provider if configured independently
+  const sentinelConfig = getSentinelLLMConfig()
+  const sentinelSettings = loadSettings()
+  if (sentinelSettings.sentinelLlmProvider && sentinelSettings.sentinelLlmProvider !== 'same') {
+    llmPool.register({
+      id: 'sentinel',
+      provider: sentinelConfig.provider,
+      apiKey: sentinelConfig.apiKey,
+      endpoint: sentinelConfig.endpoint,
+      model: sentinelConfig.model,
+      tags: ['sentinel', 'security'],
+    })
+  }
+
+  console.log(`[sidecar] LLMPool initialized: ${llmPool.list().map(p => `${p.id}=${p.provider}/${p.model}`).join(', ')}`)
+}
+initLLMPool()
 
 // Streaming Anthropic API call with tools support
 // Custom streaming implementation instead of core's `agentChatStream`.
@@ -435,8 +561,16 @@ async function* anthropicStreamWithTools(messages: any[], toolDefs: any[], syste
   const sysMsg = systemPrompt || messages.find((m: any) => m.role === 'system')?.content
   if (sysMsg) body.system = sysMsg
   if (toolDefs.length > 0) body.tools = toolDefs
-  // Extended thinking (Anthropic only)
-  if (enableThinking && config.provider === 'anthropic') {
+  // Extended thinking: only enable when no tools needed (Anthropic API limitation)
+  // When tools are present, thinking mode can suppress tool_use behavior
+  const hasToolRequest = messages.some((m: any) =>
+    typeof m.content === 'string' && (
+      m.content.includes('调用') || m.content.includes('工具') || m.content.includes('查询') ||
+      m.content.includes('查一下') || m.content.includes('搜索') || m.content.includes('检查') ||
+      m.content.includes('system_info') || m.content.includes('sentinel') || m.content.includes('health')
+    )
+  )
+  if (enableThinking && config.provider === 'anthropic' && !hasToolRequest) {
     body.thinking = { type: 'enabled', budget_tokens: 4096 }
   }
 
@@ -465,7 +599,11 @@ async function* anthropicStreamWithTools(messages: any[], toolDefs: any[], syste
     if (done) break
     buffer += decoder.decode(value, { stream: true })
 
-    for (const line of buffer.split('\n')) {
+    const lines = buffer.split('\n')
+    // Keep last (potentially incomplete) line in buffer
+    buffer = lines.pop() || ''
+
+    for (const line of lines) {
       if (!line.startsWith('data: ')) continue
       const data = line.slice(6).trim()
       if (data === '[DONE]') continue
@@ -498,13 +636,90 @@ async function* anthropicStreamWithTools(messages: any[], toolDefs: any[], syste
         }
       } catch {}
     }
-    buffer = ''
+  }
+
+  // Process any remaining buffer
+  if (buffer.startsWith('data: ')) {
+    const data = buffer.slice(6).trim()
+    if (data !== '[DONE]') {
+      try { JSON.parse(data) } catch {}
+    }
   }
 
   yield { type: 'done', contentBlocks }
 }
 
 app.use('*', cors())
+
+// ─── Gateway 中间件链（所有 /api/* 请求经过审计+认证+限流） ──
+
+app.use('/api/*', async (c, next) => {
+  const apiKey = c.req.header('Authorization')?.replace(/^Bearer\s+/i, '') || c.req.header('X-API-Key') || ''
+  const gwReq = {
+    path: c.req.path,
+    method: c.req.method,
+    headers: Object.fromEntries(c.req.raw.headers.entries()),
+    body: null,
+    query: Object.fromEntries(new URL(c.req.url).searchParams.entries()),
+    context: {
+      channelId: 'http',
+      sessionId: c.req.header('X-Session-Id'),
+      apiKey: apiKey || undefined,
+      clientIp: c.req.header('X-Forwarded-For') || c.req.header('X-Real-IP'),
+    },
+  }
+  // 执行前 4 个中间件：audit → device-auth → api-auth → rate-limit
+  const securityChain = gateway.getMiddlewares().slice(0, 4)
+  let currentIdx = 0
+
+  const passThrough = async () => {
+    if (currentIdx >= securityChain.length) {
+      return { status: 200, body: null }
+    }
+    const mw = securityChain[currentIdx]
+    currentIdx++
+    return mw(gwReq, passThrough)
+  }
+
+  const gwRes = await passThrough()
+  if (gwRes.status >= 400 && gwRes.status !== 404) {
+    return c.json(gwRes.body, gwRes.status as 400)
+  }
+  if (gwReq.context.device) {
+    c.header('X-Device-Token', gwReq.context.device.deviceToken || '')
+  }
+  await next()
+})
+
+// ─── Gateway 端点（设备绑定 + 健康检查） ──────────────────
+
+app.get('/healthz', (c) => c.json({ status: 'ok', timestamp: Date.now(), uptime: process.uptime() }))
+app.get('/livez', (c) => c.json({ status: 'ok', timestamp: Date.now() }))
+app.get('/readyz', (c) => c.json({ status: 'ok', sentinel: !!getSentinel(), charter: !!getCharterGuard() }))
+
+app.post('/api/device/bind', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const deviceId = body.deviceId || c.req.header('X-Device-Id')
+  if (!deviceId) return c.json({ error: 'Missing deviceId' }, 400)
+  const platform = body.platform || c.req.header('X-Platform') || 'unknown'
+  const userAgent = c.req.header('User-Agent') || ''
+  const apiKey = c.req.header('Authorization')?.replace(/^Bearer\s+/i, '') || c.req.header('X-API-Key') || 'default'
+  const result = gateway.bindDevice(apiKey, deviceId, platform, userAgent)
+  if ('error' in result) {
+    const status = result.code === 'token_required' ? 401 : 403
+    return c.json(result, status)
+  }
+  return c.json(result, 201)
+})
+
+app.delete('/api/device/unbind', async (c) => {
+  const deviceId = c.req.header('X-Device-Id')
+  if (!deviceId) return c.json({ error: 'Missing X-Device-Id' }, 400)
+  const apiKey = c.req.header('Authorization')?.replace(/^Bearer\s+/i, '') || c.req.header('X-API-Key') || 'default'
+  const removed = gateway.unbindDevice(apiKey, deviceId)
+  if (!removed) return c.json({ error: 'Device not found' }, 404)
+  return c.json({ unbound: deviceId })
+})
 
 // ─── Web UI ───────────────────────────────────────────
 
@@ -522,6 +737,46 @@ app.get('/favicon.ico', (c) => {
 
 app.get('/api/health', (c) => c.json({ ok: true, port: PORT }))
 app.get('/api/tools', (c) => c.json((toolRegistry.getOpenAITools?.() || []).map(t => ({ name: t.function?.name, desc: (t.function?.description || '').slice(0, 80) }))))
+
+app.get('/api/llm/providers', (c) => {
+  const providers = llmPool.list().map(p => ({
+    id: p.id,
+    provider: p.provider,
+    model: p.model,
+    isDefault: p.id === llmPool.getDefaultId(),
+    tags: p.tags || [],
+  }))
+  return c.json(providers)
+})
+
+app.post('/api/llm/providers', async (c) => {
+  const body = await c.req.json()
+  const { id, provider, apiKey, endpoint, model, maxTokens, temperature, tags } = body
+  if (!id || !provider || !apiKey || !endpoint || !model) return c.json({ error: 'Missing required fields' }, 400)
+  llmPool.register({ id, provider, apiKey, endpoint, model, maxTokens, temperature, tags })
+  return c.json({ ok: true, id })
+})
+
+app.put('/api/llm/default', async (c) => {
+  const body = await c.req.json()
+  if (!body.id) return c.json({ error: 'Missing id' }, 400)
+  try {
+    llmPool.setDefault(body.id)
+    return c.json({ ok: true, defaultProvider: body.id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 400)
+  }
+})
+
+app.delete('/api/llm/providers/:id', (c) => {
+  const id = c.req.param('id')
+  try {
+    const deleted = llmPool.unregister(id)
+    return c.json({ ok: deleted, id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 400)
+  }
+})
 
 // ─── File Upload ────────────────────────────────────────
 
@@ -575,27 +830,35 @@ app.post('/api/chat/stream', async (c) => {
   return streamSSE(c, async (stream) => {
     try {
       // Check if LLM is configured
-      const config = getLLMConfig()
+      const providerId = body.providerId
+      const config = getLLMConfig(providerId)
       if (!config.apiKey) {
         addLog('error', 'chat', 'API Key not configured', { sessionId: sid })
         await stream.writeSSE({ data: JSON.stringify({ error: '请先在设置中配置 API Key 和模型。' }) })
         return
       }
 
-      // ─── 母Agent: Sentinel 输入扫描 ─────────────────────────
+      // ─── Sentinel 输入扫描（同步阻塞） ──────────────────
       const sentinel = getSentinel()
       if (sentinel && inputText) {
-        addLog('debug', 'sentinel', `开始输入安全扫描 (3 层)`, { sessionId: sid, agentId, input: inputText.slice(0, 100) })
+        addLog('debug', 'sentinel', `开始输入安全扫描`, { sessionId: sid, agentId, input: inputText.slice(0, 100) })
         const scanResult = sentinel.scanInput(inputText, sid)
         if (!scanResult.pass) {
           addLog('warn', 'sentinel', `输入被拦截: ${scanResult.reason || 'unsafe'}`, { sessionId: sid, agentId, scanResult: JSON.stringify(scanResult), input: inputText.slice(0, 100) })
           const takeover = sentinel.scanInputWithTakeover(inputText, sid)
-          addLog('warn', 'sentinel', `Sentinel 接管，返回安全回复`, { sessionId: sid, agentId, detail: takeover.response?.slice(0, 100) })
-          await stream.writeSSE({ data: JSON.stringify({ choices: [{ delta: { content: takeover.response || '输入已被安全系统拦截' } }] }) })
+          const fallbackMsg = takeover.response || '输入已被安全系统拦截'
+          addLog('warn', 'sentinel', `Sentinel 接管，返回安全回复`, { sessionId: sid, agentId, detail: fallbackMsg.slice(0, 100) })
+          await stream.writeSSE({ data: JSON.stringify({ type: 'input_blocked', content: fallbackMsg, reason: scanResult.reason }) })
+          db.prepare('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)').run(sid, 'assistant', `[安全拦截] ${fallbackMsg}`, new Date().toISOString())
           return
         }
         addLog('info', 'sentinel', `输入安全扫描通过`, { sessionId: sid, agentId, scanResult: JSON.stringify(scanResult) })
       }
+
+      // ─── Sentinel 会话超时监控（30s警告→60s询问→120s接管） ────
+      sentinel.startSessionTimeout(sid, agentId)
+      heartbeatSender.setStatus('busy')
+      heartbeatSender.setSessionCount((heartbeatSender as any).sessionCount + 1)
 
       // Load session history from DB for context, then append new messages
       const historyRows = db.prepare('SELECT role, content FROM messages WHERE session_id = ? ORDER BY created_at ASC').all(sid) as any[]
@@ -613,6 +876,7 @@ app.post('/api/chat/stream', async (c) => {
         description: t.function.description,
         input_schema: t.function.parameters,
       }))
+      addLog('debug', 'chat', `Tool defs: ${toolDefs.length} tools, first 3: ${toolDefs.slice(0,3).map(t=>t.name).join(',')}`, { sessionId: sid, agentId })
 
       let assistantText = ''
       let thinkingText = ''
@@ -629,6 +893,8 @@ app.post('/api/chat/stream', async (c) => {
           } else if (event.type === 'text') {
             assistantText += event.text
             await stream.writeSSE({ data: JSON.stringify({ choices: [{ delta: { content: event.text } }] }) })
+            // Keep heartbeat alive during streaming
+            sentinel?.touchSession?.(sid)
           } else if (event.type === 'done') {
             contentBlocks = event.contentBlocks
           }
@@ -643,11 +909,13 @@ app.post('/api/chat/stream', async (c) => {
             const results = await toolExec.execute([{
               id: block.id, name: block.name, args: block.input,
               type: 'function', function: { name: block.name, arguments: JSON.stringify(block.input) },
-            }], { agentId, sessionKey: sid })
+            }], { agentId, sessionKey: sid, llmConfig: getLLMConfig() })
             const resultStr = results.map((r: any) => String(r.result || r.error || '')).join('\n')
             toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: resultStr })
             addLog('info', 'tool', `工具执行成功: ${block.name}`, { sessionId: sid, agentId, toolName: block.name, toolInput: JSON.stringify(block.input).slice(0, 200), toolOutput: resultStr.slice(0, 300), duration: Date.now() - startTime })
             await stream.writeSSE({ data: JSON.stringify({ choices: [{ delta: { content: `${resultStr.slice(0, 300)}\n\n` } }] }) })
+            // Keep heartbeat alive during tool execution
+            sentinel?.touchSession?.(sid)
           } catch (e: any) {
             toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: `Error: ${e.message}`, is_error: true })
             addLog('error', 'tool', `Tool error: ${block.name}`, { sessionId: sid, agentId, detail: e.message })
@@ -661,26 +929,30 @@ app.post('/api/chat/stream', async (c) => {
         messages.push({ role: 'user', content: toolResults })
       }
 
-      // ─── 母Agent: Sentinel 输出扫描（异步） ─────────────
-      if (sentinel && typeof assistantText === 'string') {
-        addLog('info', 'sentinel', `Scanning output`, { sessionId: sid, detail: assistantText.slice(0, 80) })
-        const { OutputScanner } = await import('@colomind/sentinel')
-        const scanner = new OutputScanner(sentinel, {
-          enabled: true,
-          recallCallback: (sessionId: string) => {
-            addLog('warn', 'sentinel', `Output RECALLED — session ${sessionId}`, { sessionId })
-          },
-        })
-        const outputResult = scanner.scanAsync(assistantText, sid)
-        if (outputResult && typeof outputResult === 'object' && 'pass' in outputResult) {
-          addLog(outputResult.pass ? 'info' : 'warn', 'sentinel', `Output scan: ${outputResult.pass ? 'passed' : 'BLOCKED'}`, { sessionId: sid })
+      // ─── Sentinel 输出扫描（同步阻塞） ──────────────────
+      let finalText = assistantText
+      if (sentinel && typeof assistantText === 'string' && assistantText) {
+        const outputScan = sentinel.scanOutput(assistantText)
+        if (!outputScan.pass) {
+          const OUTPUT_FALLBACK = '抱歉，AI 响应未通过安全检查，内容已过滤。'
+          addLog('warn', 'sentinel', `输出违规: ${outputScan.reason || 'unsafe'}`, { sessionId: sid, agentId, detail: outputScan.matched ? JSON.stringify(outputScan.matched) : undefined })
+          await stream.writeSSE({ data: JSON.stringify({ type: 'output_replaced', fallback: OUTPUT_FALLBACK, reason: outputScan.reason }) })
+          finalText = `[安全过滤] ${OUTPUT_FALLBACK}`
+        } else {
+          addLog('info', 'sentinel', `输出安全扫描通过`, { sessionId: sid, agentId })
         }
       }
 
+      // Clear session timeout
+      // End session timeout monitoring
+      sentinel.endSessionTimeout(sid)
+      heartbeatSender.setStatus('idle')
+      heartbeatSender.recordResponseTime(Date.now() - startTime)
+
       await stream.writeSSE({ data: '[DONE]' })
-      db.prepare('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)').run(sid, 'assistant', assistantText, new Date().toISOString())
+      db.prepare('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)').run(sid, 'assistant', finalText, new Date().toISOString())
       const totalDuration = Date.now() - startTime
-      addLog('info', 'chat', '对话完成', { sessionId: sid, agentId, duration: totalDuration, model: config.model, provider: config.provider, output: assistantText.slice(0, 200), detail: `thinking: ${thinkingText.length} chars, response: ${assistantText.length} chars, ${totalDuration}ms` })
+      addLog('info', 'chat', '对话完成', { sessionId: sid, agentId, duration: totalDuration, model: config.model, provider: config.provider, output: finalText.slice(0, 200), detail: `thinking: ${thinkingText.length} chars, response: ${assistantText.length} chars, ${totalDuration}ms` })
     } catch (e: any) {
       addLog('error', 'chat', `Chat error: ${e.message}`, { sessionId: sid, agentId })
       await stream.writeSSE({ data: JSON.stringify({ error: e.message }) })
@@ -689,8 +961,10 @@ app.post('/api/chat/stream', async (c) => {
 })
 
 app.post('/api/chat', async (c) => {
-  const { messages } = await c.req.json()
-  return c.json(await chat(messages))
+  const { messages, providerId } = await c.req.json()
+  const config = getLLMConfig(providerId)
+  if (!config.apiKey) return c.json({ error: '请先在设置中配置 API Key' }, 400)
+  return c.json(await chatWithConfig(messages, config))
 })
 
 // ─── Sessions ──────────────────────────────────────────
@@ -921,6 +1195,27 @@ app.put('/api/assistant/time-tracker/:id/stop', (c) => c.json(endTimeLog(c.req.p
 app.delete('/api/assistant/timetracker/:id', (c) => c.json(deleteTimeLog(c.req.param('id'), UID)))
 app.delete('/api/assistant/time-tracker/:id', (c) => c.json(deleteTimeLog(c.req.param('id'), UID)))
 
+// ─── Stats & Extended API ──────────────────────────────
+
+app.get('/api/assistant/mood/stats', (c) => c.json(getMoodStats(UID)))
+app.get('/api/assistant/finance/stats', (c) => c.json(getFinanceStats(UID)))
+app.get('/api/assistant/finance/monthly-stats', (c) => c.json(getMonthlyStats(UID)))
+app.get('/api/assistant/health/stats', (c) => c.json(getHealthStats(UID)))
+app.get('/api/assistant/todos/today', (c) => c.json(getTodayTodos(UID)))
+app.get('/api/assistant/habits/:id/streak', (c) => c.json({ streak: getStreak(c.req.param('id')) }))
+app.get('/api/assistant/habits/:id/logs', (c) => c.json(getHabitLogs(c.req.param('id'))))
+app.get('/api/assistant/habits/:id/today', (c) => c.json({ checked: isTodayChecked(c.req.param('id')) }))
+app.get('/api/assistant/timetracker/stats', (c) => c.json(getTimeStats(UID)))
+app.get('/api/assistant/notes/search', async (c) => c.json(searchNotes(UID, c.req.query('q') || '')))
+app.get('/api/assistant/notes/tags', (c) => c.json(getAllTags(UID)))
+app.get('/api/assistant/bookmarks/search', async (c) => c.json(searchBookmarks(UID, c.req.query('q') || '')))
+app.get('/api/assistant/contacts/search', async (c) => c.json(searchContacts(UID, c.req.query('q') || '')))
+app.get('/api/assistant/inspiration/search', async (c) => c.json(searchInspirations(UID, c.req.query('q') || '')))
+app.get('/api/assistant/calendar/week', (c) => c.json(getWeekEvents(UID)))
+app.get('/api/assistant/calendar/month', (c) => c.json(getMonthEvents(UID)))
+app.put('/api/assistant/reminders/:id/cancel', (c) => c.json({ ok: cancelReminder(c.req.param('id'), UID) }))
+app.post('/api/assistant/contacts/:id/interact', (c) => c.json(recordInteraction(c.req.param('id'), UID)))
+
 // ─── Agents ────────────────────────────────────────────
 
 app.get('/api/agents', (c) => c.json(listAgents()))
@@ -1044,7 +1339,53 @@ app.delete('/api/logs', (c) => {
 // ─── Sentinel ──────────────────────────────────────────
 
 const sentinel = getSentinel()
-addLog('info', 'sentinel', 'Sentinel initialized (three-layer defense: vocabulary, intent, legal)')
+// 启动母Agent环路守护：心跳监控、超时监控、自检
+sentinel.start()
+// 母Agent自身心跳：每秒更新事件循环活跃状态
+setInterval(() => sentinel.beat(), 1000)
+addLog('info', 'sentinel', 'Sentinel initialized + loop guardian started (heartbeat, timeout, self-check)')
+
+// 注入 LLMProvider 给 Layer 2 (InferenceAgent) 和 Layer 3 (LegalGuidanceGenerator)
+let sentinelLLMProvider = new LLMPoolProvider('sentinel', getSentinelLLMConfig())
+sentinel.setLLMProvider(sentinelLLMProvider)
+addLog('info', 'sentinel', `Sentinel LLMProvider initialized (provider: ${getSentinelLLMConfig().provider}, model: ${getSentinelLLMConfig().model})`)
+
+// 父Agent心跳发送器（每2秒发心跳给母Agent）
+const heartbeatSender = new HeartbeatSender(DEFAULT_AGENT_ID)
+heartbeatSender.setOnSend((heartbeat) => {
+  sentinel.receiveHeartbeat(heartbeat)
+})
+heartbeatSender.start()
+addLog('info', 'sentinel', 'Parent agent heartbeat sender started (2s interval)')
+
+// 接管回复生成器（用LLM生成自然接管回复）
+const takeoverGenerator = new LLMTakeoverGenerator()
+takeoverGenerator.setLLMClient({
+  chat: async (messages) => {
+    const config = getLLMConfig()
+    const result = await chatWithConfig(
+      messages.map(m => ({ role: m.role as any, content: m.content })),
+      config,
+      { maxTokens: 256, temperature: 0.5 }
+    )
+    return typeof result.content === 'string' ? result.content : ''
+  }
+})
+// 注册接管回复生成器到全局管理器
+const takeoverMgr = getTakeoverMessageManager()
+takeoverMgr.setGenerator(takeoverGenerator)
+addLog('info', 'sentinel', 'LLM takeover generator initialized')
+
+// 接管信号接收器（监听母Agent的接管/恢复信号）
+const signalReceiver = sentinel.createSignalReceiver(DEFAULT_AGENT_ID)
+signalReceiver.start({
+  onTakeover: (signal) => {
+    addLog('warn', 'sentinel', `母Agent接管! 原因: ${signal.reason}`, { sessionId: signal.sessionId })
+  },
+  onResume: (signal) => {
+    addLog('info', 'sentinel', `母Agent恢复控制`, { sessionId: signal.sessionId })
+  },
+})
 
 app.post('/api/sentinel/scan', async (c) => {
   const body = await c.req.json()
@@ -1069,10 +1410,44 @@ app.get('/api/sentinel/status', (c) => {
       intent: { active: true, description: '意图层：LLM 分析恶意意图' },
       legal: { active: true, description: '法律层：法律知识库合规审查' },
     },
-    heartbeats: {},
+    heartbeats: sentinel.getAgentHealthStatus(DEFAULT_AGENT_ID)
+      ? Object.fromEntries(
+          [sentinel.getAgentHealthStatus(DEFAULT_AGENT_ID)]
+            .filter(Boolean)
+            .map(s => [s.agentId, s])
+        )
+      : {},
+    selfHealth: sentinel.getSelfHealthStatus(),
+    timeoutSessions: sentinel.getTimeoutMessages(),
   } : { active: false }
   addLog('debug', 'sentinel', 'Status queried')
   return c.json(status)
+})
+app.get('/api/sentinel/timeout/:sessionId', (c) => {
+  const sid = c.req.param('sessionId')
+  const state = sentinel.getSessionTimeoutState(sid)
+  return c.json(state || { status: 'not_monitored' })
+})
+app.get('/api/sentinel/stats', (c) => {
+  const sentinelLogs = logs.filter(l => l.category === 'sentinel')
+  let inputTotal = 0, inputBlocked = 0, outputTotal = 0, outputViolated = 0, manualTotal = 0
+  const recent: any[] = []
+  for (let i = sentinelLogs.length - 1; i >= 0; i--) {
+    const l = sentinelLogs[i]
+    const msg = l.message || ''
+    if (msg.includes('输入安全扫描通过') || msg.includes('输入被拦截')) {
+      inputTotal++
+      if (msg.includes('输入被拦截')) inputBlocked++
+      if (recent.length < 30) recent.push({ time: l.timestamp, type: 'input', pass: !msg.includes('拦截'), reason: l.detail || l.scanResult || '', sessionId: l.sessionId })
+    } else if (msg.includes('输出安全扫描通过') || msg.includes('输出违规')) {
+      outputTotal++
+      if (msg.includes('输出违规')) outputViolated++
+      if (recent.length < 30) recent.push({ time: l.timestamp, type: 'output', pass: !msg.includes('违规'), reason: l.detail || l.scanResult || '', sessionId: l.sessionId })
+    } else if (msg.includes('Manual scan')) {
+      manualTotal++
+    }
+  }
+  return c.json({ inputTotal, inputBlocked, outputTotal, outputViolated, manualTotal, recent })
 })
 app.get('/api/sentinel/logs', (c) => {
   const sentinelLogs = logs.filter(l => l.category === 'sentinel').slice(-100).reverse()
@@ -1140,12 +1515,18 @@ app.put('/api/settings', async (c) => {
       addLog('error', 'search', `Search config failed: ${e.message}`)
     }
   }
+  // Apply sentinel LLM config change
+  if (body.sentinelLlmProvider !== undefined || body.sentinelApiKey !== undefined || body.sentinelModel !== undefined || body.sentinelApiEndpoint !== undefined) {
+    const newConfig = getSentinelLLMConfig()
+    sentinelLLMProvider.updateConfig(newConfig)
+    addLog('info', 'sentinel', `Sentinel LLMProvider updated (provider: ${newConfig.provider}, model: ${newConfig.model})`)
+  }
   return c.json({ ok: true })
 })
 app.get('/api/settings/sounds', (c) => {
   const sounds: string[] = []
   const sysDir = '/System/Library/Sounds'
-  const userDir = path.join(os.homedir(), 'Library', 'Sounds')
+  const userDir = join(homedir(), 'Library', 'Sounds')
   for (const dir of [sysDir, userDir]) {
     try {
       for (const f of readdirSync(dir)) {

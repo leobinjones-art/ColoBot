@@ -1,6 +1,6 @@
 {
   "name": "colomind",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "TypeScript AI Agent Framework with Built-in Security Guardian",
   "license": "AGPL-3.0",
   "type": "module",
@@ -33,11 +33,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@colomind/types": "^0.1.0",
-    "@colomind/core": "^0.2.0",
-    "@colomind/sentinel": "^0.1.0",
-    "@colomind/charter": "^0.1.0",
-    "@colomind/tui": "^0.1.0",
+    "@colomind/types": "^1.0.0",
+    "@colomind/core": "^1.0.0",
+    "@colomind/sentinel": "^1.0.0",
+    "@colomind/charter": "^1.0.0",
+    "@colomind/tui": "^1.0.0",
     "commander": "^12.0.0"
   },
   "devDependencies": {

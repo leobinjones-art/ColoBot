@@ -118,6 +118,42 @@
         <input bind:value={settings.defaultModel} class="w-full px-3 py-2 rounded-lg text-sm"
           style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);" />
       </div>
+
+      <!-- 安全推理模型 -->
+      <div class="pt-2 mt-2" style="border-top: 1px solid var(--border);">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xs font-medium" style="color: var(--text-muted);">🛡️ 安全推理模型</span>
+          <span class="text-xs" style="color: var(--text-muted); opacity: 0.6;">Sentinel Layer 2/3</span>
+        </div>
+        <div>
+          <label class="block text-xs mb-1 font-medium" style="color: var(--text-muted);">推理模型来源</label>
+          <select bind:value={settings.sentinelLlmProvider} class="w-full px-3 py-2 rounded-lg text-sm"
+            style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);">
+            <option value="same">与主模型相同</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </div>
+        {#if settings.sentinelLlmProvider && settings.sentinelLlmProvider !== 'same'}
+          <div class="mt-3 space-y-3 pl-2" style="border-left: 2px solid var(--accent);">
+            <div>
+              <label class="block text-xs mb-1 font-medium" style="color: var(--text-muted);">API Key</label>
+              <input bind:value={settings.sentinelApiKey} type="password" placeholder="留空则复用主模型 Key" class="w-full px-3 py-2 rounded-lg text-sm"
+                style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);" />
+            </div>
+            <div>
+              <label class="block text-xs mb-1 font-medium" style="color: var(--text-muted);">模型</label>
+              <input bind:value={settings.sentinelModel} placeholder={settings.sentinelLlmProvider === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini'} class="w-full px-3 py-2 rounded-lg text-sm"
+                style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);" />
+            </div>
+            <div>
+              <label class="block text-xs mb-1 font-medium" style="color: var(--text-muted);">API Endpoint</label>
+              <input bind:value={settings.sentinelApiEndpoint} placeholder="留空使用默认" class="w-full px-3 py-2 rounded-lg text-sm"
+                style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);" />
+            </div>
+          </div>
+        {/if}
+      </div>
       <div>
         <label class="block text-xs mb-1 font-medium" style="color: var(--text-muted);">搜索引擎</label>
         <select bind:value={settings.searchEngine} class="w-full px-3 py-2 rounded-lg text-sm"

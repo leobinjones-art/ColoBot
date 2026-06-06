@@ -5,6 +5,8 @@ dist/
 .DS_Store
 .claude/
 docs/
+papers/
+samples.json
 
 # watchOS app
 watchos/
