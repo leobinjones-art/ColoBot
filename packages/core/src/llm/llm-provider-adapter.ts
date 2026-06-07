@@ -3,6 +3,9 @@
  *
  * 将 LLMConfig + chatWithConfig 包装成 @colomind/types 的 LLMProvider 接口
  * 用于需要 LLMProvider 类型参数的组件（如 Sentinel InferenceAgent）
+ *
+ * Note: chatStream() currently yields the full response in one chunk.
+ * True streaming support will be added when chatStreamWithConfig is implemented in core.
  */
 
 import type {
@@ -49,6 +52,8 @@ export class LLMPoolProvider implements LLMProvider {
   }
 
   async *chatStream(messages: LLMMessage[], options?: LLMOptions): AsyncIterable<LLMStreamChunk> {
+    // Non-streaming fallback — yields full response then done
+    // TODO: use chatStreamWithConfig once implemented in core
     const response = await this.chat(messages, options)
     if (typeof response.content === 'string') {
       yield { type: 'text', content: response.content }

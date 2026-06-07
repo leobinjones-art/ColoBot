@@ -76,12 +76,12 @@ const app = new Hono()
 const UID = 'default'
 const PORT = parseInt(process.env.SIDECAR_PORT || '3456')
 
-const assistantDb = getDb()
+const db = getDb()
 setEncryptionKey(process.env.COLOMIND_ENCRYPTION_KEY || 'default-desktop-key')
 
 // ─── Gateway 初始化 ────────────────────────────────────────
 const gatewayConfig = { ...DEFAULT_GATEWAY_CONFIG, port: PORT, apiKeys: process.env.COLOMIND_API_KEYS?.split(',') || [] }
-const gateway = new Gateway(gatewayConfig, assistantDb, getSentinel(), getCharterGuard())
+const gateway = new Gateway(gatewayConfig, db, getSentinel(), getCharterGuard())
 console.log('[sidecar] Gateway initialized with device auth + rate limit + Sentinel + Charter')
 
 // ─── SQLite Agent Registry ──────────────────────────────
@@ -567,7 +567,8 @@ async function* anthropicStreamWithTools(messages: any[], toolDefs: any[], syste
     typeof m.content === 'string' && (
       m.content.includes('调用') || m.content.includes('工具') || m.content.includes('查询') ||
       m.content.includes('查一下') || m.content.includes('搜索') || m.content.includes('检查') ||
-      m.content.includes('system_info') || m.content.includes('sentinel') || m.content.includes('health')
+      m.content.includes('system_info') || m.content.includes('sentinel') || m.content.includes('health') ||
+      /search|check|query|find|look\s*up|run|execute|analyze|tool|call\s*/i.test(m.content)
     )
   )
   if (enableThinking && config.provider === 'anthropic' && !hasToolRequest) {
@@ -736,7 +737,7 @@ app.get('/favicon.ico', (c) => {
 // ─── Health ────────────────────────────────────────────
 
 app.get('/api/health', (c) => c.json({ ok: true, port: PORT }))
-app.get('/api/tools', (c) => c.json((toolRegistry.getOpenAITools?.() || []).map(t => ({ name: t.function?.name, desc: (t.function?.description || '').slice(0, 80) }))))
+app.get('/api/tools', (c) => c.json(toolRegistry.getOpenAITools?.() || []))
 
 app.get('/api/llm/providers', (c) => {
   const providers = llmPool.list().map(p => ({
@@ -969,7 +970,6 @@ app.post('/api/chat', async (c) => {
 
 // ─── Sessions ──────────────────────────────────────────
 
-const db = getDb()
 db.exec(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, title TEXT, created_at TEXT)`)
 db.exec(`CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT, created_at TEXT)`)
 
@@ -1480,6 +1480,15 @@ app.get('/api/search/config', (c) => {
 
 // ─── Charter ───────────────────────────────────────────
 
+app.get('/api/charter/status', (c) => {
+  const guard = getCharterGuard()
+  const charters = guard.getActiveCharters('default')
+  return c.json({
+    active: true,
+    activeCharters: charters,
+    builtinTypes: listBuiltinCharterTypes(),
+  })
+})
 app.get('/api/charters', (c) => {
   const builtin = listBuiltinCharterTypes().map(t => ({ id: t, name: t, type: t, builtin: true, ...getBuiltinCharter(t) }))
   return c.json(builtin)
@@ -1520,6 +1529,14 @@ app.put('/api/settings', async (c) => {
     const newConfig = getSentinelLLMConfig()
     sentinelLLMProvider.updateConfig(newConfig)
     addLog('info', 'sentinel', `Sentinel LLMProvider updated (provider: ${newConfig.provider}, model: ${newConfig.model})`)
+  }
+  // Apply main LLM config change — reinitialize LLMPool
+  if (body.llmProvider !== undefined || body.anthropicApiKey !== undefined || body.openaiApiKey !== undefined ||
+      body.defaultModel !== undefined || body.anthropicApiEndpoint !== undefined || body.openaiApiEndpoint !== undefined ||
+      body.anthropicDefaultModel !== undefined || body.openaiDefaultModel !== undefined) {
+    llmPool.clear()
+    initLLMPool()
+    addLog('info', 'settings', `LLMPool reinitialized: ${llmPool.list().map(p => `${p.id}=${p.provider}/${p.model}`).join(', ')}`)
   }
   return c.json({ ok: true })
 })

@@ -34,6 +34,11 @@ export class LLMPool {
     return deleted
   }
 
+  clear(): void {
+    this.providers.clear()
+    this.defaultId = 'default'
+  }
+
   get(id?: string): ProviderInstance | undefined {
     return this.providers.get(id || this.defaultId)
   }
