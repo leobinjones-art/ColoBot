@@ -32,7 +32,7 @@
     "@colomind/core": "*",
     "@colomind/types": "*",
     "highlight.js": "^11.11.1",
-    "marked": "^15.0.12"
+    "marked": "^18.0.4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
